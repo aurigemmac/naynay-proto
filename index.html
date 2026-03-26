@@ -910,6 +910,26 @@ function bottomBar(isMgr,isVet){
 }
 function navTo(tab){S.activeTab=tab;S.selectedHorse=null;S.horseTab='overview';S.quickAction=null;S.bookingVisitId=null;if(tab==='home'){S.mgrView='home';S.feedCardExpanded=false;S.feedCardHorse=null;}if(tab!=='messages')S.selectedThread=null;rerender();}
 
+function showToast(msg,icon,type){
+  S.toast={msg:msg,icon:icon||'check_circle',type:type||'success',id:Date.now()};
+  rerender();
+  var tid=S.toast.id;
+  setTimeout(function(){if(S.toast&&S.toast.id===tid){S.toast=null;rerender();}},2800);
+}
+function rToast(){
+  if(!S.toast) return '';
+  var t=S.toast;
+  var bg=t.type==='error'?'var(--md-error)':t.type==='warning'?'var(--md-warning)':'#1a1a2e';
+  return '<div style="position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:3000;'
+    +'background:'+bg+';color:#fff;border-radius:24px;padding:10px 18px 10px 14px;'
+    +'display:flex;align-items:center;gap:9px;box-shadow:0 4px 20px rgba(0,0,0,0.25);'
+    +'max-width:320px;min-width:180px;pointer-events:none;'
+    +'animation:toastIn 0.22s cubic-bezier(0.34,1.56,0.64,1) both;">'
+    +'<span class=\"msi\" style=\"font-size:19px;color:#fff;line-height:1;flex-shrink:0;\">'+t.icon+'</span>'
+    +'<span style=\"font-size:13px;font-weight:600;font-family:\'DM Sans\',sans-serif;line-height:1.3;\">'+t.msg+'</span>'
+    +'</div>';
+}
+
 function rerender(){
   const app=document.getElementById('app');if(!app.querySelector('#content-area')){render();return;}
   const t=TH,isVet=S.roles.length===1&&S.role==='vet',isMgr=S.roles.length===1&&S.role==='manager',isOwner=S.roles.length===1&&S.role==='owner',isTrainer=S.roles.length===1&&S.role==='trainer';
@@ -932,7 +952,7 @@ function render(){
   const app=document.getElementById('app');const t=TH,isVet=S.roles.length===1&&S.role==='vet',isMgr=S.roles.length===1&&S.role==='manager',isOwner=S.roles.length===1&&S.role==='owner',isTrainer=S.roles.length===1&&S.role==='trainer';
   const showHorse=!!S.selectedHorse&&!isVet,showBack=isMgr&&S.mgrView==='assignments';
   const showBB=!isVet||(isVet&&S.vetSignedIn);const pad=getPad(isVet,showHorse);
-  app.innerHTML='<div id="nav-bar">'+buildNav(isMgr,isVet,showBack,showHorse)+'</div><div id="content-area" style="background:var(--md-background);flex:1;padding:'+pad+';overflow-y:auto;"></div><div id="bottom-bar">'+(showBB?bottomBar(isMgr,isVet):'')+'</div>';
+  app.innerHTML=rToast()+'<div id="nav-bar">'+buildNav(isMgr,isVet,showBack,showHorse)+'</div><div id="content-area" style="background:var(--md-background);flex:1;padding:'+pad+';overflow-y:auto;"></div><div id="bottom-bar">'+(showBB?bottomBar(isMgr,isVet):'')+'</div>';
   app.querySelector('#content-area').innerHTML=getContent(isVet,isMgr,showHorse);
 }
 function getContent(isVet,isMgr,showHorse){
@@ -1660,7 +1680,7 @@ function rVetUnauth(){const t=TH;const v=vetVaxData;const isEdit=S.vetEditMode;c
     ?rPersonCard({prefix:v.vetPrefix,first:v.vetFirst,last:v.vetLast,suffix:v.vetSuffix,phone:v.vetPhone,email:''},'vetVaxData',['DVM','VMD','PhD','MS','DVM PhD',''])
     :'<div style="font-size:14px;font-weight:700;color:var(--md-on-surface);margin-bottom:3px;">'+(v.vetPrefix?v.vetPrefix+' ':'')+v.vetFirst+' '+v.vetLast+(v.vetSuffix?', '+v.vetSuffix:'')+'</div><div style="font-size:12px;color:var(--md-on-surface-dim);">'+v.vetPhone+'</div>'
   )
-  +'</div></div></div>';const sig=`<div style="margin-bottom:14px;"><div style="font-size:11px;font-weight:700;color:var(--md-on-surface-variant);text-transform:uppercase;margin-bottom:7px;">Signature</div><div style="background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:12px;height:70px;display:flex;align-items:center;justify-content:center;"><span style="font-size:12px;color:var(--md-on-surface-dim);font-style:italic;">Sign here</span></div></div>`;const ctas=`<div style="padding-bottom:8px;"><button onclick="S.vetConfirmPage='confirmed';rerender()" style="width:100%;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer;border:none;padding:14px;border-radius:14px;background:var(--md-primary);color:#fff;margin-bottom:10px;">Confirm vaccination</button><div style="text-align:center;"><button onclick="S.vetConfirmPage='declined';rerender()" style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:var(--md-on-surface-dim);background:none;border:none;cursor:pointer;text-decoration:underline;">I cannot confirm these details</button></div></div>`;return banner+vaccineCard+vetCard+sig+ctas;}
+  +'</div></div></div>';const sig=`<div style="margin-bottom:14px;"><div style="font-size:11px;font-weight:700;color:var(--md-on-surface-variant);text-transform:uppercase;margin-bottom:7px;">Signature</div><div style="background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:12px;height:70px;display:flex;align-items:center;justify-content:center;"><span style="font-size:12px;color:var(--md-on-surface-dim);font-style:italic;">Sign here</span></div></div>`;const ctas=`<div style="padding-bottom:8px;"><button onclick="S.vetConfirmPage='confirmed';showToast('Vaccination confirmed','vaccines','success')" style="width:100%;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer;border:none;padding:14px;border-radius:14px;background:var(--md-primary);color:#fff;margin-bottom:10px;">Confirm vaccination</button><div style="text-align:center;"><button onclick="S.vetConfirmPage='declined';rerender()" style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:var(--md-on-surface-dim);background:none;border:none;cursor:pointer;text-decoration:underline;">I cannot confirm these details</button></div></div>`;return banner+vaccineCard+vetCard+sig+ctas;}
 function rVetConfirmedPage(){const t=TH;const benefits=[{title:'Records, always ready',body:'Every visit, vaccination, and treatment stored securely.'},{title:'Connected care team',body:'Barn managers and owners see your updates in real time.'},{title:'Auto due-date reminders',body:"NayNay tracks next-due dates and notifies barns."},{title:'Payments handled in chat',body:'Invoice and collect inside the care team conversation.'}];const success=`<div style="text-align:center;padding:18px 0 14px;"><div style="width:56px;height:56px;border-radius:50%;background:var(--md-secondary-container);border:2px solid var(--md-secondary)44;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;"><svg width="26" height="26" viewBox="0 0 28 28" fill="none"><path d="M5 14l6.5 6.5L23 8" stroke="var(--md-secondary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="font-size:17px;font-weight:700;color:var(--md-on-surface);margin-bottom:3px;">Vaccination confirmed</div><div style="font-size:12px;color:var(--md-on-surface-dim);">Rivendell's records have been updated.</div></div>`;const cards=benefits.map(b=>`<div style="background:var(--md-surface);border-radius:10px;border:1.5px solid var(--md-outline-variant);padding:10px 12px;margin-bottom:7px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:2px;">${b.title}</div><div style="font-size:12px;color:var(--md-on-surface-dim);line-height:1.5;">${b.body}</div></div>`).join('');const cta=`<div style="background:linear-gradient(135deg,#0E1E2E,#1A3A4A);border-radius:14px;padding:16px;margin-top:4px;"><div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:10px;">Create your free vet account</div>${googleBtn('vetSignIn()')}</div>`;return success+`<div style="height:1px;background:var(--md-outline-variant);margin:4px 0 14px;"></div>`+cards+cta;}
 function rVetDeclinedPage(){const t=TH;return `<div style="text-align:center;padding:20px 0 16px;"><div style="width:56px;height:56px;border-radius:50%;background:var(--md-error-container);border:2px solid var(--md-error)44;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;"><svg width="24" height="24" viewBox="0 0 26 26" fill="none"><path d="M4 4l18 18M22 4L4 22" stroke="var(--md-error)" stroke-width="2.2" stroke-linecap="round"/></svg></div><div style="font-size:17px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Details not confirmed</div><div style="font-size:12px;color:var(--md-on-surface-dim);">${CURRENT_USER_NAME} has been notified and will follow up.</div></div><div style="text-align:center;margin:8px 0 16px;"><button onclick="S.vetConfirmPage=false;rerender()" style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;color:var(--md-primary);background:var(--md-surface-variant);border:1.5px solid var(--md-outline);padding:8px 22px;border-radius:12px;cursor:pointer;">Review details again</button></div><div style="background:linear-gradient(135deg,#0E1E2E,#1A3A4A);border-radius:14px;padding:16px;"><div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:3px;">Fewer callbacks with NayNay</div><div style="font-size:12px;color:rgba(255,255,255,0.65);margin-bottom:12px;">Barns enter details as you administer — reducing errors before they happen.</div>${googleBtn('vetSignIn()')}</div>`;}
 function vetSignIn(){S.vetSignedIn=true;S.vetView='home';rerender();}
@@ -1800,7 +1820,7 @@ function submitVitals(){
 window.vitalsNotifyDone=function(){
   window.vitalsState={horseId:'',date:'',time:'',activeField:null,hr:'',rr:'',temp:'',bcs:'',hg:'',bl:'',notes:''};
   S.quickAction=null;
-  rerender();
+  showToast('Vitals logged','monitor_heart','success');
 };
 
 function rQuickActionForm(actionId){
@@ -2121,6 +2141,7 @@ function toggleNotifyGroup(id){S.notifyCtx.selections[id]=!S.notifyCtx.selection
 function sendNotifyStep(){
   const fn=S.notifyCtx&&S.notifyCtx.onDone;
   S.notifyCtx=null;
+  showToast('Notifications sent','send','success');
   if(fn&&window[fn]) window[fn]();
   else {S.quickAction=null;rerender();}
 }
@@ -2263,7 +2284,7 @@ function submitObservation(){
 window.obsNotifyDone=function(){
   window.obsState={horseId:'',obsType:'',notes:'',photos:[],videos:[],date:'',time:''};
   S.quickAction=null;
-  rerender();
+  showToast('Observation saved','check_circle','success');
 };
 
 function rVetHome(){const t=TH;const appts=[{horse:'Rivendell',barn:'Sunrise Stables',month:'Mar',day:'22',time:'10:00 AM',type:'Follow-up — post colic',urgent:false},{horse:'Bella',barn:'Oakwood Farm',month:'Mar',day:'24',time:'2:00 PM',type:'Annual vaccinations',urgent:false},{horse:'Thunder',barn:'River Ranch',month:'Mar',day:'16',time:'11:30 AM',type:'Lameness eval',urgent:true}];const header=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><div><div style="font-size:17px;font-weight:700;color:var(--md-on-surface);">Good morning, Dr. Matthew</div><div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:2px;">Mon, Mar 16 · 3 upcoming appointments</div></div><div style="width:38px;height:38px;border-radius:50%;background:var(--md-secondary)22;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class=\"msi\" style=\"font-size:30px;color:var(--md-secondary);line-height:1;\">face_6</span></div></div>`;const stats=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;"><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-primary);">12</div><div style="font-size:11px;color:var(--md-on-surface-dim);">In care</div></div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-primary);">3</div><div style="font-size:11px;color:var(--md-on-surface-dim);">Appts</div></div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-warning);">2</div><div style="font-size:11px;color:var(--md-on-surface-dim);">Confirmations</div></div></div>`;const pending=`<div style="background:var(--md-warning-container);border:1.5px solid var(--md-warning)44;border-radius:12px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="S.vetSignedIn=false;S.vetView='confirmation';S.vetConfirmPage=false;rerender()"><div style="flex:1;"><div style="font-size:12px;font-weight:700;color:var(--md-warning);margin-bottom:2px;">Confirmation request pending</div><div style="font-size:12px;color:var(--md-on-surface-variant);">Rivendell · Potomavac + Imrab · Charlene Georgia</div></div><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="var(--md-warning)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;const apptCards=appts.map(a=>`<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid ${a.urgent?t.DNG:t.BRD};margin-bottom:8px;padding:11px 14px;display:flex;align-items:center;gap:10px;"><div style="width:36px;height:36px;border-radius:10px;background:${a.urgent?t.DNGBG:t.TL};display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;"><div style="font-size:9px;font-weight:700;color:${a.urgent?t.DNG:t.T};line-height:1;">${a.month}</div><div style="font-size:14px;font-weight:700;color:${a.urgent?t.DNG:t.T};line-height:1;">${a.day}</div></div><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:var(--md-on-surface);">${a.horse} <span style="font-size:11px;font-weight:400;color:var(--md-on-surface-dim);">· ${a.barn}</span></div><div style="font-size:11px;color:var(--md-on-surface-dim);">${a.time} · ${a.type}</div></div>${a.urgent?`<span style="font-size:10px;font-weight:700;background:var(--md-error-container);color:var(--md-error);padding:2px 8px;border-radius:10px;">Today</span>`:''}</div>`).join('');return header+stats+pending+`<div style="font-size:12px;font-weight:700;color:var(--md-on-surface);margin-bottom:9px;">Upcoming appointments</div>`+apptCards+quickActionsBar('vet');}
@@ -3955,7 +3976,7 @@ function rScheduleSuggestion(threadId,intent){
     +'<button onclick="S.aiScheduleDismissed[\''+threadId+'\']=true;rerender()" style="background:none;border:none;padding:2px 6px;cursor:pointer;font-size:18px;line-height:1;color:var(--md-on-surface-dim);">&times;</button>'
     +'</div>'
     +'<div style="display:flex;gap:8px;margin-top:10px;">'
-    +'<button onclick="S.aiScheduleAdded[\''+threadId+'\']=true;rerender()" style="flex:1;font-family:\'DM Sans\',sans-serif;font-size:13px;font-weight:700;cursor:pointer;padding:9px;border-radius:10px;background:var(--md-primary);color:#fff;border:none;">Add to calendar</button>'
+    +'<button onclick="S.aiScheduleAdded[\''+threadId+'\']=true;showToast(\'Added to calendar\',\'event\',\'success\')" style="flex:1;font-family:\'DM Sans\',sans-serif;font-size:13px;font-weight:700;cursor:pointer;padding:9px;border-radius:10px;background:var(--md-primary);color:#fff;border:none;">Add to calendar</button>'
     +'<button onclick="S.aiScheduleDismissed[\''+threadId+'\']=true;rerender()" style="font-family:\'DM Sans\',sans-serif;font-size:13px;font-weight:600;cursor:pointer;padding:9px 14px;border-radius:10px;background:transparent;color:var(--md-primary);border:1.5px solid var(--md-primary)44;">Dismiss</button>'
     +'</div>'
     +'</div>'
