@@ -236,16 +236,16 @@ function mdSecBlock(title,children){
 // --- ROLE CYCLE -----------------------------------------------
 const ROLE_LABELS_MAP={'staff':'Staff','manager':'Manager','vet':'Vet','trainer':'Trainer','owner':'Owner'};
 const ROLE_COMBOS=[
-  {label:'Staff',                    roles:['staff'],                         subtitle:'Barn hand / groom'},
-  {label:'Manager',                  roles:['manager'],                       subtitle:'Barn manager'},
-  {label:'Trainer',                  roles:['trainer'],                       subtitle:'Riding instructor'},
-  {label:'Vet',                      roles:['vet'],                           subtitle:'Visiting veterinarian'},
-  {label:'Owner',                    roles:['owner'],                         subtitle:'Horse owner'},
-  {label:'Owner + Trainer',          roles:['owner','trainer'],               subtitle:'Competing owner-rider'},
-  {label:'Owner + Manager',          roles:['owner','manager'],               subtitle:'Owner who runs the barn'},
-  {label:'Owner + Vet',              roles:['owner','vet'],                   subtitle:'Owner who is also a vet'},
-  {label:'Owner + Trainer + Manager',roles:['owner','trainer','manager'],     subtitle:'Small operation owner'},
-  {label:'Owner + Vet + Trainer',    roles:['owner','vet','trainer'],         subtitle:'Performance horse professional'},
+  {label:'Staff',                    roles:['staff'],                         subtitle:'Barn hand / groom',                name:'Marcus',    face:'face_4',  color:'var(--md-secondary)'},
+  {label:'Manager',                  roles:['manager'],                       subtitle:'Barn manager',                     name:'Charlene',  face:'face_3',  color:'var(--md-primary)'},
+  {label:'Trainer',                  roles:['trainer'],                       subtitle:'Riding instructor',                name:'Alyse',     face:'face_5',  color:'var(--md-tertiary)'},
+  {label:'Vet',                      roles:['vet'],                           subtitle:'Visiting veterinarian',            name:'Dr. Matthew',face:'face_6', color:'var(--md-secondary)'},
+  {label:'Owner',                    roles:['owner'],                         subtitle:'Horse owner',                      name:'Emily',     face:'face_2',  color:'#C04A6A'},
+  {label:'Owner + Trainer',          roles:['owner','trainer'],               subtitle:'Competing owner-rider',            name:'Riley',     face:'face_2',  color:'#C04A6A'},
+  {label:'Owner + Manager',          roles:['owner','manager'],               subtitle:'Owner who runs the barn',          name:'Dana',      face:'face_2',  color:'#C04A6A'},
+  {label:'Owner + Vet',              roles:['owner','vet'],                   subtitle:'Owner who is also a vet',          name:'Dr. Claire',face:'face_2',  color:'#C04A6A'},
+  {label:'Owner + Trainer + Manager',roles:['owner','trainer','manager'],     subtitle:'Small operation owner',            name:'Sam',       face:'face_2',  color:'#C04A6A'},
+  {label:'Owner + Vet + Trainer',    roles:['owner','vet','trainer'],         subtitle:'Performance horse professional',   name:'Dr. Jordan',face:'face_2',  color:'#C04A6A'},
 ];
 function hasRole(r){return S.roles.includes(r);}
 function anyRole(){var args=Array.prototype.slice.call(arguments);return args.some(function(r){return S.roles.includes(r);});}
@@ -1027,7 +1027,7 @@ function rStaff(){
   const morningTraining=TRAINING_DEFS.filter(d=>!['2:00 PM'].includes(d.startTime)).filter(filterTrain);
   const afternoonTraining=TRAINING_DEFS.filter(d=>['2:00 PM'].includes(d.startTime)).filter(filterTrain);
 
-  const staffHeader='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><div><div style="font-size:18px;font-weight:700;color:var(--md-on-surface);">Good morning, Charlene</div><div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:1px;">Mon, Mar 16 · Sunrise Stables</div></div><div style="width:38px;height:38px;border-radius:50%;background:var(--md-surface-variant);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--md-on-surface-variant);flex-shrink:0;">CG</div></div>';
+  const staffHeader='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><div><div style="font-size:18px;font-weight:700;color:var(--md-on-surface);">Good morning, '+(ROLE_COMBOS[0].name||'Marcus')+'</div><div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:1px;">Mon, Mar 16 · Sunrise Stables</div></div><div style="width:38px;height:38px;border-radius:50%;background:var(--md-secondary)22;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class=\"msi\" style=\"font-size:30px;color:var(--md-secondary);line-height:1;\">face_4</span></div></div>';
   let html=dateBanner()+staffHeader+dualProgress+rFeedMedCard()+filterBar;
 
   // Morning section -- intermixed
@@ -1167,7 +1167,7 @@ function rMgrHome(){
   const tTotal=TRAINING_DEFS.length,tDone=TRAINING_DEFS.filter(d=>trainAssigns[d.id]?.status==='complete').length;
   const tUnassigned=TRAINING_DEFS.filter(d=>!trainAssigns[d.id]?.assignee).length;
 
-  const mgrHeader='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><div><div style="font-size:18px;font-weight:700;color:var(--md-on-surface);">Good morning, Jordan</div><div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:1px;">Mon, Mar 16 · Sunrise Stables</div></div><div style="width:38px;height:38px;border-radius:50%;background:var(--md-surface-variant);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--md-on-surface-variant);flex-shrink:0;">JM</div></div>';
+  const mgrHeader='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><div><div style="font-size:18px;font-weight:700;color:var(--md-on-surface);">Good morning, Charlene</div><div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:1px;">Mon, Mar 16 · Sunrise Stables</div></div><div style="width:38px;height:38px;border-radius:50%;background:var(--md-primary)22;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class=\"msi\" style=\"font-size:30px;color:var(--md-primary);line-height:1;\">face_3</span></div></div>';
   const statsRow=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
     <div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);border-left:3px solid var(--md-error);padding:11px 13px;">
       <div style="display:flex;align-items:center;gap:5px;margin-bottom:6px;">
@@ -1383,7 +1383,7 @@ function rOwnerSetupNotifs(){
 
 function rTrainerSetup(){
   const t=TH;
-  const tabs=[{key:'account',label:'Account'},{key:'services',label:'Services'},{key:'barns',label:'Barns'},{key:'payments',label:'Payments'},{key:'calendar',label:'Calendar'},{key:'notifications',label:'Notifications'}];
+  const tabs=[{key:'account',label:'Account'},{key:'services',label:'Services'},{key:'barns',label:'Barns'},{key:'calendar',label:'Calendar'},{key:'notifications',label:'Notifications'}];
   S.trainerSetupTab=S.trainerSetupTab||'account';
   if(svcEditId!==null) S.trainerSetupTab='services';
   const tabRow='<div style="display:flex;border-bottom:2px solid '+TH.mdOutlineVar+';margin:-12px -14px 14px;background:'+TH.mdSurf+';overflow-x:auto;">'+tabs.map(function(tab){return '<button onclick="S.trainerSetupTab=\''+tab.key+'\';rerender()" style="font-family:\'DM Sans\',sans-serif;font-size:13px;font-weight:700;cursor:pointer;padding:10px 12px;background:transparent;color:'+(S.trainerSetupTab===tab.key?t.T:t.TX3)+';border:none;border-bottom:'+(S.trainerSetupTab===tab.key?'3px solid var(--md-primary)':'3px solid transparent')+';margin-bottom:-2px;white-space:nowrap;">'+tab.label+'</button>';}).join('')+'</div>';
@@ -1391,7 +1391,7 @@ function rTrainerSetup(){
   if(S.trainerSetupTab==='account') body=rTrainerSetupAccount();
   else if(S.trainerSetupTab==='services') body=rServicesTab();
   else if(S.trainerSetupTab==='barns') body=rTrainerSetupBarns();
-  else if(S.trainerSetupTab==='payments') body=rTrainerSetupPayments();
+  
   else if(S.trainerSetupTab==='calendar') body=rTrainerSetupCalendar();
   else body=rTrainerSetupNotifs();
   return tabRow+body;
@@ -1441,14 +1441,14 @@ let mgrSetup={
 
 function rMgrSetup(){
   const t=TH;
-  const tabs=[{key:'account',label:'Account'},{key:'tasks',label:'Tasks'},{key:'services',label:'Services'},{key:'payments',label:'Payments'},{key:'calendar',label:'Calendar'},{key:'notifications',label:'Notifications'}];
+  const tabs=[{key:'account',label:'Account'},{key:'tasks',label:'Tasks'},{key:'services',label:'Services'},{key:'calendar',label:'Calendar'},{key:'notifications',label:'Notifications'}];
   S.mgrSetupTab=S.mgrSetupTab||'tasks';
   const tabRow='<div style="display:flex;border-bottom:2px solid '+TH.mdOutlineVar+';margin:-12px -14px 14px;background:'+TH.mdSurf+';overflow-x:auto;">'+tabs.map(function(tab){return '<button onclick="S.mgrSetupTab=\''+tab.key+'\';rerender()" style="font-family:\'DM Sans\',sans-serif;font-size:13px;font-weight:700;cursor:pointer;padding:10px 12px;background:transparent;color:'+(S.mgrSetupTab===tab.key?t.T:t.TX3)+';border:none;border-bottom:'+(S.mgrSetupTab===tab.key?'3px solid var(--md-primary)':'3px solid transparent')+';margin-bottom:-2px;white-space:nowrap;">'+tab.label+'</button>';}).join('')+'</div>';
   let body='';
   if(S.mgrSetupTab==='account') body=rMgrSetupAccount();
   else if(S.mgrSetupTab==='tasks') body=rMgrSetupTasks();
   else if(S.mgrSetupTab==='services') body=rServicesTab();
-  else if(S.mgrSetupTab==='payments') body=rMgrSetupPayments();
+  
   else if(S.mgrSetupTab==='calendar') body=rMgrSetupCalendar();
   else body=rMgrSetupNotifs();
   return tabRow+body;
@@ -1493,7 +1493,7 @@ function rMgrSetupNotifs(){
 
 function rVetSetup(){
   const t=TH;
-  const tabs=[{key:'account',label:'Account'},{key:'services',label:'Services'},{key:'barns',label:'Barns'},{key:'payments',label:'Payments'},{key:'calendar',label:'Calendar'},{key:'notifications',label:'Notifications'}];
+  const tabs=[{key:'account',label:'Account'},{key:'services',label:'Services'},{key:'barns',label:'Barns'},{key:'calendar',label:'Calendar'},{key:'notifications',label:'Notifications'}];
   S.vetSetupTab=S.vetSetupTab||'account';
   // If we're in service edit/create and NOT on services tab, force it
   if(svcEditId!==null)S.vetSetupTab='services';
@@ -1502,13 +1502,39 @@ function rVetSetup(){
   if(S.vetSetupTab==='services') body=rServicesTab();
   else if(S.vetSetupTab==='account') body=rVetSetupPractice();
   else if(S.vetSetupTab==='barns') body=rVetSetupBarns();
-  else if(S.vetSetupTab==='payments') body=rVetSetupPayments();
+  
   else if(S.vetSetupTab==='calendar') body=rVetSetupCalendar();
   else body=rVetSetupNotifs();
   return tabRow+body;
 }
 
 // --- SERVICES LIST --------------------------------------------
+function rStripeConnect(pay,store){
+  var connected=pay&&pay.stripeConnected;
+  var stripeBlock=connected
+    ?('<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid #635BFF44;overflow:hidden;margin-top:14px;">'
+      +'<div style="padding:12px 14px;border-bottom:1px solid #635BFF22;background:#635BFF08;display:flex;align-items:center;justify-content:space-between;">'
+      +'<div style="display:flex;align-items:center;gap:8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#635BFF"/><path d="M13.5 8.5c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5.67 1.5 1.5 1.5 1.5-.67 1.5-1.5zm-3 7c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5-.67-1.5-1.5-1.5-1.5.67-1.5 1.5z" fill="#fff"/></svg>'
+      +'<div><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Stripe connected</div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+( pay.account||'Account linked')+'</div></div></div>'
+      +'<button onclick="'+store+'.stripeConnected=false;rerender()" style="font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:600;cursor:pointer;padding:6px 12px;border-radius:var(--md-shape-sm);background:transparent;color:var(--md-on-surface-dim);border:1.5px solid var(--md-outline);">Disconnect</button>'
+      +'</div>'
+      +'<div style="padding:11px 14px;display:flex;gap:16px;">'
+      +'<div style="text-align:center;flex:1;"><div style="font-size:18px;font-weight:700;color:var(--md-on-surface);">$0</div><div style="font-size:11px;color:var(--md-on-surface-dim);">This month</div></div>'
+      +'<div style="text-align:center;flex:1;"><div style="font-size:18px;font-weight:700;color:var(--md-on-surface);">0</div><div style="font-size:11px;color:var(--md-on-surface-dim);">Invoices</div></div>'
+      +'<div style="text-align:center;flex:1;"><div style="font-size:18px;font-weight:700;color:var(--md-on-surface);">—</div><div style="font-size:11px;color:var(--md-on-surface-dim);">Pending</div></div>'
+      +'</div>'
+      +'</div>')
+    :('<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);overflow:hidden;margin-top:14px;">'
+      +'<div style="padding:20px 16px;text-align:center;">'
+      +'<div style="width:52px;height:52px;border-radius:14px;background:#635BFF15;border:2px solid #635BFF33;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#635BFF"/><path d="M13.5 8.5c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5.67 1.5 1.5 1.5 1.5-.67 1.5-1.5zm-3 7c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5-.67-1.5-1.5-1.5-1.5.67-1.5 1.5z" fill="#fff"/></svg></div>'
+      +'<div style="font-size:14px;font-weight:700;color:var(--md-on-surface);margin-bottom:5px;">Accept payments</div>'
+      +'<div style="font-size:12px;color:var(--md-on-surface-dim);margin-bottom:14px;">Connect Stripe to invoice clients and accept payments directly in NayNay.</div>'
+      +'<button onclick="'+store+'.stripeConnected=true;rerender()" style="background:#635BFF;color:#fff;border:none;padding:11px 24px;border-radius:var(--md-shape-md);font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Connect Stripe</button>'
+      +'</div>'
+      +'</div>');
+  return stripeBlock;
+}
+
 function rServicesTab(){
   if(svcEditId!==null)return rServiceForm(svcEditId);
   const t=TH;
@@ -1537,7 +1563,9 @@ function rServicesTab(){
   }).join('');
 
   return searchBar+`<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);overflow:hidden;margin-bottom:12px;">${rows}</div>
-  <button onclick="svcEditId='new';rerender()" style="width:100%;background:var(--md-primary);color:#fff;border:none;padding:12px;border-radius:var(--md-shape-md);font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>Add service</button>`;
+  <button onclick="svcEditId='new';rerender()" style="width:100%;background:var(--md-primary);color:#fff;border:none;padding:12px;border-radius:var(--md-shape-md);font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>Add service</button>
+  `
+  +rStripeConnect(anyRole('vet')?vetSetup.payment:anyRole('trainer')?trainerSetup.payment:mgrSetup.payment, anyRole('vet')?'vetSetup.payment':anyRole('trainer')?'trainerSetup.payment':'mgrSetup.payment');
 }
 
 // --- SERVICE FORM (create/edit) -------------------------------
@@ -2238,7 +2266,7 @@ window.obsNotifyDone=function(){
   rerender();
 };
 
-function rVetHome(){const t=TH;const appts=[{horse:'Rivendell',barn:'Sunrise Stables',month:'Mar',day:'22',time:'10:00 AM',type:'Follow-up — post colic',urgent:false},{horse:'Bella',barn:'Oakwood Farm',month:'Mar',day:'24',time:'2:00 PM',type:'Annual vaccinations',urgent:false},{horse:'Thunder',barn:'River Ranch',month:'Mar',day:'16',time:'11:30 AM',type:'Lameness eval',urgent:true}];const header=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><div><div style="font-size:17px;font-weight:700;color:var(--md-on-surface);">Good morning, Dr. G</div><div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:2px;">Mon, Mar 16 · 3 upcoming appointments</div></div><div style="width:38px;height:38px;border-radius:50%;background:var(--md-surface-variant);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--md-primary);">KG</div></div>`;const stats=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;"><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-primary);">12</div><div style="font-size:11px;color:var(--md-on-surface-dim);">In care</div></div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-primary);">3</div><div style="font-size:11px;color:var(--md-on-surface-dim);">Appts</div></div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-warning);">2</div><div style="font-size:11px;color:var(--md-on-surface-dim);">Confirmations</div></div></div>`;const pending=`<div style="background:var(--md-warning-container);border:1.5px solid var(--md-warning)44;border-radius:12px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="S.vetSignedIn=false;S.vetView='confirmation';S.vetConfirmPage=false;rerender()"><div style="flex:1;"><div style="font-size:12px;font-weight:700;color:var(--md-warning);margin-bottom:2px;">Confirmation request pending</div><div style="font-size:12px;color:var(--md-on-surface-variant);">Rivendell · Potomavac + Imrab · Charlene Georgia</div></div><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="var(--md-warning)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;const apptCards=appts.map(a=>`<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid ${a.urgent?t.DNG:t.BRD};margin-bottom:8px;padding:11px 14px;display:flex;align-items:center;gap:10px;"><div style="width:36px;height:36px;border-radius:10px;background:${a.urgent?t.DNGBG:t.TL};display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;"><div style="font-size:9px;font-weight:700;color:${a.urgent?t.DNG:t.T};line-height:1;">${a.month}</div><div style="font-size:14px;font-weight:700;color:${a.urgent?t.DNG:t.T};line-height:1;">${a.day}</div></div><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:var(--md-on-surface);">${a.horse} <span style="font-size:11px;font-weight:400;color:var(--md-on-surface-dim);">· ${a.barn}</span></div><div style="font-size:11px;color:var(--md-on-surface-dim);">${a.time} · ${a.type}</div></div>${a.urgent?`<span style="font-size:10px;font-weight:700;background:var(--md-error-container);color:var(--md-error);padding:2px 8px;border-radius:10px;">Today</span>`:''}</div>`).join('');return header+stats+pending+`<div style="font-size:12px;font-weight:700;color:var(--md-on-surface);margin-bottom:9px;">Upcoming appointments</div>`+apptCards+quickActionsBar('vet');}
+function rVetHome(){const t=TH;const appts=[{horse:'Rivendell',barn:'Sunrise Stables',month:'Mar',day:'22',time:'10:00 AM',type:'Follow-up — post colic',urgent:false},{horse:'Bella',barn:'Oakwood Farm',month:'Mar',day:'24',time:'2:00 PM',type:'Annual vaccinations',urgent:false},{horse:'Thunder',barn:'River Ranch',month:'Mar',day:'16',time:'11:30 AM',type:'Lameness eval',urgent:true}];const header=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><div><div style="font-size:17px;font-weight:700;color:var(--md-on-surface);">Good morning, Dr. Matthew</div><div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:2px;">Mon, Mar 16 · 3 upcoming appointments</div></div><div style="width:38px;height:38px;border-radius:50%;background:var(--md-secondary)22;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class=\"msi\" style=\"font-size:30px;color:var(--md-secondary);line-height:1;\">face_6</span></div></div>`;const stats=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;"><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-primary);">12</div><div style="font-size:11px;color:var(--md-on-surface-dim);">In care</div></div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-primary);">3</div><div style="font-size:11px;color:var(--md-on-surface-dim);">Appts</div></div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-warning);">2</div><div style="font-size:11px;color:var(--md-on-surface-dim);">Confirmations</div></div></div>`;const pending=`<div style="background:var(--md-warning-container);border:1.5px solid var(--md-warning)44;border-radius:12px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="S.vetSignedIn=false;S.vetView='confirmation';S.vetConfirmPage=false;rerender()"><div style="flex:1;"><div style="font-size:12px;font-weight:700;color:var(--md-warning);margin-bottom:2px;">Confirmation request pending</div><div style="font-size:12px;color:var(--md-on-surface-variant);">Rivendell · Potomavac + Imrab · Charlene Georgia</div></div><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="var(--md-warning)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;const apptCards=appts.map(a=>`<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid ${a.urgent?t.DNG:t.BRD};margin-bottom:8px;padding:11px 14px;display:flex;align-items:center;gap:10px;"><div style="width:36px;height:36px;border-radius:10px;background:${a.urgent?t.DNGBG:t.TL};display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;"><div style="font-size:9px;font-weight:700;color:${a.urgent?t.DNG:t.T};line-height:1;">${a.month}</div><div style="font-size:14px;font-weight:700;color:${a.urgent?t.DNG:t.T};line-height:1;">${a.day}</div></div><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:var(--md-on-surface);">${a.horse} <span style="font-size:11px;font-weight:400;color:var(--md-on-surface-dim);">· ${a.barn}</span></div><div style="font-size:11px;color:var(--md-on-surface-dim);">${a.time} · ${a.type}</div></div>${a.urgent?`<span style="font-size:10px;font-weight:700;background:var(--md-error-container);color:var(--md-error);padding:2px 8px;border-radius:10px;">Today</span>`:''}</div>`).join('');return header+stats+pending+`<div style="font-size:12px;font-weight:700;color:var(--md-on-surface);margin-bottom:9px;">Upcoming appointments</div>`+apptCards+quickActionsBar('vet');}
 function rVetHorses(){const t=TH;const horses=[VET_HORSE,{id:'vh2',name:'Bella',age:'7 years',breed:'Quarter Horse',color:'Palomino',sex:'Mare',note:'Oakwood Farm. Annual vacc due Apr 3.',avatar:{bg:'#C8A840',mane:'#F5EDE0',sock:'#F5F5F0',marking:'star'}},{id:'vh3',name:'Thunder',age:'15 years',breed:'Thoroughbred',color:'Dark Grey',sex:'Gelding',note:'River Ranch. Lameness eval scheduled.',avatar:{bg:'#5A5A5A',mane:'#3A3A3A',sock:null,marking:null}}];function sc(sex){if(sex==='Mare'||sex==='Filly')return{bg:'var(--md-error-container)',color:'var(--md-error)'};if(sex==='Stallion'||sex==='Colt')return{bg:'var(--md-tertiary-container)',color:'var(--md-tertiary)'};return{bg:'var(--md-secondary-container)',color:'var(--md-secondary)'};}return `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><div><div style="font-size:16px;font-weight:700;color:var(--md-on-surface);">My horses</div><div style="font-size:11px;color:var(--md-on-surface-dim);">${horses.length} in care</div></div></div>`+horses.map(h=>{const s=sc(h.sex);return `<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);margin-bottom:9px;overflow:hidden;display:flex;align-items:stretch;"><div style="width:70px;background:${h.avatar.bg}22;display:flex;align-items:center;justify-content:center;padding:10px 6px;flex-shrink:0;border-right:1.5px solid var(--md-outline-variant);">${horseAvatar(h,52)}</div><div style="flex:1;padding:11px 13px;min-width:0;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;"><div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">${h.name}</div><span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;background:${s.bg};color:${s.color};">${h.sex}</span></div><div style="font-size:11px;color:var(--md-on-surface-variant);margin-bottom:3px;">${h.breed} · ${h.color} · ${h.age}</div><div style="font-size:11px;color:var(--md-on-surface-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-style:italic;">${h.note}</div></div></div>`;}).join('');}
 // Common equine vaccines picklist
 const EQUINE_VACCINES=[
@@ -2726,10 +2754,10 @@ function rTrainerHome(){
 
   const header=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
     <div>
-      <div style="font-size:18px;font-weight:700;color:var(--md-on-surface);">Good morning, Jordan</div>
+      <div style="font-size:18px;font-weight:700;color:var(--md-on-surface);">Good morning, Alyse</div>
       <div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:1px;">Mon, Mar 16 · Sunrise Stables</div>
     </div>
-    <div style="width:38px;height:38px;border-radius:50%;background:var(--md-surface-variant);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--md-primary);">JM</div>
+    <div style="width:38px;height:38px;border-radius:50%;background:var(--md-tertiary)22;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class=\"msi\" style=\"font-size:30px;color:var(--md-tertiary);line-height:1;\">face_5</span></div>
   </div>`;
 
   // Today's session summary bar
@@ -2885,29 +2913,68 @@ const OWNER_EVENTS=[
 
 function rRolePickerSheet(){
   const t=TH;
-  const rows=ROLE_COMBOS.map(function(combo,idx){
-    const active=idx===S.roleComboIdx;
-    const badges=combo.roles.map(function(r){
-      return '<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:20px;background:'+(active?'rgba(255,255,255,0.2)':'var(--md-surface-variant)')+';color:'+(active?'#fff':'var(--md-primary)')+';margin-right:3px;">'+ROLE_LABELS_MAP[r]+'</span>';
-    }).join('');
-    return '<div onclick="selectRoleCombo('+idx+')" style="padding:11px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;background:'+(active?'var(--md-primary)':'transparent')+';border-radius:10px;margin-bottom:3px;">'
-      +'<div style="flex:1;">'
-      +'<div style="font-size:13px;font-weight:700;color:'+(active?'#fff':'var(--md-on-surface)')+';">'+combo.label+'</div>'
-      +'<div style="font-size:11px;color:'+(active?'rgba(255,255,255,0.75)':'var(--md-on-surface-dim)')+';margin-top:1px;">'+combo.subtitle+'</div>'
-      +'<div style="margin-top:5px;">'+badges+'</div>'
+  // Single-role rows (index 0-4) shown as user cards
+  const singleCombos=ROLE_COMBOS.slice(0,5);
+  const multiCombos=ROLE_COMBOS.slice(5);
+  const active=S.roleComboIdx;
+
+  function userCard(combo,idx){
+    const isSel=idx===active;
+    const faceColor=isSel?'#fff':combo.color;
+    const faceBg=isSel?combo.color:'var(--md-surface-variant)';
+    return '<div onclick="selectRoleCombo('+idx+')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 8px;border-radius:14px;cursor:pointer;background:'+(isSel?combo.color+'18':'transparent')+';border:2px solid '+(isSel?combo.color:'var(--md-outline-variant)')+';min-width:0;flex:1;">'
+      +'<div style="width:48px;height:48px;border-radius:50%;background:'+faceBg+';display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
+      +'<span class="msi" style="font-size:30px;color:'+faceColor+';line-height:1;">'+combo.face+'</span>'
       +'</div>'
-      +(active?'<svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M3 9l5 5 7-8" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>':'')
+      +'<div style="text-align:center;min-width:0;width:100%;">'
+      +'<div style="font-size:12px;font-weight:700;color:'+(isSel?combo.color:'var(--md-on-surface)')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+combo.name+'</div>'
+      +'<div style="font-size:10px;color:var(--md-on-surface-dim);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+combo.label+'</div>'
+      +'</div>'
       +'</div>';
-  }).join('');
+  }
+
+  function multiRow(combo,idx){
+    const isSel=idx===active;
+    const badges=combo.roles.map(function(r){
+      var rc=ROLE_COMBOS.find(function(c){return c.roles.length===1&&c.roles[0]===r;});
+      return '<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;background:'+(isSel?'rgba(255,255,255,0.25)':'var(--md-surface-variant)')+';color:'+(isSel?'#fff':'var(--md-on-surface-dim)')+';">'+( rc?rc.label:r)+'</span>';
+    }).join(' ');
+    // Show stacked face icons for multi combos
+    var facesHtml='<div style="display:flex;margin-right:4px;">';
+    combo.roles.slice(0,3).forEach(function(r,ri){
+      var rc=ROLE_COMBOS.find(function(cc){return cc.roles.length===1&&cc.roles[0]===r;});
+      var fc=rc?rc.color:'var(--md-primary)';
+      facesHtml+='<div style="width:28px;height:28px;border-radius:50%;background:'+(isSel?'rgba(255,255,255,0.2)':'var(--md-surface-variant)')+';display:flex;align-items:center;justify-content:center;margin-left:'+(ri>0?'-8px':'0')+';border:2px solid '+(isSel?'rgba(255,255,255,0.3)':'var(--md-surface)')+';">'
+        +'<span class="msi" style="font-size:16px;color:'+(isSel?'#fff':fc)+';line-height:1;">'+(rc?rc.face:'face')+'</span>'
+        +'</div>';
+    });
+    facesHtml+='</div>';
+    return '<div onclick="selectRoleCombo('+idx+')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;cursor:pointer;background:'+(isSel?'var(--md-primary)':'var(--md-surface)')+';border:1.5px solid '+(isSel?'var(--md-primary)':'var(--md-outline-variant)')+';margin-bottom:6px;">'
+      +facesHtml
+      +'<div style="flex:1;min-width:0;">'
+      +'<div style="font-size:13px;font-weight:700;color:'+(isSel?'#fff':'var(--md-on-surface)')+';">'+combo.label+'</div>'
+      +'<div style="font-size:11px;color:'+(isSel?'rgba(255,255,255,0.75)':'var(--md-on-surface-dim)')+';margin-top:1px;">'+combo.subtitle+'</div>'
+      +'<div style="display:flex;gap:4px;margin-top:5px;flex-wrap:wrap;">'+badges+'</div>'
+      +'</div>'
+      +(isSel?'<svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M3 9l5 5 7-8" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>':'')
+      +'</div>';
+  }
+
+  const userCards='<div style="display:flex;gap:6px;margin-bottom:16px;">'+singleCombos.map(function(combo,idx){return userCard(combo,idx);}).join('')+'</div>';
+  const multiSection='<div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;">Multi-role</div>'
+    +multiCombos.map(function(combo,idx){return multiRow(combo,idx+5);}).join('');
+
   return '<div onclick="S.showRolePicker=false;rerender()" style="position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.4);"></div>'
-    +'<div style="position:fixed;left:0;right:0;top:0;z-index:2001;background:var(--md-surface);border-radius:0 0 16px 16px;padding:12px 12px 16px;box-shadow:0 8px 32px rgba(0,0,0,0.18);max-height:80vh;overflow-y:auto;">'
-    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:0 4px;">'
-    +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Simulate user role</div>'
-    +'<button onclick="S.showRolePicker=false;rerender()" style="background:var(--md-surface-variant);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="var(--md-on-surface-variant)" stroke-width="1.8" stroke-linecap="round"/></svg></button>'
+    +'<div style="position:fixed;left:0;right:0;top:0;z-index:2001;background:var(--md-surface);border-radius:0 0 20px 20px;padding:14px 14px 18px;box-shadow:0 8px 32px rgba(0,0,0,0.18);max-height:90vh;overflow-y:auto;">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:0 2px;">'
+    +'<div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">Switch user</div>'
+    +'<button onclick="S.showRolePicker=false;rerender()" style="background:var(--md-surface-variant);border:none;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:var(--md-on-surface-dim);">&times;</button>'
     +'</div>'
-    +'<div style="padding:0 2px;">'+rows+'</div>'
+    +userCards
+    +multiSection
     +'</div>';
 }
+
 function rMultiRoleHome(){
   const t=TH;
   const isOwner=hasRole('owner');
@@ -2920,17 +2987,20 @@ function rMultiRoleHome(){
   // -- 1. Welcome block (always) --------------------------------
   // Use owner header if owner is in the combo, else trainer, else manager/staff
   // -- 1. Welcome block (always shown) ----------------------
-  const _name=isOwner?'Sarah':isTrainer?'Jordan':isMgr?'Alex':hasRole('vet')?'Dr. Goudz':'Charlene';
-  const _avatarBg=isOwner?'linear-gradient(135deg,#4A1A8A,#2A8A9A)':isTrainer?'var(--md-tertiary-container)':isMgr?'var(--md-primary-container)':hasRole('vet')?'var(--md-secondary-container)':'var(--md-surface-variant)';
-  const _avatarColor=isOwner?'#fff':isTrainer?'var(--md-on-tertiary-container)':isMgr?'var(--md-on-primary-container)':hasRole('vet')?'var(--md-on-secondary-container)':'var(--md-on-surface-variant)';
-  const _initials=isOwner?'SK':isTrainer?'JM':isMgr?'AM':hasRole('vet')?'KG':'CG';
-  const welcomeBlock=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-    <div>
-      <div style="font-size:18px;font-weight:700;color:var(--md-on-surface);">Good morning, ${_name}</div>
-      <div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:1px;">Mon, Mar 16 · Sunrise Stables</div>
-    </div>
-    <div style="width:38px;height:38px;border-radius:50%;background:${_avatarBg};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:${_avatarColor};flex-shrink:0;">${_initials}</div>
-  </div>`;
+  // Multi-role personas
+  var _roleKey=S.roles.slice().sort().join(',');
+  var _multiP={'owner,trainer':{name:'Riley',face:'face_2',color:'#C04A6A'},'manager,owner':{name:'Dana',face:'face_2',color:'#C04A6A'},'owner,vet':{name:'Dr. Claire',face:'face_2',color:'#C04A6A'},'manager,owner,trainer':{name:'Sam',face:'face_2',color:'#C04A6A'},'owner,trainer,vet':{name:'Dr. Jordan',face:'face_2',color:'#C04A6A'}};
+  var _mp=_multiP[_roleKey];
+  var _name=_mp?_mp.name:isOwner?'Emily':isTrainer?'Alyse':isMgr?'Charlene':hasRole('vet')?'Dr. Matthew':'Jordan';
+  var _face=_mp?_mp.face:isOwner?'face_2':isTrainer?'face_5':isMgr?'face_3':hasRole('vet')?'face_6':'face_4';
+  var _faceColor=_mp?_mp.color:isOwner?'#C04A6A':isTrainer?'var(--md-tertiary)':isMgr?'var(--md-primary)':hasRole('vet')?'var(--md-secondary)':'var(--md-secondary)';
+  const welcomeBlock='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">'
+    +'<div>'
+    +'<div style="font-size:18px;font-weight:700;color:var(--md-on-surface);">Good morning, '+_name+'</div>'
+    +'<div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:1px;">Mon, Mar 16 · Sunrise Stables</div>'
+    +'</div>'
+    +'<div style="width:38px;height:38px;border-radius:50%;background:'+_faceColor+'22;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class=\'msi\' style=\'font-size:24px;color:'+_faceColor+';line-height:1;\'>'+_face+'</span></div>'
+    +'</div>';
 
   // -- 2. Overview cards (manager/staff statsRow, trainer sessionBar) --
   // Manager statsRow is the canonical "overview" for manager combos
@@ -3258,10 +3328,10 @@ function rOwnerHome(){
   // Header
   const header=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
     <div>
-      <div style="font-size:18px;font-weight:700;color:var(--md-on-surface);">Good morning, Sarah</div>
+      <div style="font-size:18px;font-weight:700;color:var(--md-on-surface);">Good morning, Emily</div>
       <div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:1px;">Monday, Mar 16 · Sunrise Stables</div>
     </div>
-    <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#4A1A8A,#2A8A9A);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;">SK</div>
+    <div style="width:38px;height:38px;border-radius:50%;background:#C04A6A22;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class=\"msi\" style=\"font-size:30px;color:#C04A6A;line-height:1;\">face_2</span></div>
   </div>`;
 
 
@@ -3936,7 +4006,7 @@ function rThreadView(threadId,role){
 
   if(threadId==='t1'){
     // Use original MSG_THREAD rendering
-    const senderStyle=function(s){if(s==='vet')return{av:t.TL,avtx:t.T,init:'KG',nc:t.T,isR:mySender==='vet',bub:t.TL,bb:t.TB};if(s==='owner')return{av:'var(--md-tertiary-container)',avtx:'var(--md-tertiary)',init:'SK',nc:'var(--md-tertiary)',isR:mySender==='owner',bub:t.CARD,bb:t.BRD};return{av:t.SUB,avtx:t.TX2,init:'CG',nc:t.TX2,isR:mySender==='barn'||mySender==='manager',bub:t.CARD,bb:t.BRD};};
+    const senderStyle=function(s){if(s==='vet')return{av:t.TL,avtx:t.T,init:'face_6',nc:t.T,isR:mySender==='vet',bub:t.TL,bb:t.TB};if(s==='owner')return{av:'var(--md-error-container)',avtx:'#C04A6A',init:'face_2',nc:'#C04A6A',isR:mySender==='owner',bub:t.CARD,bb:t.BRD};return{av:'var(--md-primary-container)',avtx:'var(--md-primary)',init:'face_3',nc:'var(--md-primary)',isR:mySender==='barn'||mySender==='manager',bub:t.CARD,bb:t.BRD};};
     const bubbles=MSG_THREAD.map(function(msg){
       if(msg.sender==='system'){
         if(msg.appt)return '<div style="display:flex;justify-content:center;margin:10px 0;"><div style="background:var(--md-secondary-container);border:1.5px solid var(--md-secondary)44;border-radius:12px;padding:9px 13px;max-width:280px;text-align:center;"><div style="font-size:10px;font-weight:700;color:var(--md-secondary);text-transform:uppercase;margin-bottom:3px;">NayNay</div><div style="font-size:12px;font-weight:700;color:var(--md-secondary);margin-bottom:1px;">'+msg.appt.label+'</div><div style="font-size:11px;color:var(--md-on-surface-variant);">'+msg.appt.detail+'</div></div></div>';
@@ -3945,7 +4015,7 @@ function rThreadView(threadId,role){
         return '';
       }
       const st=senderStyle(msg.sender);
-      const av='<div style="width:26px;height:26px;border-radius:50%;background:'+st.av+';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:'+st.avtx+';flex-shrink:0;">'+st.init+'</div>';
+      const av='<div style="width:26px;height:26px;border-radius:50%;background:'+st.av+';display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class="msi" style="font-size:17px;color:'+st.avtx+';line-height:1;">'+st.init+'</span></div>';
       const bub='<div style="max-width:230px;"><div style="background:'+st.bub+';border:1.5px solid '+st.bb+';border-radius:'+(st.isR?'12px 4px 12px 12px':'4px 12px 12px 12px')+';padding:9px 11px;"><div style="font-size:12px;color:var(--md-on-surface);line-height:1.55;">'+msg.text+'</div></div><div style="font-size:10px;color:var(--md-on-surface-dim);margin-top:3px;text-align:'+(st.isR?'right':'left')+';">'+msg.time+'</div></div>';
       const meta='<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px;'+(st.isR?'justify-content:flex-end;':'')+'"><span style="font-size:11px;font-weight:700;color:'+st.nc+';">'+msg.name+'</span></div>';
       if(st.isR)return '<div style="display:flex;justify-content:flex-end;margin-bottom:12px;padding:0 10px;"><div style="display:flex;gap:7px;align-items:flex-start;flex-direction:row-reverse;"><div style="margin-top:2px;">'+av+'</div><div style="text-align:right;">'+meta+bub+'</div></div></div>';
@@ -3957,7 +4027,7 @@ function rThreadView(threadId,role){
 
   // Generic thread renderer with visit system cards
   if(!messages)return '<div style="padding:20px;text-align:center;color:var(--md-on-surface-dim);">No messages yet.</div>';
-  const SENDER_COLORS={vet:{bg:t.TL,tc:t.T,init:'KG'},barn:{bg:t.SUB,tc:t.TX2,init:'CG'},manager:{bg:t.SUB,tc:t.TX2,init:'JM'},farrier:{bg:'var(--md-warning-container)',tc:'var(--md-on-warning-container)',init:'MF'},owner:{bg:'var(--md-tertiary-container)',tc:'var(--md-tertiary)',init:'SK'},farrier:{bg:'var(--md-warning-container)',tc:'var(--md-warning)',init:'MF'},trainer:{bg:'var(--md-tertiary-container)',tc:'var(--md-tertiary)',init:'JM'}};
+  const SENDER_COLORS={vet:{bg:t.TL,tc:t.T,init:'face_6'},barn:{bg:t.SUB,tc:t.TX2,init:'face_4'},manager:{bg:'var(--md-primary-container)',tc:'var(--md-primary)',init:'face_3'},farrier:{bg:'var(--md-warning-container)',tc:'var(--md-warning)',init:'face'},owner:{bg:'var(--md-error-container)',tc:'#C04A6A',init:'face_2'},trainer:{bg:'var(--md-tertiary-container)',tc:'var(--md-tertiary)',init:'face_5'}};
   const bubbles=messages.map(function(msg){
     if(msg.sender==='system'){
       if(msg.visitCard){
@@ -3972,7 +4042,7 @@ function rThreadView(threadId,role){
     }
     const sc=SENDER_COLORS[msg.sender]||SENDER_COLORS.barn;
     const isMe=msg.sender===mySender;
-    const av='<div style="width:28px;height:28px;border-radius:50%;background:'+sc.bg+';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:'+sc.tc+';flex-shrink:0;">'+sc.init+'</div>';
+    const av='<div style="width:28px;height:28px;border-radius:50%;background:'+sc.bg+';display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class="msi" style="font-size:18px;color:'+sc.tc+';line-height:1;">'+sc.init+'</span></div>';
     const bub='<div style="max-width:240px;"><div style="background:'+(isMe?t.T:t.CARD)+';border:1.5px solid '+(isMe?t.T:t.BRD)+';border-radius:'+(isMe?'12px 4px 12px 12px':'4px 12px 12px 12px')+';padding:9px 11px;"><div style="font-size:13px;color:'+(isMe?'#fff':t.TX)+';line-height:1.5;">'+msg.text+'</div></div><div style="font-size:10px;color:var(--md-on-surface-dim);margin-top:3px;text-align:'+(isMe?'right':'left')+';">'+msg.time+'</div></div>';
     const meta='<div style="font-size:11px;font-weight:700;color:'+sc.tc+';margin-bottom:3px;'+(isMe?'text-align:right;':'')+'">'+msg.name+'<span style="font-size:10px;font-weight:600;color:var(--md-on-surface-dim);margin-left:5px;">'+msg.role+'</span></div>';
     if(isMe)return '<div style="display:flex;justify-content:flex-end;margin-bottom:12px;padding:0 12px;"><div style="display:flex;gap:7px;flex-direction:row-reverse;align-items:flex-start;"><div style="margin-top:2px;">'+av+'</div><div style="text-align:right;">'+meta+bub+'</div></div></div>';
