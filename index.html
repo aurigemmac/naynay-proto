@@ -281,24 +281,58 @@ const INTENSITY_LABELS={1:'Low',2:'Easy',3:'Medium',4:'Strong',5:'High'};
 const INTENSITY_COLORS={1:'#2A8A4A',2:'#5A8A2A',3:'#8A7A00',4:'#8A5000',5:'#8A2020'};
 
 // --- SERVICES DATA --------------------------------------------
-const SERVICE_CATEGORIES=['Exam','Procedure','Regimens','Vaccination'];
+const SERVICE_CATEGORIES=['Exam','Procedure','Regimens','Vaccination','Board','Care','Facility'];
 const SERVICE_SUBCATEGORIES={
   Exam:['Well','Sick','Emergency'],
   Procedure:['Hospital','Surgical','In-field'],
   Regimens:['Training','Feeding','Supplements'],
   Vaccination:['Core','Risk-based'],
+  Board:['Full Care','Partial'],
+  Care:['Grooming','Feeding','Exercise'],
+  Facility:['Storage'],
 };
 const ROLES_LIST=['Manager','Trainer','Veterinarian'];
 
 let vetServices=[
-  {id:'svc1',name:'Training Session',category:'Regimens',subCategory:'Training',canBeAddon:false,isDefault:true,canBeRequestedByOwner:false,price:150,addonPrice:null,duration:60,roles:['Trainer']},
-  {id:'svc2',name:'Well Visit',category:'Exam',subCategory:'Well',canBeAddon:false,isDefault:true,canBeRequestedByOwner:true,price:50,addonPrice:null,duration:30,roles:['Veterinarian']},
-  {id:'svc3',name:'Sick Visit',category:'Exam',subCategory:'Sick',canBeAddon:false,isDefault:true,canBeRequestedByOwner:true,price:100,addonPrice:null,duration:30,roles:['Veterinarian']},
-  {id:'svc4',name:'Vaccination Appointment',category:'Exam',subCategory:'Well',canBeAddon:true,isDefault:false,canBeRequestedByOwner:true,price:20,addonPrice:15,duration:15,roles:['Veterinarian']},
-  {id:'svc5',name:'IV Fluid Treatment',category:'Regimens',subCategory:'Feeding',canBeAddon:true,isDefault:false,canBeRequestedByOwner:false,price:100,addonPrice:80,duration:10,roles:['Veterinarian']},
-  {id:'svc6',name:'Deworming',category:'Procedure',subCategory:'Hospital',canBeAddon:true,isDefault:true,canBeRequestedByOwner:true,price:100,addonPrice:75,duration:30,roles:['Veterinarian']},
-  {id:'svc7',name:'Tooth Extraction',category:'Procedure',subCategory:'Surgical',canBeAddon:false,isDefault:false,canBeRequestedByOwner:false,price:50,addonPrice:null,duration:45,roles:['Veterinarian']},
+  {id:'svc1', name:'Well Visit',              category:'Exam',      subCategory:'Well',     duration:30,  price:50,   addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true,  roles:['Veterinarian']},
+  {id:'svc2', name:'Sick Visit',              category:'Exam',      subCategory:'Sick',     duration:30,  price:100,  addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true,  roles:['Veterinarian']},
+  {id:'svc3', name:'Vaccination',             category:'Exam',      subCategory:'Well',     duration:15,  price:20,   addonPrice:15,   canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:true,  roles:['Veterinarian']},
+  {id:'svc4', name:'Dental Exam',             category:'Exam',      subCategory:'Well',     duration:30,  price:100,  addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true,  roles:['Veterinarian']},
+  {id:'svc5', name:'Lameness Exam',           category:'Exam',      subCategory:'Well',     duration:60,  price:200,  addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true,  roles:['Veterinarian']},
+  {id:'svc6', name:'Prepurchase Exam',        category:'Exam',      subCategory:'Well',     duration:120, price:300,  addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true,  roles:['Veterinarian']},
+  {id:'svc7', name:'Chiropractic Exam',       category:'Exam',      subCategory:'Well',     duration:30,  price:200,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Veterinarian']},
+  {id:'svc8', name:'Ophthalmology Exam',      category:'Exam',      subCategory:'Well',     duration:60,  price:200,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Veterinarian']},
+  {id:'svc9', name:'Reproductive Evaluation', category:'Exam',      subCategory:'Well',     duration:30,  price:200,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Veterinarian']},
+  {id:'svc10',name:'Deworming',               category:'Procedure', subCategory:'Hospital', duration:30,  price:100,  addonPrice:75,   canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:true,  roles:['Veterinarian']},
+  {id:'svc11',name:'IV Fluid Treatment',      category:'Procedure', subCategory:'Hospital', duration:10,  price:100,  addonPrice:80,   canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:false, roles:['Veterinarian']},
+  {id:'svc12',name:'Acupuncture',             category:'Procedure', subCategory:'Hospital', duration:30,  price:50,   addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Veterinarian']},
+  {id:'svc13',name:'Laser Therapy',           category:'Procedure', subCategory:'Hospital', duration:20,  price:1000, addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Veterinarian']},
+  {id:'svc14',name:'Artificial Insemination', category:'Procedure', subCategory:'Hospital', duration:30,  price:200,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Veterinarian']},
+  {id:'svc15',name:'Tooth Extraction',        category:'Procedure', subCategory:'Surgical', duration:5,   price:50,   addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Veterinarian']},
+  {id:'svc16',name:'Third Eye Removal',       category:'Procedure', subCategory:'Surgical', duration:30,  price:250,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Veterinarian']},
+  {id:'svc17',name:'Enucleation',             category:'Procedure', subCategory:'Surgical', duration:60,  price:500,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Veterinarian']},
+  {id:'svc18',name:'Castration',              category:'Procedure', subCategory:'Surgical', duration:60,  price:1000, addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Veterinarian']},
+  {id:'svc19',name:'Hernia Repair',           category:'Procedure', subCategory:'Surgical', duration:90,  price:600,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Veterinarian']},
+  {id:'svc20',name:'Laceration Repair',       category:'Procedure', subCategory:'Surgical', duration:90,  price:400,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Veterinarian']},
 ];
+
+let trainerServices=[
+  {id:'ts1', name:'Training Session',         category:'Regimens',  subCategory:'Training', duration:60,  price:150,  addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true,  roles:['Trainer']},
+];
+
+let mgrServices=[
+  {id:'ms1', name:'Full Board',             category:'Board',    subCategory:'Full Care',  duration:null, price:1500, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:false, roles:['Manager']},
+  {id:'ms2', name:'Pasture Board',          category:'Board',    subCategory:'Full Care',  duration:null, price:800,  addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:false, roles:['Manager']},
+  {id:'ms3', name:'Training Board',         category:'Board',    subCategory:'Full Care',  duration:null, price:2200, addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Manager']},
+  {id:'ms4', name:'Daily Stall Cleaning',   category:'Care',     subCategory:'Grooming',   duration:null, price:25,   addonPrice:null, canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms5', name:'Blanketing Service',     category:'Care',     subCategory:'Grooming',   duration:null, price:10,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms6', name:'Turnout',               category:'Care',     subCategory:'Exercise',   duration:null, price:15,   addonPrice:null, canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms7', name:'Grain & Supplement Feed',category:'Care',     subCategory:'Feeding',    duration:null, price:50,   addonPrice:null, canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms8', name:'Hay Only Board',         category:'Board',    subCategory:'Partial',    duration:null, price:400,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Manager']},
+  {id:'ms9', name:'Show Prep & Hauling',    category:'Care',     subCategory:'Exercise',   duration:null, price:200,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms10',name:'Tack Storage',           category:'Facility', subCategory:'Storage',    duration:null, price:75,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+];
+
 let svcEditId=null; // null=list, 'new'=new form, id=edit existing
 
 // --- STATIC DATA ----------------------------------------------
@@ -933,7 +967,7 @@ function rToast(){
 function rerender(){
   const app=document.getElementById('app');if(!app.querySelector('#content-area')){render();return;}
   const t=TH,isVet=S.roles.length===1&&S.role==='vet',isMgr=S.roles.length===1&&S.role==='manager',isOwner=S.roles.length===1&&S.role==='owner',isTrainer=S.roles.length===1&&S.role==='trainer';
-  const showHorse=!!S.selectedHorse&&!isVet,showBack=isMgr&&S.mgrView==='assignments';
+  const showHorse=!!S.selectedHorse&&!isVet,showBack=anyRole('manager')&&S.mgrView==='assignments';
   app.querySelector('#nav-bar').innerHTML=buildNav(isMgr,isVet,showBack,showHorse);
   const bb=app.querySelector('#bottom-bar');const showBB=!isVet||(isVet&&S.vetSignedIn);
   if(bb)bb.innerHTML=showBB?bottomBar(isMgr,isVet):'';
@@ -957,7 +991,7 @@ function render(){
 }
 function getContent(isVet,isMgr,showHorse){
   if(S.notifyCtx&&S.notifyCtx.active) return rNotifyStep();
-  if(S.roles.length>1&&S.activeTab==='home'&&!S.quickAction&&!S.ownerEventPass&&!S.bookingVisitId&&!showHorse) return rMultiRoleHome();
+  if(S.roles.length>1&&S.activeTab==='home'&&S.mgrView!=='assignments'&&!S.quickAction&&!S.ownerEventPass&&!S.bookingVisitId&&!showHorse) return rMultiRoleHome();
   if(S.roles.length>1&&S.activeTab==='setup'&&!showHorse){
     if(anyRole('vet'))return rVetSetup();
     if(anyRole('trainer'))return rTrainerSetup();
@@ -965,6 +999,7 @@ function getContent(isVet,isMgr,showHorse){
     if(anyRole('staff'))return rStaffSetup();
     return rOwnerSetup();
   }
+  if(anyRole('manager')&&S.mgrView==='assignments') return rAssignments();
   if(isVet){
     if(!S.vetSignedIn){if(S.vetConfirmPage==='confirmed')return rVetConfirmedPage();if(S.vetConfirmPage==='declined')return rVetDeclinedPage();return rVetUnauth();}
     if(S.quickAction==='request-barn-visit')return rRequestVisitForm();
@@ -1520,7 +1555,7 @@ function rVetSetup(){
   const tabRow=`<div style="display:flex;border-bottom:2px solid ${TH.mdOutlineVar};margin:-12px -14px 14px;background:${TH.mdSurf};overflow-x:auto;">${tabs.map(tab=>`<button onclick="S.vetSetupTab='${tab.key}';svcEditId=null;rerender()" style="flex:1;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:11px 5px;background:transparent;color:${S.vetSetupTab===tab.key?t.T:t.TX3};border:none;border-bottom:${S.vetSetupTab===tab.key?`3px solid var(--md-primary)`:'3px solid transparent'};margin-bottom:-2px;white-space:nowrap;">${tab.label}</button>`).join('')}</div>`;
   let body='';
   if(S.vetSetupTab==='services') body=rServicesTab();
-  else if(S.vetSetupTab==='account') body=rVetSetupPractice();
+  else if(S.vetSetupTab==='account') body=rVetSetupAccount();
   else if(S.vetSetupTab==='barns') body=rVetSetupBarns();
   
   else if(S.vetSetupTab==='calendar') body=rVetSetupCalendar();
@@ -1558,12 +1593,13 @@ function rStripeConnect(pay,store){
 function rServicesTab(){
   if(svcEditId!==null)return rServiceForm(svcEditId);
   const t=TH;
-  const catColors={Exam:{color:'var(--md-tertiary)',bg:'var(--md-tertiary-container)'},Procedure:{color:'var(--md-error)',bg:'var(--md-error-container)'},Regimens:{color:'var(--md-tertiary)',bg:'var(--md-tertiary-container)'},Vaccination:{color:'#2A7A3A',bg:'var(--md-secondary-container)'}};
+  const catColors={Exam:{color:'var(--md-tertiary)',bg:'var(--md-tertiary-container)'},Procedure:{color:'var(--md-error)',bg:'var(--md-error-container)'},Regimens:{color:'var(--md-secondary)',bg:'var(--md-secondary-container)'},Vaccination:{color:'var(--md-primary)',bg:'var(--md-primary-container)'},Board:{color:'var(--md-primary)',bg:'var(--md-primary-container)'},Care:{color:'var(--md-secondary)',bg:'var(--md-secondary-container)'},Facility:{color:'var(--md-tertiary)',bg:'var(--md-tertiary-container)'}};
   const cats=SERVICE_CATEGORIES;
   // Search bar
   const searchBar=`<div style="position:relative;margin-bottom:12px;"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);"><circle cx="6.5" cy="6.5" r="5" stroke="var(--md-on-surface-dim)" stroke-width="1.4"/><path d="M11 11l3 3" stroke="var(--md-on-surface-dim)" stroke-width="1.4" stroke-linecap="round"/></svg><input type="text" placeholder="Search services…" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:10px;padding:9px 12px 9px 32px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>`;
 
-  const rows=vetServices.map(svc=>{
+  var activeServices=anyRole('trainer')&&!anyRole('vet')?trainerServices:anyRole('manager')&&!anyRole('vet')&&!anyRole('trainer')?mgrServices:vetServices;
+  const rows=activeServices.map(svc=>{
     const cc=catColors[svc.category]||{color:t.TX2,bg:t.SUB};
     return `<div onclick="svcEditId='${svc.id}';rerender()" style="display:flex;align-items:center;padding:11px 14px;border-bottom:1px solid var(--md-outline-variant);cursor:pointer;gap:10px;">
       <div style="flex:1;min-width:0;">
@@ -1628,10 +1664,7 @@ function rServiceForm(id){
     </div>
     ${sc.canBeAddon?`<div style="margin-bottom:12px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Duration (min)</label><input type="number" value="${sc.duration}" oninput="_svcScratch.duration=parseInt(this.value)||0" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>`:''}
 
-    <div style="margin-bottom:14px;">
-      <label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:8px;">Applies to roles</label>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;">${rolePills}</div>
-    </div>
+    ${(()=>{var proRoles=['Vet','Trainer','Manager'];var userProRoles=proRoles.filter(function(r){return S.roles.some(function(ur){return ur.toLowerCase()===r.toLowerCase()||ur==='veterinarian'&&r==='Vet';});});return userProRoles.length>1?'<div style="margin-bottom:14px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:8px;">Applies to roles</label><div style="display:flex;gap:6px;flex-wrap:wrap;">'+rolePills+'</div></div>':'';})()} 
 
     <div style="display:flex;gap:8px;">
       <button onclick="saveSvc()" style="flex:1;background:var(--md-primary);color:#fff;border:none;padding:13px;border-radius:var(--md-shape-md);font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;">${isNew?'Add service':'Save changes'}</button>
@@ -1642,23 +1675,26 @@ function rServiceForm(id){
 }
 function onSvcCatChange(val){if(window._svcScratch){_svcScratch.category=val;_svcScratch.subCategory='';}rerender();}
 function toggleSvcRole(r){if(!window._svcScratch)return;const idx=(_svcScratch.roles||[]).indexOf(r);if(idx>=0)_svcScratch.roles.splice(idx,1);else{if(!_svcScratch.roles)_svcScratch.roles=[];_svcScratch.roles.push(r);}rerender();}
-function saveSvc(){if(!window._svcScratch)return;if(svcEditId==='new'){const ns={..._svcScratch,id:'svc'+Date.now()};delete ns._editId;vetServices.push(ns);}else{const idx=vetServices.findIndex(s=>s.id===svcEditId);if(idx>=0){const ns={..._svcScratch};delete ns._editId;vetServices[idx]=ns;}}svcEditId=null;window._svcScratch=null;rerender();}
-function deleteSvc(id){vetServices=vetServices.filter(s=>s.id!==id);svcEditId=null;window._svcScratch=null;rerender();}
+function saveSvc(){
+  if(!window._svcScratch)return;
+  var arr=anyRole('trainer')&&!anyRole('vet')?trainerServices:anyRole('manager')&&!anyRole('vet')&&!anyRole('trainer')?mgrServices:vetServices;
+  if(svcEditId==='new'){
+    var ns={..._svcScratch,id:'svc'+Date.now()};delete ns._editId;arr.push(ns);
+  }else{
+    var idx=arr.findIndex(function(s){return s.id===svcEditId;});
+    if(idx>=0){var ns2={..._svcScratch};delete ns2._editId;arr[idx]=ns2;}
+  }
+  window._svcScratch=null;svcEditId=null;rerender();
+}
 
-// --- OTHER VET VIEWS ------------------------------------------
-function rVetSetupPractice(){
+function rVetSetupAccount(){
   var p=vetSetup.profile;
   var creds='<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);padding:14px 14px 10px;margin-bottom:14px;">'
     +'<div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">Credentials &amp; licenses</div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
-    +settingInput('License number','license',p.license||'')
-    +settingInput('State','licenseState',p.licenseState||'')
-    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'+settingInput('License number','license',p.license||'')+settingInput('State','licenseState',p.licenseState||'')+'</div>'
     +settingInput('Credentials','credentials',p.credentials||'')
     +'</div>';
-  return rPersonCard(p,'vetSetup.profile',['DVM','VMD','PhD','MS','DVM PhD',''])
-    +rPracticeCard(p,'vetSetup.profile','Practice')
-    +creds;
+  return rPersonCard(p,'vetSetup.profile',['DVM','VMD','PhD','MS','DVM PhD',''])+rPracticeCard(p,'vetSetup.profile','Practice')+creds;
 }
 
 function rVetSetupBarns(){const t=TH;const barns=vetSetup.connectedBarns;const info=`<div style="background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:12px;font-weight:600;color:var(--md-on-primary-container);margin-bottom:12px;">${barns.filter(b=>b.active).length} active barn connections.</div>`;const cards=barns.map(b=>`<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);margin-bottom:10px;overflow:hidden;opacity:${b.active?1:0.65};"><div style="padding:12px 14px;display:flex;align-items:center;gap:10px;"><div style="width:38px;height:38px;border-radius:10px;background:var(--md-surface-variant);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="var(--md-primary)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 22V12h6v10" stroke="var(--md-primary)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">${b.name}</div><div style="font-size:11px;color:var(--md-on-surface-dim);">${b.manager} · ${b.horses} horses · Since ${b.since}</div></div><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:${b.active?t.SUCBG:t.SUB};color:${b.active?t.SUC:t.TX3};border:1px solid ${b.active?TH.mdSec+'44':t.BRD};">${b.active?'Active':'Inactive'}</span></div><div style="border-top:1px solid var(--md-outline-variant);padding:8px 14px;display:flex;gap:8px;"><button style="flex:1;background:none;border:1.5px solid var(--md-outline-variant);padding:7px;border-radius:8px;font-size:12px;font-weight:600;color:var(--md-on-surface-variant);font-family:'DM Sans',sans-serif;cursor:pointer;">View horses</button><button style="flex:1;background:none;border:1.5px solid ${b.active?t.DNG:t.T};padding:7px;border-radius:8px;font-size:12px;font-weight:600;color:${b.active?t.DNG:t.T};font-family:'DM Sans',sans-serif;cursor:pointer;">${b.active?'Disconnect':'Reconnect'}</button></div></div>`).join('');return info+cards+`<button style="width:100%;background:var(--md-surface);border:2px dashed var(--md-outline);border-radius:10px;padding:11px;color:var(--md-primary);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:700;">+ Connect a new barn</button>`;}
@@ -3298,9 +3334,9 @@ function rEventPassSection(){
   const cards=groupList.map(function(g){
     const allValid=g.entries.every(function(e){return e.passStatus==='valid';});
     const horsesRow=g.entries.map(function(ev){
-      const horse=HORSES.find(function(h){return h.id===ev.horse;})||OWNER_HORSES.find(function(h){return h.id===ev.horse;})||{avatar:{bg:'#3A3A3A',mane:'#1A1A1A',sock:null,marking:null}};
+      const horse=HORSES_ALL.find(function(h){return h.name===ev.horse;})||OWNER_HORSES.find(function(h){return h.name===ev.horse;})||{avatar:{bg:'#3A3A3A',mane:'#1A1A1A',sock:null,marking:null}};
       // Each horse is a tappable row leading to their individual pass
-      return '<div onclick="event.stopPropagation();S.ownerEventPass=\''+ev.passId+'\';rerender()" style="display:flex;align-items:center;gap:8px;padding:9px 14px;border-top:1px solid rgba(255,255,255,0.08);cursor:pointer;">'
+      return '<div onclick="event.stopPropagation();S.ownerEventPass=\''+ev.passId+'\';S.showScanOverlay=true;rerender()" style="display:flex;align-items:center;gap:8px;padding:9px 14px;border-top:1px solid rgba(255,255,255,0.08);cursor:pointer;">'
         +horseAvatar(horse,24)
         +'<span style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.9);flex:1;">'+ev.horse+'</span>'
         +'<div style="display:flex;align-items:center;gap:4px;">'
@@ -3417,7 +3453,7 @@ function rEventPass(passId){
   const pass=EVENT_PASSES.find(p=>p.id===passId);
   if(!pass)return '';
   const scanState=S.ownerPassScanState[passId]||0; // 0=not scanned, 1=first scan (valid entry), 2=subsequent
-  const horse=OWNER_HORSES.find(h=>h.id===pass.horseId)||HORSES.find(h=>h.id===pass.horseId);
+  const horse=HORSES_ALL.find(h=>h.id===pass.horseId)||OWNER_HORSES.find(h=>h.id===pass.horseId)||HORSES.find(h=>h.id===pass.horseId);
 
   // QR code SVG -- decorative mosaic
   function qrSVG(size){
@@ -3430,7 +3466,7 @@ function rEventPass(passId){
   }
 
   // Scan simulation overlay
-  const scanOverlay=scanState===0?`
+  const scanOverlay=(scanState===0&&S.showScanOverlay)?`
     <div id="scan-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.88);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;padding:24px;">
       <div style="width:220px;height:220px;position:relative;margin-bottom:24px;">
         <div style="position:absolute;inset:0;border:2px solid rgba(58,172,190,0.3);border-radius:16px;"></div>
@@ -3444,9 +3480,9 @@ function rEventPass(passId){
       <div style="color:#fff;font-size:15px;font-weight:700;margin-bottom:6px;">Scan to validate entry</div>
       <div style="color:rgba(255,255,255,0.55);font-size:12px;text-align:center;margin-bottom:24px;">Position the QR code within the frame</div>
       <button onclick="simulateScan('${passId}')" style="background:var(--md-primary);color:#fff;border:none;padding:14px 32px;border-radius:var(--md-shape-md);font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;margin-bottom:12px;">Simulate Scan</button>
-      <button onclick="document.getElementById('scan-overlay').remove()" style="background:transparent;color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.2);padding:10px 24px;border-radius:12px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;">Cancel</button>
+      <button onclick="S.showScanOverlay=false;rerender()" style="background:transparent;color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.2);padding:10px 24px;border-radius:12px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;">Cancel</button>
     </div>`:
-  scanState===1?`
+  (scanState===1&&S.showScanOverlay)?`
     <div id="scan-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;padding:24px;">
       <div style="width:80px;height:80px;border-radius:50%;background:var(--md-secondary)22;border:3px solid var(--md-secondary);display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
         <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><path d="M8 20l9 9 15-15" stroke="var(--md-secondary)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -3458,9 +3494,10 @@ function rEventPass(passId){
         <div style="font-size:12px;color:rgba(255,255,255,0.6);">${pass.event.name}</div>
         <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px;">Pass ID: ${pass.passId}</div>
       </div>
-      <button onclick="S.ownerPassScanState['${passId}']=2;document.getElementById('scan-overlay').remove()" style="background:var(--md-primary);color:#fff;border:none;padding:13px 32px;border-radius:14px;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;">Done</button>
+      <button onclick="S.ownerPassScanState['${passId}']=2;S.showScanOverlay=false;rerender()" style="background:var(--md-primary);color:#fff;border:none;padding:13px 32px;border-radius:14px;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;margin-bottom:10px;">Done</button>
+      <button onclick="S.ownerEventPass=null;S.showScanOverlay=false;rerender()" style="background:transparent;color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.2);padding:10px 24px;border-radius:12px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;">Back to home</button>
     </div>`:
-  scanState===2?`
+  (scanState===2&&S.showScanOverlay)?`
     <div id="scan-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;padding:24px;">
       <div style="width:70px;height:70px;border-radius:50%;background:var(--md-surface-variant);border:3px solid var(--md-primary);display:flex;align-items:center;justify-content:center;margin-bottom:14px;">${horseAvatar(horse||OWNER_HORSES[0],48)}</div>
       <div style="color:#fff;font-size:17px;font-weight:700;margin-bottom:3px;">${pass.horseName}</div>
@@ -3472,29 +3509,27 @@ function rEventPass(passId){
         <div style="font-size:12px;color:rgba(255,255,255,0.8);">${pass.event.name}</div>
         <div style="font-size:11px;color:rgba(255,255,255,0.4);">${pass.event.date}</div>
       </div>
-      <button onclick="document.getElementById('scan-overlay').remove()" style="background:var(--md-primary);color:#fff;border:none;padding:13px 32px;border-radius:14px;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:8px;">Close</button>
+      <button onclick="S.showScanOverlay=false;rerender()" style="background:var(--md-primary);color:#fff;border:none;padding:13px 32px;border-radius:14px;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:8px;">Close</button>
     </div>`:'';
 
   // Main pass card
   const passContent=`
-    <div style="min-height:100%;background:linear-gradient(170deg,#112030 0%,#0E1E2E 40%,#0D1E2C 100%);">
+    <div style="min-height:100%;background:linear-gradient(170deg,#112030 0%,#0E1E2E 40%,#0D1E2C 100%);padding-bottom:90px;">
 
-      // Back button
       <div style="padding:14px 16px 0;display:flex;align-items:center;justify-content:space-between;">
         <button onclick="S.ownerEventPass=null;rerender()" style="background:none;border:none;padding:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M14 5L8 11l6 6" stroke="var(--md-on-surface)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         <div style="background:${pass.status==='valid'?t.SUC:'var(--md-warning)'};color:#fff;font-size:10px;font-weight:700;padding:4px 12px;border-radius:20px;letter-spacing:0.5px;">✓ VALID PASS</div>
       </div>
 
-      // Header
       <div style="padding:18px 16px 14px;text-align:center;">
         <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:4px;">
           ${logoSVG(22,'rgba(58,172,190,0.9)')}<span style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.55);letter-spacing:1px;text-transform:uppercase;">NayNay Event Pass</span>
         </div>
+        <div style="margin-bottom:10px;display:flex;justify-content:center;">${horseAvatar(horse||{name:pass.horseName,avatar:{bg:'#2A3A4A',mane:'#1A2A3A',sock:null,marking:null}},64)}</div>
         <div style="font-size:22px;font-weight:700;color:#fff;margin-bottom:2px;">${pass.horseName}</div>
         <div style="font-size:13px;color:rgba(255,255,255,0.5);">${pass.breed} · ${pass.color} · ${pass.age}</div>
       </div>
 
-      // Event info
       <div style="margin:0 16px 14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:14px;">
         <div style="font-size:10px;font-weight:700;color:rgba(58,172,190,0.8);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Event</div>
         <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:4px;">${pass.event.name}</div>
@@ -3505,7 +3540,6 @@ function rEventPass(passId){
         <div style="display:flex;gap:8px;flex-wrap:wrap;">${pass.event.classes.map(c=>`<span style="font-size:11px;font-weight:600;background:rgba(58,172,190,0.15);color:rgba(58,172,190,0.9);padding:3px 9px;border-radius:20px;border:1px solid rgba(58,172,190,0.25);">${c}</span>`).join('')}</div>
       </div>
 
-      // Vaccination seal
       <div style="margin:0 16px 14px;background:rgba(10,96,64,0.15);border:1.5px solid rgba(74,186,138,0.3);border-radius:14px;padding:14px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
           <div style="display:flex;align-items:center;gap:8px;">
@@ -3525,7 +3559,6 @@ function rEventPass(passId){
         </div>`).join('')}
       </div>
 
-      // Lab test seal
       <div style="margin:0 16px 14px;background:rgba(26,58,138,0.15);border:1.5px solid rgba(58,100,200,0.3);border-radius:14px;padding:14px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
           <div style="display:flex;align-items:center;gap:8px;">
@@ -3545,7 +3578,6 @@ function rEventPass(passId){
         </div>`).join('')}
       </div>
 
-      // QR Code + scan button
       <div style="margin:0 16px 20px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:20px;text-align:center;">
         <div style="display:flex;justify-content:center;margin-bottom:12px;position:relative;display:inline-block;">
           ${qrSVG(140)}
@@ -3554,27 +3586,26 @@ function rEventPass(passId){
         <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;">Pass ID</div>
         <div style="font-size:14px;font-weight:700;color:rgba(255,255,255,0.7);letter-spacing:2px;margin-bottom:4px;">${pass.passId}</div>
         <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:14px;">Issued ${pass.issued}</div>
-        <button onclick="S.ownerPassScanState['${passId}']=${scanState===2?2:0};showScanOverlay()" style="width:100%;background:rgba(58,172,190,0.15);border:1.5px solid rgba(58,172,190,0.35);border-radius:12px;padding:12px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;color:rgba(58,172,190,0.9);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+        <button onclick="S.showScanOverlay=true;rerender()" style="width:100%;background:rgba(58,172,190,0.15);border:1.5px solid rgba(58,172,190,0.35);border-radius:12px;padding:12px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;color:rgba(58,172,190,0.9);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
           <svg width="18" height="18" viewBox="0 0 22 22" fill="none"><rect x="2" y="2" width="7" height="7" rx="1.5" stroke="rgba(58,172,190,0.9)" stroke-width="1.5"/><rect x="13" y="2" width="7" height="7" rx="1.5" stroke="rgba(58,172,190,0.9)" stroke-width="1.5"/><rect x="2" y="13" width="7" height="7" rx="1.5" stroke="rgba(58,172,190,0.9)" stroke-width="1.5"/><rect x="14" y="14" width="3" height="3" rx="0.5" fill="rgba(58,172,190,0.9)"/><rect x="19" y="14" width="2" height="2" rx="0.5" fill="rgba(58,172,190,0.6)"/><rect x="14" y="19" width="2" height="2" rx="0.5" fill="rgba(58,172,190,0.6)"/><rect x="18" y="18" width="3" height="3" rx="0.5" fill="rgba(58,172,190,0.9)"/></svg>
           ${scanState===0?'Scan to validate entry':scanState===1?'Entry validated — scan again':'Scan again for profile'}
         </button>
       </div>
     </div>`;
 
-  return passContent+scanOverlay;
+  var closeBtn='<div style="position:fixed;bottom:70px;left:50%;transform:translateX(-50%);z-index:100;"><button onclick="S.ownerEventPass=null;S.showScanOverlay=false;rerender()" style="background:rgba(255,255,255,0.12);backdrop-filter:blur(8px);border:1.5px solid rgba(255,255,255,0.2);color:#fff;padding:10px 28px;border-radius:24px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;gap:7px;">'+msiIcon('arrow_back',16,'#fff')+'<span>Close pass</span></button></div>';
+  return passContent+closeBtn+scanOverlay;
 }
 
 function showScanOverlay(){
-  // Just rerender to show the overlay state=0
-  const passId=S.ownerEventPass;
-  if(!S.ownerPassScanState)S.ownerPassScanState={};
-  // Keep scanState as-is, just show overlay by rerendering
+  S.showScanOverlay=true;
   rerender();
 }
 function simulateScan(passId){
   if(!S.ownerPassScanState)S.ownerPassScanState={};
   const cur=S.ownerPassScanState[passId]||0;
   S.ownerPassScanState[passId]=cur===0?1:(cur===1?2:2);
+  S.showScanOverlay=true;
   rerender();
 }
 
@@ -3662,11 +3693,11 @@ function rHorseDetail(h){
 
 // --- BARN PROFESSIONALS DATA ---------------------------------
 const BARN_PROFESSIONALS=[
-  {id:'p1',name:'Dr. Konstantine Goudz',type:'Vet',email:'k.goudz@goudzeq.com',phone:'',nayNay:true,initials:'KG',color:'var(--md-primary)',bg:'var(--md-primary-container)'},
-  {id:'p2',name:'Mike Farrell',type:'Farrier',email:'',phone:'(555) 382-9104',nayNay:false,initials:'MF',color:'var(--md-warning)',bg:'var(--md-warning-container)'},
-  {id:'p3',name:'Dr. Priya Nair',type:'Dentist',email:'priya@equinedental.com',phone:'',nayNay:true,initials:'PN',color:'var(--md-error)',bg:'var(--md-error-container)'},
-  {id:'p4',name:'Jordan M.',type:'Trainer',email:'jordan@sunrisestables.com',phone:'',nayNay:true,initials:'JM',color:'var(--md-tertiary)',bg:'var(--md-tertiary-container)'},
-  {id:'p5',name:'Sofia Reyes',type:'Masseuse',email:'sofia@eqwellness.com',phone:'',nayNay:false,initials:'SR',color:'var(--md-secondary)',bg:'var(--md-secondary-container)'},
+  {id:'p1',name:'Dr. Konstantine Goudz',type:'Vet',face:'face_6',email:'k.goudz@goudzeq.com',phone:'',nayNay:true,initials:'KG',color:'var(--md-primary)',bg:'var(--md-primary-container)'},
+  {id:'p2',name:'Mike Farrell',type:'Farrier',face:'face',email:'',phone:'(555) 382-9104',nayNay:false,initials:'MF',color:'var(--md-warning)',bg:'var(--md-warning-container)'},
+  {id:'p3',name:'Dr. Priya Nair',type:'Dentist',face:'face_3',email:'priya@equinedental.com',phone:'',nayNay:true,initials:'PN',color:'var(--md-error)',bg:'var(--md-error-container)'},
+  {id:'p4',name:'Jordan M.',type:'Trainer',face:'face_5',email:'jordan@sunrisestables.com',phone:'',nayNay:true,initials:'JM',color:'var(--md-tertiary)',bg:'var(--md-tertiary-container)'},
+  {id:'p5',name:'Sofia Reyes',type:'Masseuse',face:'face_4',email:'sofia@eqwellness.com',phone:'',nayNay:false,initials:'SR',color:'var(--md-secondary)',bg:'var(--md-secondary-container)'},
 ];
 
 // --- VISITS DATA ---------------------------------------------
@@ -3834,7 +3865,7 @@ function visitCard(visit,role){
   const pendingAction=(visit.status==='pending_barn_confirm'&&role==='manager');
   return '<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);overflow:hidden;margin-bottom:12px;">'
     +'<div style="padding:12px 14px;display:flex;align-items:flex-start;gap:11px;">'
-    +'<div style="width:42px;height:42px;border-radius:50%;background:'+pro.bg+';display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:'+pro.color+';flex-shrink:0;">'+pro.initials+'</div>'
+    +'<div style="width:42px;height:42px;border-radius:50%;background:'+pro.bg+';display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class="msi" style="font-size:26px;color:'+pro.color+';line-height:1;">'+(pro.face||'person')+'</span></div>'
     +'<div style="flex:1;min-width:0;">'
     +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:3px;"><div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">'+visit.professionalName+'</div><span style="font-size:10px;font-weight:700;background:'+pro.bg+';color:'+pro.color+';padding:2px 7px;border-radius:10px;">'+visit.professionalType+'</span></div>'
     +'<div style="font-size:12px;color:var(--md-on-surface-variant);margin-bottom:3px;">'+visit.date+' · '+visit.timeStart+'–'+visit.timeEnd+'</div>'
