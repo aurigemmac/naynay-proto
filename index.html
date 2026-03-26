@@ -6,6 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,300,0,0" rel="stylesheet"/>
 <title>NayNay</title>
 <style>
 :root{
@@ -48,6 +49,7 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;width:100%;overflow:hidden;font-size:15px;}
 body{background:var(--nn-bg-page);display:flex;flex-direction:column;font-family:'DM Sans',sans-serif;color:var(--nn-tx);}
+.msi{font-family:'Material Symbols Outlined';font-variation-settings:'FILL' 0,'wght' 300,'GRAD' 0,'opsz' 24;font-size:26px;line-height:1;display:block;user-select:none;}
 @media(display-mode:standalone){html{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);}}
 @keyframes scan{0%,100%{top:15%}50%{top:80%}}
 </style>
@@ -105,6 +107,10 @@ const TH={
 // automatically respond to dark/light mode via the token system.
 
 // Filled text field -- Material 3 style
+function msiIcon(symbol,size,color){
+  return '<span class="msi" style="font-size:'+(size||20)+'px;color:'+(color||'inherit')+';line-height:1;display:inline-block;user-select:none;vertical-align:middle;">'+symbol+'</span>';
+}
+
 function mdField(label,attrs){
   // attrs: {id, type, value, placeholder, oninput, onchange, style, disabled}
   const a=attrs||{};
@@ -264,12 +270,12 @@ function selectRoleCombo(idx){
 
 // --- TRAINING CONFIG ------------------------------------------
 const TRAINING_TYPES={
-  Hack:    {icon:'🌿',color:'#2A7A3A',bg:'var(--md-secondary-container)'},
-  Flat:    {icon:'⬜',color:'var(--md-tertiary)',bg:'var(--md-tertiary-container)'},
-  Arena:   {icon:'◈', color:'var(--md-tertiary)',bg:'var(--md-tertiary-container)'},
-  Jump:    {icon:'🏁',color:'var(--md-error)',bg:'var(--md-error-container)'},
-  Trails:  {icon:'🏔',color:'#3A6A2A',bg:'var(--md-secondary-container)'},
-  Fitness: {icon:'⚡',color:'var(--md-warning)',bg:'var(--md-warning-container)'},
+  Hack:    {icon:msiIcon('nature'),color:'#2A7A3A',bg:'var(--md-secondary-container)'},
+  Flat:    {icon:msiIcon('crop_square'),color:'var(--md-tertiary)',bg:'var(--md-tertiary-container)'},
+  Arena:   {icon:msiIcon('pentagon'), color:'var(--md-tertiary)',bg:'var(--md-tertiary-container)'},
+  Jump:    {icon:msiIcon('flag'),color:'var(--md-error)',bg:'var(--md-error-container)'},
+  Trails:  {icon:msiIcon('landscape'),color:'#3A6A2A',bg:'var(--md-secondary-container)'},
+  Fitness: {icon:msiIcon('bolt'),color:'var(--md-warning)',bg:'var(--md-warning-container)'},
 };
 const INTENSITY_LABELS={1:'Low',2:'Easy',3:'Medium',4:'Strong',5:'High'};
 const INTENSITY_COLORS={1:'#2A8A4A',2:'#5A8A2A',3:'#8A7A00',4:'#8A5000',5:'#8A2020'};
@@ -327,7 +333,7 @@ const BARNS={
 
 const HORSES_ALL=[
   // ── Sunrise Stables ──────────────────────────────────────────
-  {id:'h1',name:'Apollo',   breed:'Warmblood',      color:'Bay',         age:'9 years', sex:'Gelding',
+  {id:'h1',photo:'https://images.pexels.com/photos/635499/pexels-photo-635499.jpeg?w=400&h=400&fit=crop',name:'Apollo',   breed:'Warmblood',      color:'Bay',         age:'9 years', sex:'Gelding',
    barn:'sunrise', stall:'A1',
    owners:[{name:'Sarah K.',userId:'owner-sarah',share:'Full'}],
    trainer:'Jordan M.',vet:'Dr. Goudz',
@@ -339,7 +345,7 @@ const HORSES_ALL=[
    discipline:'Hunter/Jumper',level:'Pre-green',
    pros:[{role:'Farrier',name:'Mike Farrell',next:'Apr 4'},{role:'Dentist',name:'Dr. Nair',next:'May 2026'}],
   },
-  {id:'h2',name:'Vader',    breed:'Friesian',        color:'Black',       age:'7 years', sex:'Gelding',
+  {id:'h2',photo:'https://images.pexels.com/photos/1996333/pexels-photo-1996333.jpeg?w=400&h=400&fit=crop',name:'Vader',    breed:'Friesian',        color:'Black',       age:'7 years', sex:'Gelding',
    barn:'sunrise', stall:'A2',
    owners:[{name:'Sarah K.',userId:'owner-sarah',share:'Full'}],
    trainer:'Jordan M.',vet:'Dr. Goudz',
@@ -351,7 +357,7 @@ const HORSES_ALL=[
    discipline:'Dressage',level:'Training level',
    pros:[{role:'Farrier',name:'Mike Farrell',next:'Apr 4'}],
   },
-  {id:'h3',name:'Luna',     breed:'Arabian',         color:'Gray',        age:'6 years', sex:'Mare',
+  {id:'h3',photo:'https://images.pexels.com/photos/1289659/pexels-photo-1289659.jpeg?w=400&h=400&fit=crop',name:'Luna',     breed:'Arabian',         color:'Gray',        age:'6 years', sex:'Mare',
    barn:'sunrise', stall:'B1',
    owners:[{name:'Sarah K.',userId:'owner-sarah',share:'Full'},{name:'Dana L.',userId:'owner-dana',share:'Lease'}],
    trainer:'Jordan M.',vet:'Dr. Goudz',
@@ -364,7 +370,7 @@ const HORSES_ALL=[
    discipline:'Hunter',level:'Short stirrup',
    pros:[{role:'Farrier',name:'Mike Farrell',next:'Apr 18'},{role:'Masseuse',name:'Sofia Reyes',next:'Mar 28'}],
   },
-  {id:'rv',name:'Rivendell', breed:'Hanoverian',     color:'Dark Bay',    age:'11 years',sex:'Mare',
+  {id:'rv',photo:'https://images.pexels.com/photos/52500/horse-herd-fog-nature-52500.jpeg?w=400&h=400&fit=crop',name:'Rivendell', breed:'Hanoverian',     color:'Dark Bay',    age:'11 years',sex:'Mare',
    barn:'sunrise', stall:'B2',
    owners:[{name:'Sarah K.',userId:'owner-sarah',share:'Full'}],
    trainer:null,vet:'Dr. Goudz',
@@ -377,7 +383,7 @@ const HORSES_ALL=[
    discipline:null,level:null,
    pros:[{role:'Farrier',name:'Mike Farrell',next:'Apr 18'}],
   },
-  {id:'h4',name:'Maple',    breed:'Quarter Horse',   color:'Chestnut',    age:'14 years',sex:'Mare',
+  {id:'h4',photo:'https://images.pexels.com/photos/1759454/pexels-photo-1759454.jpeg?w=400&h=400&fit=crop',name:'Maple',    breed:'Quarter Horse',   color:'Chestnut',    age:'14 years',sex:'Mare',
    barn:'sunrise', stall:'C1',
    owners:[{name:'Lisa T.',userId:'owner-lisa',share:'Full'}],
    trainer:'Jordan M.',vet:'Dr. Goudz',
@@ -390,7 +396,7 @@ const HORSES_ALL=[
    discipline:'Western Pleasure',level:'Open',
    pros:[{role:'Farrier',name:'Mike Farrell',next:'Apr 4'},{role:'Dentist',name:'Dr. Nair',next:'Jun 2026'}],
   },
-  {id:'h5',name:'Bill',     breed:'Mustang',          color:'Dun',         age:'5 years', sex:'Gelding',
+  {id:'h5',photo:'https://images.pexels.com/photos/1846567/pexels-photo-1846567.jpeg?w=400&h=400&fit=crop',name:'Bill',     breed:'Mustang',          color:'Dun',         age:'5 years', sex:'Gelding',
    barn:'sunrise', stall:'C2',
    owners:[{name:'Mike R.',userId:'owner-mike',share:'Full'}],
    trainer:'Jordan M.',vet:'Dr. Goudz',
@@ -402,7 +408,7 @@ const HORSES_ALL=[
    discipline:'Trail',level:'Green',
    pros:[{role:'Farrier',name:'Mike Farrell',next:'Mar 28'}],
   },
-  {id:'h6',name:'Duchess',  breed:'Paint',            color:'Tobiano',     age:'10 years',sex:'Mare',
+  {id:'h6',photo:'https://images.pexels.com/photos/1000082/pexels-photo-1000082.jpeg?w=400&h=400&fit=crop',name:'Duchess',  breed:'Paint',            color:'Tobiano',     age:'10 years',sex:'Mare',
    barn:'sunrise', stall:'D1',
    owners:[{name:'Emma S.',userId:'owner-emma',share:'Full'},{name:'Claire B.',userId:'owner-claire',share:'Half-lease'}],
    trainer:'Jordan M.',vet:'Dr. Goudz',
@@ -415,7 +421,7 @@ const HORSES_ALL=[
    discipline:'Hunter',level:'Children\'s',
    pros:[{role:'Farrier',name:'Mike Farrell',next:'Apr 4'},{role:'Dentist',name:'Dr. Nair',next:'Apr 2026'}],
   },
-  {id:'h7',name:'Comet',    breed:'Thoroughbred',     color:'Gray',        age:'4 years', sex:'Gelding',
+  {id:'h7',photo:'https://images.pexels.com/photos/1289671/pexels-photo-1289671.jpeg?w=400&h=400&fit=crop',name:'Comet',    breed:'Thoroughbred',     color:'Gray',        age:'4 years', sex:'Gelding',
    barn:'sunrise', stall:'D2',
    owners:[{name:'Emma S.',userId:'owner-emma',share:'Full'}],
    trainer:'Jordan M.',vet:'Dr. Goudz',
@@ -428,7 +434,7 @@ const HORSES_ALL=[
    pros:[{role:'Farrier',name:'Mike Farrell',next:'Apr 18'}],
   },
   // ── Ridgeline Equestrian ─────────────────────────────────────
-  {id:'r1',name:'Bella',    breed:'Thoroughbred',     color:'Bay',         age:'7 years', sex:'Mare',
+  {id:'r1',photo:'https://images.pexels.com/photos/1996334/pexels-photo-1996334.jpeg?w=400&h=400&fit=crop',name:'Bella',    breed:'Thoroughbred',     color:'Bay',         age:'7 years', sex:'Mare',
    barn:'ridgeline', stall:'1',
    owners:[{name:'Chloe W.',userId:'owner-chloe',share:'Full'}],
    trainer:'Alex P.',vet:'Dr. Goudz',
@@ -441,7 +447,7 @@ const HORSES_ALL=[
    discipline:'Dressage',level:'First level',
    pros:[],
   },
-  {id:'r2',name:'Storm',    breed:'Warmblood',        color:'Dapple Gray', age:'8 years', sex:'Gelding',
+  {id:'r2',photo:'https://images.pexels.com/photos/1319557/pexels-photo-1319557.jpeg?w=400&h=400&fit=crop',name:'Storm',    breed:'Warmblood',        color:'Dapple Gray', age:'8 years', sex:'Gelding',
    barn:'ridgeline', stall:'2',
    owners:[{name:'Chloe W.',userId:'owner-chloe',share:'Full'},{name:'James W.',userId:'owner-james',share:'Co-owner'}],
    trainer:'Alex P.',vet:'Dr. Goudz',
@@ -454,7 +460,7 @@ const HORSES_ALL=[
    discipline:'Dressage',level:'Second level',
    pros:[{role:'Farrier',name:'Tom H.',next:'Apr 10'}],
   },
-  {id:'r3',name:'Duchess II',breed:'Quarter Horse',  color:'Buckskin',    age:'12 years',sex:'Mare',
+  {id:'r3',photo:'https://images.pexels.com/photos/2218673/pexels-photo-2218673.jpeg?w=400&h=400&fit=crop',name:'Duchess II',breed:'Quarter Horse',  color:'Buckskin',    age:'12 years',sex:'Mare',
    barn:'ridgeline', stall:'3',
    owners:[{name:'Paul B.',userId:'owner-paul',share:'Full'}],
    trainer:'Alex P.',vet:'Dr. Goudz',
@@ -466,7 +472,7 @@ const HORSES_ALL=[
    discipline:'Western',level:'Amateur',
    pros:[],
   },
-  {id:'r4',name:'Rocket',   breed:'Thoroughbred',     color:'Chestnut',    age:'6 years', sex:'Gelding',
+  {id:'r4',photo:'https://images.pexels.com/photos/1759455/pexels-photo-1759455.jpeg?w=400&h=400&fit=crop',name:'Rocket',   breed:'Thoroughbred',     color:'Chestnut',    age:'6 years', sex:'Gelding',
    barn:'ridgeline', stall:'4',
    owners:[{name:'Paul B.',userId:'owner-paul',share:'Full'}],
    trainer:'Alex P.',vet:'Dr. Goudz',
@@ -478,7 +484,7 @@ const HORSES_ALL=[
    discipline:'Eventing',level:'Beginner Novice',
    pros:[{role:'Farrier',name:'Tom H.',next:'Mar 30'}],
   },
-  {id:'r5',name:'Pepper',   breed:'Arabian',          color:'Black',       age:'9 years', sex:'Mare',
+  {id:'r5',photo:'https://images.pexels.com/photos/1997274/pexels-photo-1997274.jpeg?w=400&h=400&fit=crop',name:'Pepper',   breed:'Arabian',          color:'Black',       age:'9 years', sex:'Mare',
    barn:'ridgeline', stall:'5',
    owners:[{name:'Paul B.',userId:'owner-paul',share:'Full'}],
    trainer:'Alex P.',vet:'Dr. Nair',
@@ -490,7 +496,7 @@ const HORSES_ALL=[
    discipline:'Endurance',level:'Open',
    pros:[{role:'Dentist',name:'Dr. Nair',next:'Sep 2026'}],
   },
-  {id:'r6',name:'Cirrus',   breed:'Warmblood',        color:'Cremello',    age:'5 years', sex:'Stallion',
+  {id:'r6',photo:'https://images.pexels.com/photos/1559388/pexels-photo-1559388.jpeg?w=400&h=400&fit=crop',name:'Cirrus',   breed:'Warmblood',        color:'Cremello',    age:'5 years', sex:'Stallion',
    barn:'ridgeline', stall:'6',
    owners:[{name:'Paul B.',userId:'owner-paul',share:'Full'},{name:'Ridgeline Equestrian LLC',userId:'owner-ridgeline',share:'Syndicate'}],
    trainer:'Alex P.',vet:'Dr. Goudz',
@@ -503,7 +509,7 @@ const HORSES_ALL=[
    pros:[{role:'Farrier',name:'Tom H.',next:'Apr 10'}],
   },
   // ── Blue Ridge Farm ──────────────────────────────────────────
-  {id:'b1',name:'Scout',    breed:'Quarter Horse',    color:'Bay',         age:'11 years',sex:'Gelding',
+  {id:'b1',photo:'https://images.pexels.com/photos/1997276/pexels-photo-1997276.jpeg?w=400&h=400&fit=crop',name:'Scout',    breed:'Quarter Horse',    color:'Bay',         age:'11 years',sex:'Gelding',
    barn:'blueridge', stall:'1',
    owners:[{name:'Dana L.',userId:'owner-dana',share:'Full'}],
    trainer:'Jordan M.',vet:'Dr. Goudz',
@@ -515,7 +521,7 @@ const HORSES_ALL=[
    discipline:'Trail/Western',level:'Open',
    pros:[{role:'Farrier',name:'Mike Farrell',next:'Apr 10'}],
   },
-  {id:'b2',name:'Nova',     breed:'Warmblood',        color:'Blue Roan',   age:'6 years', sex:'Mare',
+  {id:'b2',photo:'https://images.pexels.com/photos/2227376/pexels-photo-2227376.jpeg?w=400&h=400&fit=crop',name:'Nova',     breed:'Warmblood',        color:'Blue Roan',   age:'6 years', sex:'Mare',
    barn:'blueridge', stall:'2',
    owners:[{name:'Dana L.',userId:'owner-dana',share:'Full'},{name:'Tom F.',userId:'owner-tom',share:'Training lease'}],
    trainer:'Jordan M.',vet:'Dr. Goudz',
@@ -527,7 +533,7 @@ const HORSES_ALL=[
    discipline:'Hunter/Jumper',level:'Pre-green',
    pros:[{role:'Farrier',name:'Mike Farrell',next:'Apr 10'}],
   },
-  {id:'b3',name:'Echo',     breed:'Warmblood',        color:'Pinto',       age:'8 years', sex:'Gelding',
+  {id:'b3',photo:'https://images.pexels.com/photos/1820771/pexels-photo-1820771.jpeg?w=400&h=400&fit=crop',name:'Echo',     breed:'Warmblood',        color:'Pinto',       age:'8 years', sex:'Gelding',
    barn:'blueridge', stall:'3',
    owners:[{name:'Tom F.',userId:'owner-tom',share:'Full'}],
    trainer:'Jordan M.',vet:'Dr. Goudz',
@@ -539,7 +545,7 @@ const HORSES_ALL=[
    discipline:'Hunter',level:'Modified',
    pros:[],
   },
-  {id:'b4',name:'Solstice', breed:'Thoroughbred',     color:'Bay',         age:'7 years', sex:'Mare',
+  {id:'b4',photo:'https://images.pexels.com/photos/1851776/pexels-photo-1851776.jpeg?w=400&h=400&fit=crop',name:'Solstice', breed:'Thoroughbred',     color:'Bay',         age:'7 years', sex:'Mare',
    barn:'blueridge', stall:'4',
    owners:[{name:'Tom F.',userId:'owner-tom',share:'Full'},{name:'Rachel M.',userId:'owner-rachel',share:'Half-lease'}],
    trainer:'Jordan M.',vet:'Dr. Goudz',
@@ -667,9 +673,10 @@ const COMBINED_SORT_ORDER={
 
 let vetVaxData={vaccine:'Equine Potomavac + Imrab Rabies Equine Vaccine',lot:'0623-afd-161',expiry:'05-2027',administeredOn:'2026-03-04',nextDue:'2026-03-25',vetPrefix:'Dr.',vetFirst:'Konstantine',vetLast:'Goudz',vetSuffix:'DVM',vetPhone:'(123) 123-1231',duration:'12 months',site:'Neck',notes:'',horseId:''};
 let vetSetup={
-  profile:{name:'Dr. Konstantine Goudz',credentials:'DVM, MS',practice:'Goudz Equine Veterinary Services',phone:'(123) 123-1231',email:'k.goudz@goudzeq.com',license:'VT-48821'},
+  profile:{prefix:'Dr.',first:'Konstantine',last:'Goudz',suffix:'DVM',credentials:'DVM, MS',practice:'Goudz Equine Veterinary Services',practicePhone:'(123) 123-1231',practiceEmail:'k.goudz@goudzeq.com',practiceAddress:'',website:'',phone:'(123) 123-1231',email:'k.goudz@goudzeq.com',license:'VT-48821',licenseState:'Vermont'},
   notifs:{confirmRequests:true,appointmentReminders:true,labResults:true,paymentReceipts:true,chatMessages:true,dueDateAlerts:true},
   payment:{method:'Bank account',account:'Chase ···· 7742',invoicePrefix:'GEV',taxId:'47-2983311',autoCharge:true,receiptEmail:true},
+  calendar:{googleConnected:false,iCalConnected:false,syncAppts:true,syncVaccines:true,syncReminders:true},
   connectedBarns:[{id:'b1',name:'Sunrise Stables',manager:'Charlene Georgia',horses:3,since:'Jan 2025',active:true},{id:'b2',name:'Oakwood Farm',manager:'David Park',horses:5,since:'Mar 2024',active:true},{id:'b3',name:'River Ranch',manager:'Melissa Torres',horses:8,since:'Sep 2023',active:false}],
 };
 const MSG_THREAD=[
@@ -724,7 +731,7 @@ let S={
   mgrView:'home',assignDate:TODAY,expandedAssign:null,expandedTrainingAssign:null,
   mgrAssignTab:'tasks',
   selectedHorse:null,taskFilter:'all',
-  vetSignedIn:false,vetView:'confirmation',vetSetupTab:'practice',
+  vetSignedIn:false,vetView:'confirmation',vetSetupTab:'account',trainerSetupTab:'account',mgrSetupTab:'tasks',staffSetupTab:'account',ownerSetupTab:'account',taskScheduleExpanded:false,aiScheduleDismissed:{},aiScheduleAdded:{},
   vetConfirmPage:false,vetEditMode:false,prevVetView:null,
   feedCardExpanded:false,feedCardHorse:null,
   expandedTraining:null,loggingTraining:null,
@@ -746,14 +753,62 @@ function secBlock(title,children){return mdSecBlock(title,children);}
 function statusBadge(s){const t=TH;const st={pending:{bg:t.SUB,color:t.TX3,label:'Pending',border:t.BRD},in_progress:{bg:t.WARNBG,color:t.WARN,label:'In progress',border:t.WARN+'44'},complete:{bg:t.SUCBG,color:t.SUC,label:'Complete',border:t.SUC+'44'}}[s]||{bg:t.SUB,color:t.TX3,label:'Pending',border:t.BRD};return '<span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;background:'+st.bg+';color:'+st.color+';border:1px solid '+st.border+';white-space:nowrap;">'+st.label+'</span>';}
 function secHead(label,col){const t=TH;return '<div style="display:flex;align-items:center;gap:8px;margin:10px 0 8px;"><span style="background:'+(col||t.T)+';color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:0.4px;">'+label+'</span><div style="flex:1;height:1px;background:'+t.BRD+';"></div></div>';}
 function formatDate(d){if(!d)return '';const parts=d.split('-');if(parts.length!==3)return d;const months=['January','February','March','April','May','June','July','August','September','October','November','December'];return months[parseInt(parts[1])-1]+' '+parseInt(parts[2])+', '+parts[0];}
-function horseAvatar(h,size){const av=h.avatar,s=size,cx=s/2,earH=s*0.1;const blaze=av.marking==='blaze'?'<ellipse cx="'+cx+'" cy="'+(s*0.42)+'" rx="'+(s*0.07)+'" ry="'+(s*0.14)+'" fill="#F5EDE0" opacity="0.9"/>':'';const star=av.marking==='star'?'<ellipse cx="'+cx+'" cy="'+(s*0.32)+'" rx="'+(s*0.08)+'" ry="'+(s*0.07)+'" fill="#F5F5F0" opacity="0.9"/>':'';const sock=av.sock?'<ellipse cx="'+cx+'" cy="'+(s*0.88)+'" rx="'+(s*0.14)+'" ry="'+(s*0.08)+'" fill="'+av.sock+'" opacity="0.7"/>':'';return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 '+s+' '+s+'" fill="none"><circle cx="'+cx+'" cy="'+cx+'" r="'+cx+'" fill="'+av.bg+'"/><ellipse cx="'+cx+'" cy="'+(s*0.78)+'" rx="'+(s*0.22)+'" ry="'+(s*0.2)+'" fill="'+av.bg+'"/><ellipse cx="'+(cx-s*0.06)+'" cy="'+(s*0.22)+'" rx="'+(s*0.05)+'" ry="'+earH+'" fill="'+av.bg+'"/><ellipse cx="'+(cx+s*0.06)+'" cy="'+(s*0.22)+'" rx="'+(s*0.05)+'" ry="'+earH+'" fill="'+av.bg+'"/><ellipse cx="'+(cx-s*0.06)+'" cy="'+(s*0.21)+'" rx="'+(s*0.03)+'" ry="'+(earH*0.7)+'" fill="'+av.mane+'" opacity="0.5"/><ellipse cx="'+(cx+s*0.06)+'" cy="'+(s*0.21)+'" rx="'+(s*0.03)+'" ry="'+(earH*0.7)+'" fill="'+av.mane+'" opacity="0.5"/><ellipse cx="'+cx+'" cy="'+(s*0.42)+'" rx="'+(s*0.18)+'" ry="'+(s*0.22)+'" fill="'+av.bg+'"/><path d="M'+(cx-s*0.14)+' '+(s*0.32)+' Q'+(cx-s*0.22)+' '+(s*0.18)+' '+(cx-s*0.08)+' '+(s*0.12)+' Q'+cx+' '+(s*0.08)+' '+(cx+s*0.08)+' '+(s*0.12)+' Q'+(cx+s*0.22)+' '+(s*0.18)+' '+(cx+s*0.14)+' '+(s*0.32)+'" fill="'+av.mane+'" opacity="0.85"/>'+blaze+star+'<ellipse cx="'+(cx-s*0.07)+'" cy="'+(s*0.38)+'" rx="'+(s*0.04)+'" ry="'+(s*0.03)+'" fill="#1A0A00" opacity="0.9"/><ellipse cx="'+(cx+s*0.07)+'" cy="'+(s*0.38)+'" rx="'+(s*0.04)+'" ry="'+(s*0.03)+'" fill="#1A0A00" opacity="0.9"/><ellipse cx="'+(cx-s*0.06)+'" cy="'+(s*0.375)+'" rx="'+(s*0.015)+'" ry="'+(s*0.012)+'" fill="#fff" opacity="0.6"/><ellipse cx="'+(cx+s*0.08)+'" cy="'+(s*0.375)+'" rx="'+(s*0.015)+'" ry="'+(s*0.012)+'" fill="#fff" opacity="0.6"/>'+sock+'</svg>';}
+function horseAvatar(h,size){
+  if(h.photo){
+    const s=size||40;
+    return '<div style="width:'+s+'px;height:'+s+'px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--md-surface-variant);">'
+      +'<img src="'+h.photo+'" alt="'+h.name+'" width="'+s+'" height="'+s+'" style="width:100%;height:100%;object-fit:cover;object-position:center top;display:block;">'
+      +'</div>';
+  }
+  // Fallback to SVG illustration
+  const av=h.avatar,s=size,cx=s/2,earH=s*0.1;const blaze=av.marking==='blaze'?'<ellipse cx="'+cx+'" cy="'+(s*0.42)+'" rx="'+(s*0.07)+'" ry="'+(s*0.14)+'" fill="#F5EDE0" opacity="0.9"/>':'';const star=av.marking==='star'?'<ellipse cx="'+cx+'" cy="'+(s*0.32)+'" rx="'+(s*0.08)+'" ry="'+(s*0.07)+'" fill="#F5F5F0" opacity="0.9"/>':'';const sock=av.sock?'<ellipse cx="'+cx+'" cy="'+(s*0.88)+'" rx="'+(s*0.14)+'" ry="'+(s*0.08)+'" fill="'+av.sock+'" opacity="0.7"/>':'';return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 '+s+' '+s+'" fill="none"><circle cx="'+cx+'" cy="'+cx+'" r="'+cx+'" fill="'+av.bg+'"/><ellipse cx="'+cx+'" cy="'+(s*0.78)+'" rx="'+(s*0.22)+'" ry="'+(s*0.2)+'" fill="'+av.bg+'"/><ellipse cx="'+(cx-s*0.06)+'" cy="'+(s*0.22)+'" rx="'+(s*0.05)+'" ry="'+earH+'" fill="'+av.bg+'"/><ellipse cx="'+(cx+s*0.06)+'" cy="'+(s*0.22)+'" rx="'+(s*0.05)+'" ry="'+earH+'" fill="'+av.bg+'"/><ellipse cx="'+(cx-s*0.06)+'" cy="'+(s*0.21)+'" rx="'+(s*0.03)+'" ry="'+(earH*0.7)+'" fill="'+av.mane+'" opacity="0.5"/><ellipse cx="'+(cx+s*0.06)+'" cy="'+(s*0.21)+'" rx="'+(s*0.03)+'" ry="'+(earH*0.7)+'" fill="'+av.mane+'" opacity="0.5"/><ellipse cx="'+cx+'" cy="'+(s*0.42)+'" rx="'+(s*0.18)+'" ry="'+(s*0.22)+'" fill="'+av.bg+'"/><path d="M'+(cx-s*0.14)+' '+(s*0.32)+' Q'+(cx-s*0.22)+' '+(s*0.18)+' '+(cx-s*0.08)+' '+(s*0.12)+' Q'+cx+' '+(s*0.08)+' '+(cx+s*0.08)+' '+(s*0.12)+' Q'+(cx+s*0.22)+' '+(s*0.18)+' '+(cx+s*0.14)+' '+(s*0.32)+'" fill="'+av.mane+'" opacity="0.85"/>'+blaze+star+'<ellipse cx="'+(cx-s*0.07)+'" cy="'+(s*0.38)+'" rx="'+(s*0.04)+'" ry="'+(s*0.03)+'" fill="#1A0A00" opacity="0.9"/><ellipse cx="'+(cx+s*0.07)+'" cy="'+(s*0.38)+'" rx="'+(s*0.04)+'" ry="'+(s*0.03)+'" fill="#1A0A00" opacity="0.9"/><ellipse cx="'+(cx-s*0.06)+'" cy="'+(s*0.375)+'" rx="'+(s*0.015)+'" ry="'+(s*0.012)+'" fill="#fff" opacity="0.6"/><ellipse cx="'+(cx+s*0.08)+'" cy="'+(s*0.375)+'" rx="'+(s*0.015)+'" ry="'+(s*0.012)+'" fill="#fff" opacity="0.6"/>'+sock+'</svg>';}
 function toggle(on,onclick){return mdToggle(on,onclick);}
 function settingToggle(label,sub,on,onclick){return mdSettingToggle(label,sub,on,onclick);}
 function settingInput(label,key,val){return mdSettingInput(label,key,val);}
 function googleBtn(onclick){return '<button onclick="'+onclick+'" style="width:100%;font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:700;cursor:pointer;border:1.5px solid var(--md-outline);padding:12px 16px;border-radius:var(--md-shape-md);background:var(--md-surface);color:var(--md-on-surface);display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px;"><svg width="17" height="17" viewBox="0 0 18 18" fill="none"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/><path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>Continue with Google</button>';}
 
 // Training helpers
-function typeChip(type,small){const cfg=TRAINING_TYPES[type]||{icon:'🐴',color:TH.mdOnSurfVar,bg:TH.SUB};const sz=small?10:11;return `<span style="font-size:${sz}px;font-weight:700;padding:${small?'2px 7px':'3px 9px'};border-radius:20px;background:${cfg.bg};color:${cfg.color};white-space:nowrap;">${cfg.icon} ${type==='Arena'?'Arena work':type==='Jump'?'Jump school':type}</span>`;}
+
+function rPersonCard(p,store,suffixOpts){
+  var opts=suffixOpts||[''];
+  var initials=((p.first||'')[0]||'')+((p.last||'')[0]||'');
+  var inp='width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:8px;padding:8px 10px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
+  var lbl='font-size:9px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;';
+  var prefFld='<div><label style="'+lbl+'">Prefix</label><input type="text" value="'+(p.prefix||'')+'" oninput="'+store+'.prefix=this.value" placeholder="Dr." style="'+inp+'"/></div>';
+  var fstFld='<div><label style="'+lbl+'">First name</label><input type="text" value="'+(p.first||'')+'" oninput="'+store+'.first=this.value" placeholder="First name" style="'+inp+'"/></div>';
+  var lstFld='<div><label style="'+lbl+'">Last name</label><input type="text" value="'+(p.last||'')+'" oninput="'+store+'.last=this.value" placeholder="Last name" style="'+inp+'"/></div>';
+  var sfxFld='<div><label style="'+lbl+'">Suffix</label><select oninput="'+store+'.suffix=this.value" style="'+inp+'">'+opts.map(function(s){return '<option'+(p.suffix===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>';
+  var phnFld='<div style="margin-top:8px;"><input type="text" inputmode="tel" value="'+(p.phone||'')+'" oninput="'+store+'.phone=this.value" placeholder="Phone number" style="'+inp+'"/></div>';
+  var emlFld='<div style="margin-top:8px;"><input type="text" inputmode="email" value="'+(p.email||'')+'" oninput="'+store+'.email=this.value" placeholder="Email address" style="'+inp+'"/></div>';
+  return '<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);padding:14px 14px 12px;margin-bottom:14px;">'
+    +'<div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">Your information</div>'
+    +'<div style="display:flex;align-items:flex-start;gap:12px;">'
+    +'<div style="width:44px;height:44px;border-radius:50%;background:var(--md-primary-container);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--md-primary);flex-shrink:0;">'+initials+'</div>'
+    +'<div style="flex:1;min-width:0;">'
+    +'<div style="display:grid;grid-template-columns:80px 1fr;gap:6px;margin-bottom:6px;">'+prefFld+fstFld+'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 80px;gap:6px;">'+lstFld+sfxFld+'</div>'
+    +'</div></div>'
+    +phnFld+emlFld
+    +'<div style="border-top:1px solid var(--md-outline-variant);margin-top:10px;padding-top:10px;display:flex;justify-content:flex-end;">'
+    +'<button onclick="alert(\'Sign out\')" style="background:none;border:none;font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:600;color:var(--md-on-surface-dim);cursor:pointer;padding:4px 0;display:flex;align-items:center;gap:5px;">'
+    +msiIcon('logout',14,'var(--md-on-surface-dim)')
+    +'<span>Sign out</span></button>'
+    +'</div>'
+    +'</div>';
+}
+function rPracticeCard(p,store,label){
+  var lbl=label||'Practice';
+  return '<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);padding:14px 14px 10px;margin-bottom:14px;">'
+    +'<div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">'+lbl+'</div>'
+    +settingInput(lbl+' name','practice',p.practice||'')
+    +settingInput('Address','practiceAddress',p.practiceAddress||'')
+    +settingInput(lbl+' phone','practicePhone',p.practicePhone||'')
+    +settingInput(lbl+' email','practiceEmail',p.practiceEmail||'')
+    +settingInput('Website','website',p.website||'')
+    +'</div>';
+}
+
+function typeChip(type,small){const cfg=TRAINING_TYPES[type]||{icon:msiIcon('pets'),color:TH.mdOnSurfVar,bg:TH.SUB};const sz=small?10:11;return `<span style="font-size:${sz}px;font-weight:700;padding:${small?'2px 7px':'3px 9px'};border-radius:20px;background:${cfg.bg};color:${cfg.color};white-space:nowrap;">${cfg.icon} ${type==='Arena'?'Arena work':type==='Jump'?'Jump school':type}</span>`;}
 function intensityDots(level){let out='<div style="display:flex;gap:3px;align-items:center;">';for(let i=1;i<=5;i++){const col=i<=level?INTENSITY_COLORS[level]:'var(--md-outline)';out+=`<div style="width:7px;height:7px;border-radius:50%;background:${col};flex-shrink:0;"></div>`;}out+=`<span style="font-size:10px;font-weight:600;color:${INTENSITY_COLORS[level]||TH.mdOnSurfDim};margin-left:3px;">${INTENSITY_LABELS[level]||''}</span></div>`;return out;}
 function intensityPicker(currentVal,fn){let out=`<div style="display:flex;gap:5px;flex-wrap:wrap;">`;for(let i=1;i<=5;i++){const on=currentVal===i;const col=INTENSITY_COLORS[i];out+=`<button onclick="${fn}(${i})" style="font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;cursor:pointer;padding:5px 10px;border-radius:20px;background:${on?col:'transparent'};color:${on?'#fff':col};border:1.5px solid ${col};">${i} — ${INTENSITY_LABELS[i]}</button>`;}out+='</div>';return out;}
 
@@ -824,7 +879,7 @@ function buildNav(isMgr,isVet,showBack,showHorse){
   const _unreadCount=hasRole('owner')?OWNER_NOTIFICATIONS.filter(function(n){return !n.read;}).length:3;
   const notifDot=_unreadCount>0?'<div style="position:absolute;top:5px;right:5px;width:8px;height:8px;border-radius:50%;background:var(--md-error);border:1.5px solid var(--nn-bg-card);"></div>':'';
   const notifBell='<button onclick="S.showNotifPanel=!S.showNotifPanel;rerender()" style="background:var(--nn-bg-subtle);border:1px solid var(--nn-border);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;flex-shrink:0;"><svg width="17" height="17" viewBox="0 0 20 20" fill="none"><path d="M10 2a6 6 0 00-6 6v3l-1.5 2.5h15L16 11V8a6 6 0 00-6-6z" stroke="var(--nn-tx)" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 16.5a2 2 0 004 0" stroke="var(--nn-tx)" stroke-width="1.4" stroke-linecap="round"/></svg>'+notifDot+'</button>';
-  const notifItems=hasRole('owner')?OWNER_NOTIFICATIONS.map(function(n){return {icon:n.icon,title:n.title,sub:n.body.substring(0,42)+(n.body.length>42?'...':'')+' · '+n.time,unread:!n.read};}): [{icon:'💊',title:'Medication update — Luna',sub:'Magnesium increased · Today 7:00 AM',unread:true},{icon:'👁',title:'Barn obs — Rivendell',sub:'Charlene: recovery on track · Today 8:15 AM',unread:true},{icon:'📅',title:'Appointment confirmed',sub:'Dr. Goudz · Mar 22, 10:00 AM',unread:false}];
+  const notifItems=hasRole('owner')?OWNER_NOTIFICATIONS.map(function(n){return {icon:n.icon,title:n.title,sub:n.body.substring(0,42)+(n.body.length>42?'...':'')+' · '+n.time,unread:!n.read};}): [{icon:msiIcon('medication',18,'var(--md-primary)'),title:'Medication update — Luna',sub:'Magnesium increased · Today 7:00 AM',unread:true},{icon:msiIcon('visibility',18,'var(--md-secondary)'),title:'Barn obs — Rivendell',sub:'Charlene: recovery on track · Today 8:15 AM',unread:true},{icon:msiIcon('event',18,'var(--md-tertiary)'),title:'Appointment confirmed',sub:'Dr. Goudz · Mar 22, 10:00 AM',unread:false}];
   const notifRows=notifItems.map(function(n){return '<div style="padding:10px 14px;border-bottom:1px solid var(--md-outline-variant);display:flex;gap:9px;align-items:flex-start;background:'+(n.unread?t.TL:'transparent')+'"><span style="font-size:16px;flex-shrink:0;">'+n.icon+'</span><div style="flex:1"><div style="font-size:13px;font-weight:'+(n.unread?700:500)+';color:var(--md-on-surface);">'+n.title+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+n.sub+'</div></div>'+(n.unread?'<div style="width:7px;height:7px;border-radius:50%;background:var(--md-primary);flex-shrink:0;margin-top:3px;"></div>':'')+'</div>';}).join('');
   const notifPanel=S.showNotifPanel?('<div onclick="S.showNotifPanel=false;rerender()" style="position:fixed;inset:0;z-index:1000;"></div><div style="position:absolute;top:52px;right:10px;width:300px;background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.18);z-index:1001;overflow:hidden;"><div style="padding:11px 14px;border-bottom:1px solid var(--md-outline-variant);display:flex;align-items:center;justify-content:space-between;"><span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Notifications</span><span style="font-size:10px;font-weight:700;background:var(--md-error);color:#fff;padding:2px 7px;border-radius:10px;">2 new</span></div>'+notifRows+'</div>') :'';
   let leftEl;
@@ -842,16 +897,15 @@ function bottomBar(isMgr,isVet){
   const homeOn=isVet?(S.vetView==='home'):(S.activeTab==='home'&&!S.selectedHorse);
   const horsesOn=isVet?(S.vetView==='horses'):(S.activeTab==='horses'||!!S.selectedHorse);
   const msgOn=isVet?(S.vetView==='messages'):(S.activeTab==='messages');
-  const setupOn=isVet?(S.vetView==='setup'):(isMgr&&S.activeTab==='setup'&&!S.selectedHorse);
+  const setupOn=isVet?(S.vetView==='setup'):(S.activeTab==='setup'&&!S.selectedHorse);
   function ic(p,on){return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none">${p(on?t.T:t.TX3)}</svg>`;}
   const tabs=[
     {l:'Home',on:homeOn,nav:isVet?`S.vetView='home';rerender()`:`navTo('home')`,ic:c=>`<path d="M3 12L12 4l9 8" stroke="${c}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 10v9a1 1 0 001 1h4v-4h4v4h4a1 1 0 001-1v-9" stroke="${c}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`},
     {l:'Horses',on:horsesOn,nav:isVet?`S.vetView='horses';rerender()`:`navTo('horses')`,ic:c=>`<ellipse cx="12" cy="9" rx="5" ry="3" stroke="${c}" stroke-width="1.5"/><path d="M7 9c0 2 2 5 5 7 3-2 5-5 5-7" stroke="${c}" stroke-width="1.5" stroke-linecap="round"/><path d="M5 14c-1.5 1-2 2.5-2 3.5C3 19 4 20 6 20h12c2 0 3-1 3-2.5 0-1-.5-2.5-2-3.5" stroke="${c}" stroke-width="1.5" stroke-linecap="round"/>`},
     {l:'Messages',on:msgOn,nav:isVet?`S.vetView='messages';rerender()`:`navTo('messages')`,ic:c=>`<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="${c}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`},
-    {l:'Setup',on:setupOn,nav:isVet?`S.vetView='setup';S.vetSetupTab='practice';svcEditId=null;rerender()`:`navTo('setup')`,ic:c=>`<circle cx="12" cy="12" r="3" stroke="${c}" stroke-width="1.5"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="${c}" stroke-width="1.5" stroke-linecap="round"/>`},
+    {l:'Setup',on:setupOn,nav:isVet?`S.vetView='setup';S.vetSetupTab='account';svcEditId=null;rerender()`:`navTo('setup')`,ic:c=>`<circle cx="12" cy="12" r="3" stroke="${c}" stroke-width="1.5"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="${c}" stroke-width="1.5" stroke-linecap="round"/>`},
   ];
-  if(!isVet&&!isMgr&&S.role!=='owner'&&S.role!=='trainer')tabs.splice(3,1);
-  if(S.role==='owner'||S.role==='trainer')tabs.splice(3,1);
+  // Setup tab: shown for all roles
   return `<div style="background:var(--md-surface);border-top:1.5px solid var(--md-outline-variant);display:flex;padding:10px 0 14px;flex-shrink:0;">${tabs.map(tab=>`<div onclick="${tab.nav}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;opacity:${tab.on?1:0.4};">${ic(tab.ic,tab.on)}<span style="font-size:11px;font-weight:600;color:${tab.on?t.T:t.TX3};">${tab.l}</span></div>`).join('')}</div>`;
 }
 function navTo(tab){S.activeTab=tab;S.selectedHorse=null;S.horseTab='overview';S.quickAction=null;S.bookingVisitId=null;if(tab==='home'){S.mgrView='home';S.feedCardExpanded=false;S.feedCardHorse=null;}if(tab!=='messages')S.selectedThread=null;rerender();}
@@ -884,6 +938,13 @@ function render(){
 function getContent(isVet,isMgr,showHorse){
   if(S.notifyCtx&&S.notifyCtx.active) return rNotifyStep();
   if(S.roles.length>1&&S.activeTab==='home'&&!S.quickAction&&!S.ownerEventPass&&!S.bookingVisitId&&!showHorse) return rMultiRoleHome();
+  if(S.roles.length>1&&S.activeTab==='setup'&&!showHorse){
+    if(anyRole('vet'))return rVetSetup();
+    if(anyRole('trainer'))return rTrainerSetup();
+    if(anyRole('manager'))return rMgrSetup();
+    if(anyRole('staff'))return rStaffSetup();
+    return rOwnerSetup();
+  }
   if(isVet){
     if(!S.vetSignedIn){if(S.vetConfirmPage==='confirmed')return rVetConfirmedPage();if(S.vetConfirmPage==='declined')return rVetDeclinedPage();return rVetUnauth();}
     if(S.quickAction==='request-barn-visit')return rRequestVisitForm();
@@ -900,6 +961,7 @@ function getContent(isVet,isMgr,showHorse){
     if(S.quickAction)return rQuickActionForm(S.quickAction);
     if(S.activeTab==='horses')return rHorseList();
     if(S.activeTab==='messages')return rMessages('trainer');
+    if(S.activeTab==='setup')return rTrainerSetup();
     return rTrainerHome();
   }
   if(S.role==='owner'){
@@ -910,6 +972,7 @@ function getContent(isVet,isMgr,showHorse){
     if(S.quickAction)return rQuickActionForm(S.quickAction);
     if(S.activeTab==='horses')return rHorseList();
     if(S.activeTab==='messages')return rMessages('owner');
+    if(S.activeTab==='setup')return rOwnerSetup();
     return rOwnerHome();
   }
   if(showHorse)return rHorseDetail(HORSES_ALL.find(function(h){return h.id===S.selectedHorse;})||HORSES.find(function(h){return h.id===S.selectedHorse;}));
@@ -917,7 +980,8 @@ function getContent(isVet,isMgr,showHorse){
   if(S.quickAction==='document-observation')return rObservationForm();
   if(S.quickAction)return rQuickActionForm(S.quickAction);
   if(S.activeTab==='horses')return rHorseList();if(S.activeTab==='messages')return rMessages(S.role);
-  if(isMgr){if(S.activeTab==='setup')return rSetup();if(S.mgrView==='assignments')return rAssignments();return rMgrHome();}
+  if(isMgr){if(S.activeTab==='setup')return rMgrSetup();if(S.mgrView==='assignments')return rAssignments();return rMgrHome();}
+  if(S.activeTab==='setup')return rStaffSetup();
   return rStaff();
 }
 
@@ -1226,16 +1290,217 @@ function rAssignments(){
 }
 
 // --- VET SETUP (with Services tab) ---------------------------
+let staffSetup={
+  profile:{prefix:'',first:'Charlene',last:'G.',suffix:'',phone:'(914) 555-0210',email:'charlene@sunrisestables.com',emergencyContact:'Jordan M. · (914) 555-0187'},
+  notifs:{taskReminders:true,scheduleChanges:true,urgentAlerts:true,chatMessages:true},
+  calendar:{googleConnected:false,iCalConnected:false,syncTasks:true,syncShifts:true,syncReminders:true},
+};
+
+let ownerSetup={
+  profile:{prefix:'',first:'Sarah',last:'K.',suffix:'',phone:'(914) 555-0143',email:'sarah.k@email.com',preferredContact:'App messaging'},
+  notifs:{healthAlerts:true,appointmentReminders:true,feedChanges:true,vetUpdates:true,chatMessages:true,invoices:true},
+  calendar:{googleConnected:false,iCalConnected:false,syncAppts:true,syncEventPasses:true,syncReminders:true},
+};
+
+let trainerSetup={
+  profile:{prefix:'',first:'Jordan',last:'Mitchell',suffix:'',credentials:'USEA Level 1, USHJA Certified',practice:'Jordan Mitchell Training',practicePhone:'(914) 555-0192',practiceEmail:'jordan@mitchelltraining.com',practiceAddress:'',website:'',phone:'(914) 555-0192',email:'jordan@mitchelltraining.com',specialty:'Hunter/Jumper, Dressage',certifications:'USEA Level 1, USHJA Certified Trainer'},
+  notifs:{sessionReminders:true,ownerUpdates:true,appointmentChanges:true,paymentReceipts:true,chatMessages:true},
+  payment:{method:'Bank account',account:'Chase \u00b7\u00b7\u00b7\u00b7 3318',invoicePrefix:'JMT',autoCharge:false,receiptEmail:true},
+  calendar:{googleConnected:false,iCalConnected:false,syncSessions:true,syncAppts:true,syncReminders:true},
+  connectedBarns:[{id:'b1',name:'Sunrise Stables',manager:'Jordan M.',horses:8,since:'Mar 2024',active:true},{id:'b3',name:'Blue Ridge Farm',manager:'Dana L.',horses:4,since:'Sep 2024',active:true}],
+};
+
+function rStaffSetup(){
+  const t=TH;
+  const tabs=[{key:'account',label:'Account'},{key:'calendar',label:'Calendar'},{key:'notifications',label:'Notifications'}];
+  S.staffSetupTab=S.staffSetupTab||'account';
+  const tabRow='<div style="display:flex;border-bottom:2px solid '+TH.mdOutlineVar+';margin:-12px -14px 14px;background:'+TH.mdSurf+';overflow-x:auto;">'+tabs.map(function(tab){return '<button onclick="S.staffSetupTab=\''+tab.key+'\';rerender()" style="font-family:\'DM Sans\',sans-serif;font-size:13px;font-weight:700;cursor:pointer;padding:10px 16px;background:transparent;color:'+(S.staffSetupTab===tab.key?t.T:t.TX3)+';border:none;border-bottom:'+(S.staffSetupTab===tab.key?'3px solid var(--md-primary)':'3px solid transparent')+';margin-bottom:-2px;white-space:nowrap;">'+tab.label+'</button>';}).join('')+'</div>';
+  let body='';
+  if(S.staffSetupTab==='account') body=rStaffSetupAccount();
+  else if(S.staffSetupTab==='calendar') body=rStaffSetupCalendar();
+  else body=rStaffSetupNotifs();
+  return tabRow+body;
+}
+
+function rStaffSetupAccount(){
+  var p=staffSetup.profile;
+  return rPersonCard(p,'staffSetup.profile',['',''])
+    +secBlock('Emergency contact',settingInput('Emergency contact','emergencyContact',p.emergencyContact||''));
+}
+
+function rCalendarConnections(cal,store){
+  var bs='width:100%;font-family:\'DM Sans\',sans-serif;font-size:13px;font-weight:700;cursor:pointer;padding:11px 16px;border-radius:var(--md-shape-md);display:flex;align-items:center;gap:10px;';
+  var gc=cal&&cal.googleConnected,ic=cal&&cal.iCalConnected;
+  var gcBtn=gc
+    ?('<button onclick="'+store+'.googleConnected=false;rerender()" style="'+bs+'background:var(--md-secondary-container);color:var(--md-secondary);border:1.5px solid var(--md-secondary)44;">'+msiIcon('event',18,'var(--md-secondary)')+'<span>Disconnect Google Calendar</span></button>')
+    :('<button onclick="'+store+'.googleConnected=true;rerender()" style="'+bs+'background:#fff;color:#3c4043;border:1.5px solid #dadce0;box-shadow:0 1px 3px rgba(0,0,0,0.1);"><svg width="18" height="18" viewBox="0 0 24 24" style="flex-shrink:0;"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg><span>Connect Google Calendar</span></button>');
+  var icBtn=ic
+    ?('<button onclick="'+store+'.iCalConnected=false;rerender()" style="'+bs+'background:var(--md-surface-variant);color:var(--md-on-surface-variant);border:1.5px solid var(--md-outline);">'+msiIcon('calendar_month',18,'var(--md-on-surface-variant)')+'<span>Disconnect Apple / iCal</span></button>')
+    :('<button onclick="'+store+'.iCalConnected=true;rerender()" style="'+bs+'background:var(--md-surface);color:var(--md-on-surface);border:1.5px solid var(--md-outline-variant);">'+msiIcon('calendar_month',18,'var(--md-primary)')+'<span>Connect Apple / iCal</span></button>');
+  return '<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);padding:14px 14px 12px;margin-bottom:14px;">'
+    +'<div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">Calendar connections</div>'
+    +'<div style="font-size:12px;color:var(--md-on-surface-dim);margin-bottom:12px;">Connect your calendar to sync events and get reminders where you already work.</div>'
+    +'<div style="display:flex;flex-direction:column;gap:8px;">'+gcBtn+icBtn+'</div>'
+    +'</div>';
+}
+
+function rStaffSetupCalendar(){
+  var cal=staffSetup.calendar;
+  return rCalendarConnections(cal,'staffSetup.calendar')+secBlock('Sync settings',settingToggle('Task schedule','Sync daily tasks and shift to calendar',cal.syncTasks,'staffSetup.calendar.syncTasks=!staffSetup.calendar.syncTasks;rerender()')+settingToggle('Shift schedule','Add shift start and end times',cal.syncShifts,'staffSetup.calendar.syncShifts=!staffSetup.calendar.syncShifts;rerender()')+settingToggle('Reminders','Task reminders for required items',cal.syncReminders,'staffSetup.calendar.syncReminders=!staffSetup.calendar.syncReminders;rerender()'));
+}
+
+function rStaffSetupNotifs(){
+  const n=staffSetup.notifs;
+  return secBlock('Reminders',settingToggle('Task reminders','Notifications for upcoming required tasks',n.taskReminders,'staffSetup.notifs.taskReminders=!staffSetup.notifs.taskReminders;rerender()')+settingToggle('Schedule changes','When your shift or task list is updated',n.scheduleChanges,'staffSetup.notifs.scheduleChanges=!staffSetup.notifs.scheduleChanges;rerender()')+settingToggle('Urgent barn alerts','Colic, injuries, and emergencies',n.urgentAlerts,'staffSetup.notifs.urgentAlerts=!staffSetup.notifs.urgentAlerts;rerender()'))+secBlock('Communication',settingToggle('Chat messages','New messages from the barn team',n.chatMessages,'staffSetup.notifs.chatMessages=!staffSetup.notifs.chatMessages;rerender()'));
+}
+
+function rOwnerSetup(){
+  const t=TH;
+  const tabs=[{key:'account',label:'Account'},{key:'calendar',label:'Calendar'},{key:'notifications',label:'Notifications'}];
+  S.ownerSetupTab=S.ownerSetupTab||'account';
+  const tabRow='<div style="display:flex;border-bottom:2px solid '+TH.mdOutlineVar+';margin:-12px -14px 14px;background:'+TH.mdSurf+';overflow-x:auto;">'+tabs.map(function(tab){return '<button onclick="S.ownerSetupTab=\''+tab.key+'\';rerender()" style="font-family:\'DM Sans\',sans-serif;font-size:13px;font-weight:700;cursor:pointer;padding:10px 16px;background:transparent;color:'+(S.ownerSetupTab===tab.key?t.T:t.TX3)+';border:none;border-bottom:'+(S.ownerSetupTab===tab.key?'3px solid var(--md-primary)':'3px solid transparent')+';margin-bottom:-2px;white-space:nowrap;">'+tab.label+'</button>';}).join('')+'</div>';
+  let body='';
+  if(S.ownerSetupTab==='account') body=rOwnerSetupAccount();
+  else if(S.ownerSetupTab==='calendar') body=rOwnerSetupCalendar();
+  else body=rOwnerSetupNotifs();
+  return tabRow+body;
+}
+
+function rOwnerSetupAccount(){
+  var p=ownerSetup.profile;
+  return rPersonCard(p,'ownerSetup.profile',['','']);
+}
+
+function rOwnerSetupCalendar(){
+  var cal=ownerSetup.calendar;
+  return rCalendarConnections(cal,'ownerSetup.calendar')+secBlock('Sync settings',settingToggle('Appointments','Vet and farrier visits for your horses',cal.syncAppts,'ownerSetup.calendar.syncAppts=!ownerSetup.calendar.syncAppts;rerender()')+settingToggle('Event passes','Competition and event dates',cal.syncEventPasses,'ownerSetup.calendar.syncEventPasses=!ownerSetup.calendar.syncEventPasses;rerender()')+settingToggle('Reminders','24h reminders before appointments',cal.syncReminders,'ownerSetup.calendar.syncReminders=!ownerSetup.calendar.syncReminders;rerender()'));
+}
+
+function rOwnerSetupNotifs(){
+  const n=ownerSetup.notifs;
+  return secBlock('Horse health',settingToggle('Health alerts','Injuries, illness, and urgent observations',n.healthAlerts,'ownerSetup.notifs.healthAlerts=!ownerSetup.notifs.healthAlerts;rerender()')+settingToggle('Vet updates','When a vet visits or logs a vaccination',n.vetUpdates,'ownerSetup.notifs.vetUpdates=!ownerSetup.notifs.vetUpdates;rerender()')+settingToggle('Feed changes','Updates to your horse\'s feed or medication',n.feedChanges,'ownerSetup.notifs.feedChanges=!ownerSetup.notifs.feedChanges;rerender()'))+secBlock('Appointments & billing',settingToggle('Appointment reminders','24h before vet or farrier visits',n.appointmentReminders,'ownerSetup.notifs.appointmentReminders=!ownerSetup.notifs.appointmentReminders;rerender()')+settingToggle('Invoices','When a new invoice is ready',n.invoices,'ownerSetup.notifs.invoices=!ownerSetup.notifs.invoices;rerender()'))+secBlock('Communication',settingToggle('Chat messages','New messages from the barn team',n.chatMessages,'ownerSetup.notifs.chatMessages=!ownerSetup.notifs.chatMessages;rerender()'));
+}
+
+function rTrainerSetup(){
+  const t=TH;
+  const tabs=[{key:'account',label:'Account'},{key:'services',label:'Services'},{key:'barns',label:'Barns'},{key:'payments',label:'Payments'},{key:'calendar',label:'Calendar'},{key:'notifications',label:'Notifications'}];
+  S.trainerSetupTab=S.trainerSetupTab||'account';
+  if(svcEditId!==null) S.trainerSetupTab='services';
+  const tabRow='<div style="display:flex;border-bottom:2px solid '+TH.mdOutlineVar+';margin:-12px -14px 14px;background:'+TH.mdSurf+';overflow-x:auto;">'+tabs.map(function(tab){return '<button onclick="S.trainerSetupTab=\''+tab.key+'\';rerender()" style="font-family:\'DM Sans\',sans-serif;font-size:13px;font-weight:700;cursor:pointer;padding:10px 12px;background:transparent;color:'+(S.trainerSetupTab===tab.key?t.T:t.TX3)+';border:none;border-bottom:'+(S.trainerSetupTab===tab.key?'3px solid var(--md-primary)':'3px solid transparent')+';margin-bottom:-2px;white-space:nowrap;">'+tab.label+'</button>';}).join('')+'</div>';
+  let body='';
+  if(S.trainerSetupTab==='account') body=rTrainerSetupAccount();
+  else if(S.trainerSetupTab==='services') body=rServicesTab();
+  else if(S.trainerSetupTab==='barns') body=rTrainerSetupBarns();
+  else if(S.trainerSetupTab==='payments') body=rTrainerSetupPayments();
+  else if(S.trainerSetupTab==='calendar') body=rTrainerSetupCalendar();
+  else body=rTrainerSetupNotifs();
+  return tabRow+body;
+}
+
+function rTrainerSetupAccount(){
+  var p=trainerSetup.profile;
+  var creds='<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);padding:14px 14px 10px;margin-bottom:14px;">'
+    +'<div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">Credentials &amp; specialties</div>'
+    +settingInput('Specialties','specialty',p.specialty||'')
+    +settingInput('Certifications','certifications',p.certifications||'')
+    +'</div>';
+  return rPersonCard(p,'trainerSetup.profile',['','USEA','USHJA','BHS','FEI'])
+    +rPracticeCard(p,'trainerSetup.profile','Business')
+    +creds;
+}
+
+function rTrainerSetupBarns(){
+  const barns=trainerSetup.connectedBarns;
+  const info='<div style="background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:12px;font-weight:600;color:var(--md-on-primary-container);margin-bottom:12px;">'+barns.filter(function(b){return b.active;}).length+' active barn connections.</div>';
+  const cards=barns.map(function(b){return '<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);padding:12px 14px;margin-bottom:9px;display:flex;align-items:center;gap:10px;"><div style="flex:1;"><div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">'+b.name+'</div><div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:2px;">'+b.horses+' horses \u00b7 Since '+b.since+'</div></div><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:'+(b.active?'var(--md-secondary-container)':'var(--md-surface-variant)')+';color:'+(b.active?'var(--md-secondary)':'var(--md-on-surface-dim)')+';">'+(b.active?'Active':'Inactive')+'</span></div>';}).join('');
+  return info+cards+'<button style="width:100%;background:var(--md-surface);border:2px dashed var(--md-outline);border-radius:10px;padding:11px;color:var(--md-primary);font-size:13px;font-family:\'DM Sans\',sans-serif;cursor:pointer;font-weight:700;">+ Connect a barn</button>';
+}
+
+function rTrainerSetupCalendar(){
+  var cal=trainerSetup.calendar;
+  return rCalendarConnections(cal,'trainerSetup.calendar')+secBlock('Sync settings',settingToggle('Training sessions','Add sessions to your calendar',cal.syncSessions,'trainerSetup.calendar.syncSessions=!trainerSetup.calendar.syncSessions;rerender()')+settingToggle('Appointments','Barn visits and vet appointments',cal.syncAppts,'trainerSetup.calendar.syncAppts=!trainerSetup.calendar.syncAppts;rerender()')+settingToggle('Reminders','24h reminders before sessions',cal.syncReminders,'trainerSetup.calendar.syncReminders=!trainerSetup.calendar.syncReminders;rerender()'));
+}
+
+function rTrainerSetupPayments(){
+  const pay=trainerSetup.payment;
+  const prefs=secBlock('Preferences',settingToggle('Auto-charge on approval',"Charge owner's card when they approve",pay.autoCharge,'trainerSetup.payment.autoCharge=!trainerSetup.payment.autoCharge;rerender()')+settingToggle('Email receipts','Send receipt after each payment',pay.receiptEmail,'trainerSetup.payment.receiptEmail=!trainerSetup.payment.receiptEmail;rerender()'));
+  return '<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);overflow:hidden;margin-bottom:14px;"><div style="padding:20px 16px;text-align:center;"><div style="font-size:14px;font-weight:700;color:var(--md-on-surface);margin-bottom:6px;">Connect Stripe</div><div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:14px;">Accept payments from owners directly in NayNay</div><button style="background:#635BFF;color:#fff;border:none;padding:11px 22px;border-radius:var(--md-shape-md);font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Connect Stripe</button></div></div>'+prefs;
+}
+
+function rTrainerSetupNotifs(){
+  const n=trainerSetup.notifs;
+  const comms=secBlock('Communication',settingToggle('Chat messages','New messages from barn teams and owners',n.chatMessages,'trainerSetup.notifs.chatMessages=!trainerSetup.notifs.chatMessages;rerender()'));return secBlock('Reminders',settingToggle('Session reminders','Notifications before upcoming sessions',n.sessionReminders,'trainerSetup.notifs.sessionReminders=!trainerSetup.notifs.sessionReminders;rerender()')+settingToggle('Owner updates','When owners message or make changes',n.ownerUpdates,'trainerSetup.notifs.ownerUpdates=!trainerSetup.notifs.ownerUpdates;rerender()'))+comms;
+}
+
+let mgrSetup={
+  profile:{prefix:'',first:'Jordan',last:'M.',suffix:'',practice:'Sunrise Stables',practicePhone:'(914) 555-0187',practiceEmail:'jordan@sunrisestables.com',practiceAddress:'Sunrise Stables, Greenwich CT',website:'',phone:'(914) 555-0187',email:'jordan@sunrisestables.com'},
+  notifs:{visitRequests:true,staffUpdates:true,vetAlerts:true,paymentReceipts:true,chatMessages:true},
+  payment:{method:'Bank account',account:'Chase \u00b7\u00b7\u00b7\u00b7 5591',invoicePrefix:'SSB',autoCharge:false,receiptEmail:true},
+  calendar:{googleConnected:false,iCalConnected:false,syncTasks:true,syncVisits:true,syncReminders:true},
+};
+
+function rMgrSetup(){
+  const t=TH;
+  const tabs=[{key:'account',label:'Account'},{key:'tasks',label:'Tasks'},{key:'services',label:'Services'},{key:'payments',label:'Payments'},{key:'calendar',label:'Calendar'},{key:'notifications',label:'Notifications'}];
+  S.mgrSetupTab=S.mgrSetupTab||'tasks';
+  const tabRow='<div style="display:flex;border-bottom:2px solid '+TH.mdOutlineVar+';margin:-12px -14px 14px;background:'+TH.mdSurf+';overflow-x:auto;">'+tabs.map(function(tab){return '<button onclick="S.mgrSetupTab=\''+tab.key+'\';rerender()" style="font-family:\'DM Sans\',sans-serif;font-size:13px;font-weight:700;cursor:pointer;padding:10px 12px;background:transparent;color:'+(S.mgrSetupTab===tab.key?t.T:t.TX3)+';border:none;border-bottom:'+(S.mgrSetupTab===tab.key?'3px solid var(--md-primary)':'3px solid transparent')+';margin-bottom:-2px;white-space:nowrap;">'+tab.label+'</button>';}).join('')+'</div>';
+  let body='';
+  if(S.mgrSetupTab==='account') body=rMgrSetupAccount();
+  else if(S.mgrSetupTab==='tasks') body=rMgrSetupTasks();
+  else if(S.mgrSetupTab==='services') body=rServicesTab();
+  else if(S.mgrSetupTab==='payments') body=rMgrSetupPayments();
+  else if(S.mgrSetupTab==='calendar') body=rMgrSetupCalendar();
+  else body=rMgrSetupNotifs();
+  return tabRow+body;
+}
+
+function rMgrSetupAccount(){
+  var p=mgrSetup.profile;
+  var barn='<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);padding:14px 14px 10px;margin-bottom:14px;">'
+    +'<div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">Barn information</div>'
+    +settingInput('Barn name','practice',p.practice||'')
+    +settingInput('Address','practiceAddress',p.practiceAddress||'')
+    +settingInput('Barn phone','practicePhone',p.practicePhone||'')
+    +settingInput('Barn email','practiceEmail',p.practiceEmail||'')
+    +'</div>';
+  return rPersonCard(p,'mgrSetup.profile',['',''])+barn;
+}
+
+function rMgrSetupTasks(){
+  const t=TH;
+  const tasksSection=rTasksTab();
+  const isExp=S.taskScheduleExpanded;
+  const schedHeader='<div onclick="S.taskScheduleExpanded=!S.taskScheduleExpanded;rerender()" style="display:flex;align-items:center;justify-content:space-between;background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:'+(isExp?'12px 12px 0 0':'12px')+';padding:12px 14px;margin-top:12px;cursor:pointer;"><div><div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">Task schedule</div><div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:1px;">Configure seasons and active days per task</div></div>'+chevron(isExp)+'</div>';
+  const schedBody=isExp?('<div style="background:var(--md-surface-variant);border:1.5px solid var(--md-outline-variant);border-top:none;border-radius:0 0 12px 12px;padding:12px 14px;">'+rScheduleTab()+'</div>'):'';
+  return tasksSection+schedHeader+schedBody;
+}
+
+function rMgrSetupCalendar(){
+  var cal=mgrSetup.calendar;
+  return rCalendarConnections(cal,'mgrSetup.calendar')+secBlock('Sync settings',settingToggle('Task schedule','Sync daily task list to calendar',cal.syncTasks,'mgrSetup.calendar.syncTasks=!mgrSetup.calendar.syncTasks;rerender()')+settingToggle('Professional visits','Vet, farrier, and trainer visits',cal.syncVisits,'mgrSetup.calendar.syncVisits=!mgrSetup.calendar.syncVisits;rerender()')+settingToggle('Reminders','24h reminders before visits',cal.syncReminders,'mgrSetup.calendar.syncReminders=!mgrSetup.calendar.syncReminders;rerender()'));
+}
+
+function rMgrSetupPayments(){
+  const pay=mgrSetup.payment;
+  const prefs=secBlock('Preferences',settingToggle('Auto-charge on approval','Charge on approval',pay.autoCharge,'mgrSetup.payment.autoCharge=!mgrSetup.payment.autoCharge;rerender()')+settingToggle('Email receipts','Send receipt after each payment',pay.receiptEmail,'mgrSetup.payment.receiptEmail=!mgrSetup.payment.receiptEmail;rerender()'));
+  return '<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);overflow:hidden;margin-bottom:14px;"><div style="padding:20px 16px;text-align:center;"><div style="font-size:14px;font-weight:700;color:var(--md-on-surface);margin-bottom:6px;">Connect Stripe</div><div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:14px;">Accept barn payments directly in NayNay</div><button style="background:#635BFF;color:#fff;border:none;padding:11px 22px;border-radius:var(--md-shape-md);font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Connect Stripe</button></div></div>'+prefs;
+}
+
+function rMgrSetupNotifs(){
+  const n=mgrSetup.notifs;
+  const comms=secBlock('Communication',settingToggle('Chat messages','New messages from owners, vets, and farriers',n.chatMessages,'mgrSetup.notifs.chatMessages=!mgrSetup.notifs.chatMessages;rerender()'));return secBlock('Barn notifications',settingToggle('Visit requests','When professionals request a barn visit',n.visitRequests,'mgrSetup.notifs.visitRequests=!mgrSetup.notifs.visitRequests;rerender()')+settingToggle('Staff updates','Task completions and check-ins',n.staffUpdates,'mgrSetup.notifs.staffUpdates=!mgrSetup.notifs.staffUpdates;rerender()')+settingToggle('Vet alerts','Vaccination and health alerts',n.vetAlerts,'mgrSetup.notifs.vetAlerts=!mgrSetup.notifs.vetAlerts;rerender()'))+comms;
+}
+
 function rVetSetup(){
   const t=TH;
-  const tabs=[{key:'practice',label:'Practice'},{key:'services',label:'Services'},{key:'barns',label:'Barns'},{key:'payments',label:'Payments'},{key:'calendar',label:'Calendar'},{key:'notifications',label:'Alerts'}];
-  S.vetSetupTab=S.vetSetupTab||'practice';
+  const tabs=[{key:'account',label:'Account'},{key:'services',label:'Services'},{key:'barns',label:'Barns'},{key:'payments',label:'Payments'},{key:'calendar',label:'Calendar'},{key:'notifications',label:'Notifications'}];
+  S.vetSetupTab=S.vetSetupTab||'account';
   // If we're in service edit/create and NOT on services tab, force it
   if(svcEditId!==null)S.vetSetupTab='services';
   const tabRow=`<div style="display:flex;border-bottom:2px solid ${TH.mdOutlineVar};margin:-12px -14px 14px;background:${TH.mdSurf};overflow-x:auto;">${tabs.map(tab=>`<button onclick="S.vetSetupTab='${tab.key}';svcEditId=null;rerender()" style="flex:1;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:11px 5px;background:transparent;color:${S.vetSetupTab===tab.key?t.T:t.TX3};border:none;border-bottom:${S.vetSetupTab===tab.key?`3px solid var(--md-primary)`:'3px solid transparent'};margin-bottom:-2px;white-space:nowrap;">${tab.label}</button>`).join('')}</div>`;
   let body='';
   if(S.vetSetupTab==='services') body=rServicesTab();
-  else if(S.vetSetupTab==='practice') body=rVetSetupPractice();
+  else if(S.vetSetupTab==='account') body=rVetSetupPractice();
   else if(S.vetSetupTab==='barns') body=rVetSetupBarns();
   else if(S.vetSetupTab==='payments') body=rVetSetupPayments();
   else if(S.vetSetupTab==='calendar') body=rVetSetupCalendar();
@@ -1333,7 +1598,21 @@ function saveSvc(){if(!window._svcScratch)return;if(svcEditId==='new'){const ns=
 function deleteSvc(id){vetServices=vetServices.filter(s=>s.id!==id);svcEditId=null;window._svcScratch=null;rerender();}
 
 // --- OTHER VET VIEWS ------------------------------------------
-function rVetSetupPractice(){const t=TH;const p=vetSetup.profile;const profile=secBlock('Your profile',`<div style="display:flex;align-items:center;gap:12px;padding:12px 0 8px;border-bottom:1px solid var(--md-outline-variant);"><div style="width:48px;height:48px;border-radius:50%;background:var(--md-surface-variant);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--md-primary);flex-shrink:0;">KG</div><div style="flex:1;"><div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">${p.name}</div><div style="font-size:11px;color:var(--md-on-surface-dim);">${p.credentials}</div></div></div>`+settingInput('Full name','name',p.name)+settingInput('Credentials','credentials',p.credentials)+settingInput('License','license',p.license)+settingInput('Phone','phone',p.phone)+settingInput('Email','email',p.email));const practice=secBlock('Practice',settingInput('Practice name','practice',p.practice));return profile+practice+`<button style="width:100%;background:var(--md-primary);color:#fff;border:none;padding:12px;border-radius:var(--md-shape-md);font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;">Save profile</button><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);margin-top:12px;overflow:hidden;"><div style="padding:10px 14px;border-bottom:1.5px solid var(--md-outline-variant);background:var(--md-surface-variant);font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;">Account</div><div style="padding:8px 14px;"><button style="width:100%;background:none;border:1.5px solid var(--md-error);padding:10px;border-radius:var(--md-shape-sm);font-size:13px;font-weight:700;color:var(--md-error);font-family:'DM Sans',sans-serif;cursor:pointer;margin:6px 0;">Sign out</button></div></div>`;}
+function rVetSetupPractice(){
+  var p=vetSetup.profile;
+  var creds='<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);padding:14px 14px 10px;margin-bottom:14px;">'
+    +'<div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">Credentials &amp; licenses</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
+    +settingInput('License number','license',p.license||'')
+    +settingInput('State','licenseState',p.licenseState||'')
+    +'</div>'
+    +settingInput('Credentials','credentials',p.credentials||'')
+    +'</div>';
+  return rPersonCard(p,'vetSetup.profile',['DVM','VMD','PhD','MS','DVM PhD',''])
+    +rPracticeCard(p,'vetSetup.profile','Practice')
+    +creds;
+}
+
 function rVetSetupBarns(){const t=TH;const barns=vetSetup.connectedBarns;const info=`<div style="background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:12px;font-weight:600;color:var(--md-on-primary-container);margin-bottom:12px;">${barns.filter(b=>b.active).length} active barn connections.</div>`;const cards=barns.map(b=>`<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);margin-bottom:10px;overflow:hidden;opacity:${b.active?1:0.65};"><div style="padding:12px 14px;display:flex;align-items:center;gap:10px;"><div style="width:38px;height:38px;border-radius:10px;background:var(--md-surface-variant);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="var(--md-primary)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 22V12h6v10" stroke="var(--md-primary)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">${b.name}</div><div style="font-size:11px;color:var(--md-on-surface-dim);">${b.manager} · ${b.horses} horses · Since ${b.since}</div></div><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:${b.active?t.SUCBG:t.SUB};color:${b.active?t.SUC:t.TX3};border:1px solid ${b.active?TH.mdSec+'44':t.BRD};">${b.active?'Active':'Inactive'}</span></div><div style="border-top:1px solid var(--md-outline-variant);padding:8px 14px;display:flex;gap:8px;"><button style="flex:1;background:none;border:1.5px solid var(--md-outline-variant);padding:7px;border-radius:8px;font-size:12px;font-weight:600;color:var(--md-on-surface-variant);font-family:'DM Sans',sans-serif;cursor:pointer;">View horses</button><button style="flex:1;background:none;border:1.5px solid ${b.active?t.DNG:t.T};padding:7px;border-radius:8px;font-size:12px;font-weight:600;color:${b.active?t.DNG:t.T};font-family:'DM Sans',sans-serif;cursor:pointer;">${b.active?'Disconnect':'Reconnect'}</button></div></div>`).join('');return info+cards+`<button style="width:100%;background:var(--md-surface);border:2px dashed var(--md-outline);border-radius:10px;padding:11px;color:var(--md-primary);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:700;">+ Connect a new barn</button>`;}
 function rVetSetupPayments(){
   const t=TH;const pay=vetSetup.payment;
@@ -1350,17 +1629,7 @@ function rVetSetupNotifs(){const t=TH;const n=vetSetup.notifs;const clinical=sec
 
 function rVetUnauth(){const t=TH;const v=vetVaxData;const isEdit=S.vetEditMode;const banner=`<div style="background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:14px;padding:13px 16px;margin-bottom:14px;"><div style="font-size:13px;color:var(--md-on-surface-variant);line-height:1.6;"><span style="font-weight:700;color:var(--md-on-surface);">${CURRENT_USER_NAME}</span> has asked that you confirm vaccination details for <span style="font-weight:700;color:var(--md-primary);">Rivendell</span>.</div></div>`;const editBtn=`<button onclick="S.vetEditMode=${!isEdit};rerender()" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:5px 12px;border-radius:20px;background:${isEdit?t.TX:t.CARD};color:${isEdit?'#fff':t.T};border:1.5px solid ${isEdit?t.TX:t.T};">${isEdit?'Cancel':'Edit'}</button>`;function fld(label,key,value,type='text'){if(isEdit)return `<div style="margin-bottom:10px;"><label style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;display:block;margin-bottom:4px;">${label}</label><input type="${type}" value="${value}" oninput="vetVaxData['${key}']=this.value" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:8px;padding:8px 12px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>`;const dv=(type==='date')?formatDate(value):value;return `<div><div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;margin-bottom:2px;">${label}</div><div style="font-size:13px;font-weight:500;color:var(--md-on-surface);">${dv||'—'}</div></div>`;}const vaccineCard=`<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);overflow:hidden;margin-bottom:12px;"><div style="padding:11px 16px;border-bottom:1px solid var(--md-outline-variant);background:var(--md-surface-container);display:flex;align-items:center;justify-content:space-between;"><div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;">Vaccine</div>${editBtn}</div><div style="padding:14px 16px;">${isEdit?`<div style="margin-bottom:12px;"><label style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;display:block;margin-bottom:4px;">Vaccine name</label><input type="text" value="${v.vaccine}" oninput="vetVaxData.vaccine=this.value" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:8px;padding:8px 12px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>`:`<div style="font-size:14px;font-weight:700;color:var(--md-on-surface);margin-bottom:12px;line-height:1.4;">${v.vaccine}</div>`}<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">${fld('Lot','lot',v.lot)}${fld('Expiry','expiry',v.expiry)}${fld('Administered','administeredOn',v.administeredOn,'date')}${fld('Next due','nextDue',v.nextDue,'date')}</div></div></div>`;const vetCard='<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);overflow:hidden;margin-bottom:18px;"><div style="padding:11px 16px;border-bottom:1px solid var(--md-outline-variant);background:var(--md-surface-container)"><div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;">Administered by</div></div><div style="padding:14px 16px;display:flex;align-items:flex-start;gap:12px;"><div style="width:40px;height:40px;border-radius:50%;background:var(--md-primary-container);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:var(--md-primary);">'+(v.vetPrefix==='Dr.'?'KG':'??')+'</div><div style="flex:1;">'
   +(isEdit
-    ?'<div style="display:grid;grid-template-columns:80px 1fr;gap:6px;margin-bottom:6px;">'
-    +'<div><label style="font-size:9px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;display:block;margin-bottom:3px;">Prefix</label><input type="text" value="'+v.vetPrefix+'" oninput="vetVaxData.vetPrefix=this.value" placeholder="Dr." style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:7px;padding:7px 8px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>'
-    +'<div><label style="font-size:9px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;display:block;margin-bottom:3px;">First name</label><input type="text" value="'+v.vetFirst+'" oninput="vetVaxData.vetFirst=this.value" placeholder="First name" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:7px;padding:7px 8px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>'
-    +'</div>'
-    +'<div style="display:grid;grid-template-columns:1fr 80px;gap:6px;margin-bottom:8px;">'
-    +'<div><label style="font-size:9px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;display:block;margin-bottom:3px;">Last name</label><input type="text" value="'+v.vetLast+'" oninput="vetVaxData.vetLast=this.value" placeholder="Last name" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:7px;padding:7px 8px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>'
-    +'<div><label style="font-size:9px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;display:block;margin-bottom:3px;">Suffix</label><select oninput="vetVaxData.vetSuffix=this.value" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:7px;padding:7px 6px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;">'
-    +['DVM','VMD','PhD','MS','DVM PhD',''].map(function(s){return '<option'+(v.vetSuffix===s?' selected':'')+'>'+s+'</option>';}).join('')
-    +'</select></div>'
-    +'</div>'
-    +'<input type="text" value="'+v.vetPhone+'" oninput="vetVaxData.vetPhone=this.value" placeholder="Phone number" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:8px;padding:7px 10px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/>'
+    ?rPersonCard({prefix:v.vetPrefix,first:v.vetFirst,last:v.vetLast,suffix:v.vetSuffix,phone:v.vetPhone,email:''},'vetVaxData',['DVM','VMD','PhD','MS','DVM PhD',''])
     :'<div style="font-size:14px;font-weight:700;color:var(--md-on-surface);margin-bottom:3px;">'+(v.vetPrefix?v.vetPrefix+' ':'')+v.vetFirst+' '+v.vetLast+(v.vetSuffix?', '+v.vetSuffix:'')+'</div><div style="font-size:12px;color:var(--md-on-surface-dim);">'+v.vetPhone+'</div>'
   )
   +'</div></div></div>';const sig=`<div style="margin-bottom:14px;"><div style="font-size:11px;font-weight:700;color:var(--md-on-surface-variant);text-transform:uppercase;margin-bottom:7px;">Signature</div><div style="background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:12px;height:70px;display:flex;align-items:center;justify-content:center;"><span style="font-size:12px;color:var(--md-on-surface-dim);font-style:italic;">Sign here</span></div></div>`;const ctas=`<div style="padding-bottom:8px;"><button onclick="S.vetConfirmPage='confirmed';rerender()" style="width:100%;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer;border:none;padding:14px;border-radius:14px;background:var(--md-primary);color:#fff;margin-bottom:10px;">Confirm vaccination</button><div style="text-align:center;"><button onclick="S.vetConfirmPage='declined';rerender()" style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:var(--md-on-surface-dim);background:none;border:none;cursor:pointer;text-decoration:underline;">I cannot confirm these details</button></div></div>`;return banner+vaccineCard+vetCard+sig+ctas;}
@@ -1493,7 +1762,7 @@ function submitVitals(){
   const displayDate=(function(){const d=new Date((vs.date||now.toISOString().split('T')[0])+'T00:00:00');const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return mo[d.getMonth()]+' '+d.getDate();})();
   const displayTime=(function(){const tt=vs.time||(now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0'));const [h,m]=tt.split(':');const hr=parseInt(h);return (hr%12||12)+':'+m+' '+(hr>=12?'PM':'AM');})();
   triggerNotify('obs',{
-    icon:'🩺',
+    icon:msiIcon('stethoscope',22,'var(--md-secondary)'),
     title:'Vitals recorded for '+horse.name,
     subtitle:displayDate+' at '+displayTime,
     detail:filled.length+' measurement'+(filled.length!==1?'s':'')+' logged'+(vs.notes?' · with notes':''),
@@ -1694,7 +1963,7 @@ function rRequestAppointmentForm(){
   }
 
   // Horse picker
-  const ownerHorses=[{id:'h3',name:'Luna'},{id:'h4',name:'Rivendell'}];
+  const ownerHorses=[{id:'h3',photo:'https://images.pexels.com/photos/1289659/pexels-photo-1289659.jpeg?w=400&h=400&fit=crop',name:'Luna'},{id:'h4',name:'Rivendell'}];
   const horseSel='<div style="margin-bottom:13px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:6px;">Horse</label>'
     +'<div style="display:flex;gap:8px;">'+ownerHorses.map(function(h){const sel=ra.horseId===h.id;return '<button onclick="window.reqApptState.horseId=\''+h.id+'\';rerender()" style="font-family:\'DM Sans\',sans-serif;flex:1;padding:10px;border-radius:10px;border:1.5px solid '+(sel?t.T:t.BRD)+';background:'+(sel?t.TL:t.CARD)+';font-size:13px;font-weight:700;color:'+(sel?t.T:t.TX)+';cursor:pointer;">'+h.name+'</button>';}).join('')+'</div></div>';
 
@@ -1744,23 +2013,23 @@ function getNotifyGroups(ctx, role){
   if(ctx==='obs'||ctx==='obs_urgent'){
     const urgent=ctx==='obs_urgent';
     return [
-      {id:'vet',      label:'Veterinarian',    sub:'Dr. Konstantine Goudz', icon:'🩺', recommended:urgent},
-      {id:'manager',  label:'Barn Manager',    sub:'Charlene G.',           icon:'🏠', recommended:true,  hideFor:'manager'},
-      {id:'staff',    label:'Staff',           sub:'All assigned staff',    icon:'👷', recommended:false, hideFor:'staff'},
-      {id:'trainers', label:'Trainer',         sub:'Jordan M.',             icon:'🎯', recommended:urgent},
-      {id:'owners',   label:'Horse Owner',     sub:'Owner of this horse',   icon:'👤', recommended:true},
+      {id:'vet',      label:'Veterinarian',    sub:'Dr. Konstantine Goudz', icon:msiIcon('stethoscope'), recommended:urgent},
+      {id:'manager',  label:'Barn Manager',    sub:'Charlene G.',           icon:msiIcon('home'), recommended:true,  hideFor:'manager'},
+      {id:'staff',    label:'Staff',           sub:'All assigned staff',    icon:msiIcon('engineering'), recommended:false, hideFor:'staff'},
+      {id:'trainers', label:'Trainer',         sub:'Jordan M.',             icon:msiIcon('sports_score'), recommended:urgent},
+      {id:'owners',   label:'Horse Owner',     sub:'Owner of this horse',   icon:msiIcon('person'), recommended:true},
     ];
   }
   if(ctx==='visit_confirmed'){
     return [
-      {id:'owners',   label:'Horse Owners',    sub:'All owners at this barn',icon:'👤',recommended:true},
-      {id:'staff',    label:'Staff',           sub:'All barn staff',         icon:'👷',recommended:true},
-      {id:'trainers', label:'Trainers',        sub:'All trainers',           icon:'🎯',recommended:false},
+      {id:'owners',   label:'Horse Owners',    sub:'All owners at this barn',icon:msiIcon('person'),recommended:true},
+      {id:'staff',    label:'Staff',           sub:'All barn staff',         icon:msiIcon('engineering'),recommended:true},
+      {id:'trainers', label:'Trainers',        sub:'All trainers',           icon:msiIcon('sports_score'),recommended:false},
     ];
   }
   if(ctx==='visit_requested'){
     return [
-      {id:'manager',  label:'Barn Manager',    sub:'Charlene G.',            icon:'🏠',recommended:true},
+      {id:'manager',  label:'Barn Manager',    sub:'Charlene G.',            icon:msiIcon('home'),recommended:true},
     ];
   }
   return [];
@@ -1782,7 +2051,7 @@ function rNotifyStep(){
     +'</div>';
 
   const summaryCard='<div style="background:'+(sm.urgent?t.DNGBG:t.SUCBG)+';border:1.5px solid '+(sm.urgent?TH.mdErr+'44':TH.mdSec+'44')+';border-radius:14px;padding:14px 15px;margin-bottom:14px;display:flex;gap:11px;align-items:flex-start;">'
-    +'<div style="font-size:26px;flex-shrink:0;">'+( sm.icon||'✓')+'</div>'
+    +'<div style="font-size:26px;flex-shrink:0;">'+( sm.icon||msiIcon('check_circle',26,'var(--md-secondary)'))+'</div>'
     +'<div style="flex:1;">'
     +'<div style="font-size:14px;font-weight:700;color:var(--md-on-surface);margin-bottom:2px;">'+( sm.title||'Done')+'</div>'
     +(sm.subtitle?'<div style="font-size:13px;color:var(--md-on-surface-variant);margin-bottom:2px;">'+sm.subtitle+'</div>':'')
@@ -1842,16 +2111,16 @@ function triggerNotify(context, summary, onDone){
 if(!window.obsState) window.obsState={horseId:'',obsType:'',notes:'',photos:[],videos:[],date:'',time:''};
 
 const OBS_TYPES=[
-  {id:'laceration',     label:'Laceration',       icon:'🩹', color:'var(--md-error)', bg:'var(--md-error-container)',  urgent:false, desc:'Cuts, wounds, or skin tears'},
-  {id:'swelling',       label:'Swelling',          icon:'🔴', color:'var(--md-warning)', bg:'var(--md-warning-container)',  urgent:false, desc:'Localized swelling or inflammation'},
-  {id:'lameness',       label:'Lameness',          icon:'🦵', color:'var(--md-tertiary)', bg:'var(--md-tertiary-container)',  urgent:false, desc:'Gait irregularity, favoring a leg'},
-  {id:'nasal-discharge',label:'Nasal Discharge',   icon:'💧', color:'var(--md-tertiary)', bg:'var(--md-tertiary-container)',  urgent:false, desc:'Runny nose or nasal discharge'},
-  {id:'hives',          label:'Hives',             icon:'🔶', color:'var(--md-warning)', bg:'var(--md-warning-container)',  urgent:false, desc:'Raised welts or allergic reaction'},
-  {id:'eye',            label:'Eye Issue',         icon:'👁',  color:'var(--md-secondary)', bg:'var(--md-secondary-container)',  urgent:false, desc:'Discharge, cloudiness, or swelling'},
-  {id:'choke',          label:'Choke',             icon:'⚠️',  color:'var(--md-error)', bg:'var(--md-error-container)',  urgent:true,  desc:'Esophageal obstruction'},
-  {id:'colic',          label:'Colic',             icon:'🚨', color:'var(--md-error)', bg:'var(--md-error-container)',  urgent:true,  desc:'Abdominal pain — call vet now'},
-  {id:'wound',          label:'Open Wound',        icon:'🩸', color:'var(--md-error)', bg:'var(--md-error-container)',  urgent:false, desc:'Bleeding or open skin injury'},
-  {id:'other',          label:'Other',             icon:'📋', color:'var(--md-on-surface-variant)', bg:'var(--md-surface-variant)',  urgent:false, desc:'Describe in notes below'},
+  {id:'laceration',     label:'Laceration',       icon:'<span class=\"msi\" style=\"color:inherit;font-size:28px;margin-bottom:4px;display:block;line-height:1;\">healing</span>', color:'var(--md-error)', bg:'var(--md-error-container)',  urgent:false, desc:'Cuts, wounds, or skin tears'},
+  {id:'swelling',       label:'Swelling',          icon:'<span class=\"msi\" style=\"color:inherit;font-size:28px;margin-bottom:4px;display:block;line-height:1;\">water_drop</span>', color:'var(--md-warning)', bg:'var(--md-warning-container)',  urgent:false, desc:'Localized swelling or inflammation'},
+  {id:'lameness',       label:'Lameness',          icon:'<span class=\"msi\" style=\"color:inherit;font-size:28px;margin-bottom:4px;display:block;line-height:1;\">directions_walk</span>', color:'var(--md-tertiary)', bg:'var(--md-tertiary-container)',  urgent:false, desc:'Gait irregularity, favoring a leg'},
+  {id:'nasal-discharge',label:'Nasal Discharge',   icon:'<span class=\"msi\" style=\"color:inherit;font-size:28px;margin-bottom:4px;display:block;line-height:1;\">water</span>', color:'var(--md-tertiary)', bg:'var(--md-tertiary-container)',  urgent:false, desc:'Runny nose or nasal discharge'},
+  {id:'hives',          label:'Hives',             icon:'<span class=\"msi\" style=\"color:inherit;font-size:28px;margin-bottom:4px;display:block;line-height:1;\">dermatology</span>', color:'var(--md-warning)', bg:'var(--md-warning-container)',  urgent:false, desc:'Raised welts or allergic reaction'},
+  {id:'eye',            label:'Eye Issue',         icon:'<span class=\"msi\" style=\"color:inherit;font-size:28px;margin-bottom:4px;display:block;line-height:1;\">visibility</span>',  color:'var(--md-secondary)', bg:'var(--md-secondary-container)',  urgent:false, desc:'Discharge, cloudiness, or swelling'},
+  {id:'choke',          label:'Choke',             icon:'<span class=\"msi\" style=\"color:inherit;font-size:28px;margin-bottom:4px;display:block;line-height:1;\">warning</span>',  color:'var(--md-error)', bg:'var(--md-error-container)',  urgent:true,  desc:'Esophageal obstruction'},
+  {id:'colic',          label:'Colic',             icon:'<span class=\"msi\" style=\"color:inherit;font-size:28px;margin-bottom:4px;display:block;line-height:1;\">emergency</span>', color:'var(--md-error)', bg:'var(--md-error-container)',  urgent:true,  desc:'Abdominal pain — call vet now'},
+  {id:'wound',          label:'Open Wound',        icon:'<span class=\"msi\" style=\"color:inherit;font-size:28px;margin-bottom:4px;display:block;line-height:1;\">cut</span>', color:'var(--md-error)', bg:'var(--md-error-container)',  urgent:false, desc:'Bleeding or open skin injury'},
+  {id:'other',          label:'Other',             icon:'<span class=\"msi\" style=\"color:inherit;font-size:28px;margin-bottom:4px;display:block;line-height:1;\">more_horiz</span>', color:'var(--md-on-surface-variant)', bg:'var(--md-surface-variant)',  urgent:false, desc:'Describe in notes below'},
 ];
 
 function rObservationForm(){
@@ -1905,7 +2174,7 @@ function rObservationForm(){
         +(urgent&&!sel?'<div style="position:absolute;inset:0;border-radius:13px;border:2px solid '+o.color+'55;pointer-events:none;"></div>':'')
         +(urgent?'<div style="position:absolute;top:6px;right:6px;background:'+o.color+';color:#fff;font-size:8px;font-weight:700;padding:1px 5px;border-radius:4px;letter-spacing:0.3px;">URGENT</div>':'')
         +(sel?'<div style="position:absolute;top:6px;right:6px;width:16px;height:16px;border-radius:50%;background:'+o.color+';display:flex;align-items:center;justify-content:center;"><svg width="9" height="9" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>':'')
-        +'<div style="font-size:26px;margin-bottom:6px;line-height:1;">'+o.icon+'</div>'
+        +'<div style="font-size:28px;margin-bottom:6px;line-height:1;color:'+(sel?o.color:t.TX3)+';">'+o.icon+'</div>'
         +'<div style="font-size:13px;font-weight:700;color:'+(sel?o.color:t.TX)+';margin-bottom:2px;line-height:1.2;">'+o.label+'</div>'
         +'<div style="font-size:11px;color:'+(sel?o.color:t.TX3)+';line-height:1.3;opacity:'+(sel?0.85:0.7)+';font-weight:'+(sel?600:400)+';">'+o.desc+'</div>'
         +'</div>';
@@ -1941,7 +2210,7 @@ function rObservationForm(){
   const canSubmit=!!os.horseId&&!!os.obsType;
   const submitBtn='<button onclick="'+(canSubmit?'submitObservation()':'void 0')+'" style="width:100%;background:'+(canSubmit?t.T:t.BRD)+';color:#fff;border:none;padding:14px;border-radius:var(--md-shape-md);font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(canSubmit?'pointer':'default')+';">Add to Journal</button>';
 
-  return backBtn+'<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);padding:14px;">'+horseSel+dtRow+obsGrid+notesField+mediaSection+submitBtn+'</div>';
+  return backBtn+'<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);padding:14px;">'+horseSel+dtRow+obsGrid+notesField+mediaSection+'<div style="background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start;">'+'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;margin-top:1px;"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" stroke="var(--md-primary)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><polyline points="16 6 12 2 8 6" stroke="var(--md-primary)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="2" x2="12" y2="15" stroke="var(--md-primary)" stroke-width="1.6" stroke-linecap="round"/></svg>'+'<div>'+'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:3px;">Share photos & videos directly</div>'+'<div style="font-size:12px;color:var(--md-on-surface-variant);line-height:1.55;">Take a photo or video with your camera app and use the <strong>Share</strong> button to send it straight to NayNay — no need to open the app first.</div>'+'</div>'+'</div>'+submitBtn+'</div>';
 }
 
 function addObsMedia(type){
@@ -1952,7 +2221,7 @@ function addObsMedia(type){
 function submitObservation(){
   const os=window.obsState;
   const horse=HORSES.find(function(h){return h.id===os.horseId;})||{name:'Unknown'};
-  const obsType=OBS_TYPES.find(function(o){return o.id===os.obsType;})||{label:'Observation',icon:'📋',urgent:false};
+  const obsType=OBS_TYPES.find(function(o){return o.id===os.obsType;})||{label:'Observation',icon:msiIcon('assignment',22,'var(--md-on-surface-variant)'),urgent:false};
   const now=new Date();
   const displayDate=(function(){const d=new Date((os.date||now.toISOString().split('T')[0])+'T00:00:00');const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return mo[d.getMonth()]+' '+d.getDate();})();
   const displayTime=(function(){const t=os.time||(now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0'));const [h,m]=t.split(':');const hr=parseInt(h);return (hr%12||12)+':'+m+' '+(hr>=12?'PM':'AM');})();
@@ -2284,7 +2553,7 @@ function rHorseList(){
             var bg=a.urgent?'var(--md-error-container)':'var(--md-warning-container)';
             var col=a.urgent?'var(--md-error)':'var(--md-warning)';
             return '<div style="display:flex;gap:7px;align-items:flex-start;margin-bottom:4px;">'
-              +'<span style="font-size:13px;flex-shrink:0;">'+(a.urgent?'⚠️':'💊')+'</span>'
+              +'<span style="font-size:13px;flex-shrink:0;">'+msiIcon(a.urgent?'warning':'medication',18,a.urgent?'var(--md-error)':'var(--md-warning)')+'</span>'
               +'<span style="font-size:12px;color:'+col+';font-weight:600;">'+a.msg+'</span>'
               +'</div>';
           }).join('')
@@ -2560,7 +2829,7 @@ function rTrainerHome(){
 // Owner horses -- subset that have barn/vet crossover
 const OWNER_HORSES=[
   {id:'h3',name:'Luna',  age:'6 years', breed:'Arabian',  color:'Gray',   sex:'Mare',   note:'Sensitive to fly spray. Farrier visit today.',avatar:{bg:'#B0B0A8',mane:'#D8D8D0',sock:'#F0F0EE',marking:'star'}},
-  {id:'rv',name:'Rivendell',age:'11 years',breed:'Hanoverian',color:'Dark Bay',sex:'Mare',note:'Post-colic recovery. Soaked hay 48 hrs.',avatar:{bg:'#3A1A06',mane:'#1A0800',sock:'#F5EDE0',marking:'star'}},
+  {id:'rv',photo:'https://images.pexels.com/photos/52500/horse-herd-fog-nature-52500.jpeg?w=400&h=400&fit=crop',name:'Rivendell',age:'11 years',breed:'Hanoverian',color:'Dark Bay',sex:'Mare',note:'Post-colic recovery. Soaked hay 48 hrs.',avatar:{bg:'#3A1A06',mane:'#1A0800',sock:'#F5EDE0',marking:'star'}},
 ];
 
 // Event passes for owner's horses
@@ -2596,10 +2865,10 @@ const EVENT_PASSES=[
 ];
 
 const OWNER_NOTIFICATIONS=[
-  {id:'n1',type:'med',icon:'💊',title:'Medication update — Luna',body:'Magnesium increased to 3 scoops per vet recommendation. Effective today.',time:'Today, 7:00 AM',horse:'Luna',urgent:false,read:false},
-  {id:'n2',type:'observation',icon:'👁',title:'Barn observation — Rivendell',body:'Charlene noted Rivendell is eating well and gut sounds are normal. Recovery on track.',time:'Today, 8:15 AM',horse:'Rivendell',urgent:false,read:false},
-  {id:'n3',type:'alert',icon:'⚠️',title:'Vet follow-up — Rivendell',body:'Post-colic follow-up appointment confirmed for Mar 22 at 10:00 AM with Dr. Konstantine Goudz.',time:'Yesterday',horse:'Rivendell',urgent:false,read:true},
-  {id:'n4',type:'feed',icon:'🌾',title:'Feed change — Rivendell',body:'Soaked hay protocol started per vet instructions. Continues through Mar 18.',time:'Yesterday',horse:'Rivendell',urgent:false,read:true},
+  {id:'n1',type:'med',icon:msiIcon('medication',18,'var(--md-primary)'),title:'Medication update — Luna',body:'Magnesium increased to 3 scoops per vet recommendation. Effective today.',time:'Today, 7:00 AM',horse:'Luna',urgent:false,read:false},
+  {id:'n2',type:'observation',icon:msiIcon('visibility',18,'var(--md-secondary)'),title:'Barn observation — Rivendell',body:'Charlene noted Rivendell is eating well and gut sounds are normal. Recovery on track.',time:'Today, 8:15 AM',horse:'Rivendell',urgent:false,read:false},
+  {id:'n3',type:'alert',icon:msiIcon('warning',18,'var(--md-error)'),title:'Vet follow-up — Rivendell',body:'Post-colic follow-up appointment confirmed for Mar 22 at 10:00 AM with Dr. Konstantine Goudz.',time:'Yesterday',horse:'Rivendell',urgent:false,read:true},
+  {id:'n4',type:'feed',icon:msiIcon('grass',18,'var(--md-tertiary)'),title:'Feed change — Rivendell',body:'Soaked hay protocol started per vet instructions. Continues through Mar 18.',time:'Yesterday',horse:'Rivendell',urgent:false,read:true},
 ];
 
 const OWNER_APPOINTMENTS=[
@@ -2729,7 +2998,7 @@ function rMultiRoleHome(){
   const alertItems=[];
   if(anyRole('staff','manager')){
     const reqLeft=TASK_DEFS.filter(d=>d.req&&assigns[d.id]?.status!=='complete');
-    if(reqLeft.length>0) alertItems.push({icon:'⚠️',title:reqLeft.length+' required task'+(reqLeft.length>1?'s':'')+' incomplete',body:reqLeft.map(d=>d.name).slice(0,3).join(', ')+(reqLeft.length>3?'…':''),type:'warn'});
+    if(reqLeft.length>0) alertItems.push({icon:msiIcon('warning',18,'var(--md-error)'),title:reqLeft.length+' required task'+(reqLeft.length>1?'s':'')+' incomplete',body:reqLeft.map(d=>d.name).slice(0,3).join(', ')+(reqLeft.length>3?'…':''),type:'warn'});
   }
   if(isOwner){
     OWNER_NOTIFICATIONS.filter(n=>!n.read&&n.type==='alert').forEach(n=>{
@@ -2738,7 +3007,7 @@ function rMultiRoleHome(){
   }
   if(isMgr){
     const pending=BARN_VISITS.filter(v=>v.status==='pending_barn_confirm');
-    if(pending.length) alertItems.push({icon:'🏠',title:pending.length+' barn visit'+(pending.length>1?'s':'')+' awaiting approval',body:pending.map(v=>v.pro).join(', '),type:'warn'});
+    if(pending.length) alertItems.push({icon:msiIcon('home',18,'var(--md-warning)'),title:pending.length+' barn visit'+(pending.length>1?'s':'')+' awaiting approval',body:pending.map(v=>v.pro).join(', '),type:'warn'});
   }
   if(alertItems.length){
     alertsBlock='<div style="margin-bottom:14px;">'+alertItems.map(a=>{
@@ -3220,18 +3489,12 @@ function simulateScan(passId){
 
 // --- CALENDAR SETUP ------------------------------------------
 function rVetSetupCalendar(){
-  const t=TH;
-  if(!vetSetup.calendar)vetSetup.calendar={googleConnected:false,iCalConnected:false,chatMessages:[],chatInput:''};
-  const cal=vetSetup.calendar;
-  const gcBtn=cal.googleConnected?('<button onclick="vetSetup.calendar.googleConnected=false;rerender()" style="font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:6px 14px;border-radius:20px;background:var(--md-error-container);color:var(--md-error);border:1.5px solid var(--md-error);">Disconnect</button>'):('<button onclick="vetSetup.calendar.googleConnected=true;rerender()" style="font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:6px 14px;border-radius:20px;background:var(--md-primary);color:#fff;border:1.5px solid var(--md-primary);">Connect</button>');
-  const icalBtn=cal.iCalConnected?('<button onclick="vetSetup.calendar.iCalConnected=false;rerender()" style="font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:6px 14px;border-radius:20px;background:var(--md-error-container);color:var(--md-error);border:1.5px solid var(--md-error);">Disconnect</button>'):('<button onclick="vetSetup.calendar.iCalConnected=true;rerender()" style="font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:6px 14px;border-radius:20px;background:var(--md-surface);color:var(--md-primary);border:1.5px solid var(--md-primary);">Copy URL</button>');
-  const calConns='<div style="margin-bottom:14px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:10px;">Calendar connections</div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:11px;"><div style="width:38px;height:38px;border-radius:10px;background:#EA433515;border:1px solid #EA433530;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;">📅</div><div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Google Calendar</div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+(cal.googleConnected?'k.goudz@goudzeq.com · Syncing':'Not connected')+'</div></div>'+gcBtn+'</div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:11px;"><div style="width:38px;height:38px;border-radius:10px;background:var(--md-primary-container);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;">🗓</div><div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">iCal / Other calendar</div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+(cal.iCalConnected?'Feed active':'Subscribe via iCal URL')+'</div></div>'+icalBtn+'</div>'+secBlock('Sync settings',settingToggle('New appointments','Auto-add to calendar',true,'null')+settingToggle('Reminders','Push 24h before each visit',true,'null')+settingToggle('Cancellations','Remove cancelled appts',true,'null'))+'</div>';
-  const chatMsgs=cal.chatMessages.length?cal.chatMessages:[{role:'ai',text:'Hi Dr. Goudz! Describe an appointment and I\'ll set it up — horse name, visit type, and when works.'}];
-  const chatBubbles=chatMsgs.map(function(m){return m.role==='ai'?('<div style="display:flex;gap:7px;margin-bottom:9px;"><div style="width:26px;height:26px;border-radius:50%;background:var(--md-primary-container);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;">🐴</div><div style="max-width:78%;background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:4px 12px 12px 12px;padding:8px 11px;font-size:13px;color:var(--md-on-surface);line-height:1.5;">'+m.text+'</div></div>'):('<div style="display:flex;justify-content:flex-end;margin-bottom:9px;"><div style="max-width:78%;background:var(--md-primary);border-radius:12px 4px 12px 12px;padding:8px 11px;font-size:13px;color:#fff;line-height:1.5;">'+m.text+'</div></div>');}).join('');
-  const chips=['Rivendell follow-up Tue 10am','Luna dental float Apr 8','Thunder lameness eval Thu'].map(function(c){return '<button onclick="sendCalChat(\''+c+'\')" style="font-family:\'DM Sans\',sans-serif;font-size:11px;font-weight:600;cursor:pointer;padding:5px 11px;border-radius:20px;background:var(--md-primary-container);color:var(--md-primary);border:1px solid var(--md-outline);white-space:nowrap;flex-shrink:0;">'+c+'</button>';}).join('');
-  const chatUI='<div style="margin-bottom:14px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Schedule with natural language</div><div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);overflow:hidden;"><div style="padding:12px;min-height:120px;max-height:180px;overflow-y:auto;">'+chatBubbles+'</div><div style="border-top:1px solid var(--md-outline-variant);padding:7px;display:flex;gap:6px;overflow-x:auto;">'+chips+'</div><div style="border-top:1px solid var(--md-outline-variant);padding:8px;display:flex;gap:7px;align-items:center;"><input id="cal-chat-in" type="text" placeholder="e.g. Rivendell check-up next Mon 2pm…" style="flex:1;background:var(--md-primary-container);border:1.5px solid var(--md-outline);border-radius:20px;padding:8px 13px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;" onkeydown="if(event.key===\'Enter\'){sendCalChat(document.getElementById(\'cal-chat-in\').value);}"/><button onclick="sendCalChat(document.getElementById(\'cal-chat-in\').value)" style="width:34px;height:34px;border-radius:50%;background:var(--md-primary);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M7 1l6 6-6 6" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div></div>';
-  return calConns+chatUI;
+  if(!vetSetup.calendar)vetSetup.calendar={googleConnected:false,iCalConnected:false,syncAppts:true,syncVaccines:true,syncReminders:true};
+  var cal=vetSetup.calendar;
+  return rCalendarConnections(cal,'vetSetup.calendar')
+    +secBlock('Sync settings',settingToggle('Appointments','Add confirmed barn appointments to calendar',cal.syncAppts,'vetSetup.calendar.syncAppts=!vetSetup.calendar.syncAppts;rerender()')+settingToggle('Vaccine & due dates','Sync vaccination and Coggins due dates',cal.syncVaccines,'vetSetup.calendar.syncVaccines=!vetSetup.calendar.syncVaccines;rerender()')+settingToggle('Reminders','24h reminders before appointments',cal.syncReminders,'vetSetup.calendar.syncReminders=!vetSetup.calendar.syncReminders;rerender()'));
 }
+
 const CAL_RESPONSES=[
   {kw:['rivendell'],reply:'Scheduling a follow-up for Rivendell.',date:'Tue Mar 24, 10:00 AM'},
   {kw:['luna','dental'],reply:'Scheduling a dental float for Luna.',date:'Tue Apr 8, 1:00 PM'},
@@ -3497,7 +3760,7 @@ function acceptVisit(id){
   if(!v)return;
   v.status='confirmed';
   triggerNotify('visit_confirmed',
-    {icon:'📅',title:'Visit confirmed',subtitle:v.professionalName+' · '+v.professionalType,detail:v.date+' · '+v.timeStart+'–'+v.timeEnd+' · '+v.services.length+' services',urgent:false},
+    {icon:msiIcon('event',20,'var(--md-secondary)'),title:'Visit confirmed',subtitle:v.professionalName+' · '+v.professionalType,detail:v.date+' · '+v.timeStart+'–'+v.timeEnd+' · '+v.services.length+' services',urgent:false},
     'visitNotifyDone'
   );
 }
@@ -3506,11 +3769,15 @@ function declineVisit(id){const v=BARN_VISITS.find(function(v){return v.id===id;
 
 // --- UPDATED MESSAGES -- THREAD LIST + MULTI-THREAD -----------
 const MESSAGE_THREADS=[
-  {id:'t1',title:'Rivendell · Colic incident',participants:['Sarah K.','Charlene G.','Dr. Goudz'],roles:['Owner','Barn','Vet'],lastMsg:'Payment confirmed · $540.00',time:'Mar 22',unread:0,icon:'🐴',iconBg:'var(--md-primary-container)'},
-  {id:'t2',title:'Dr. Goudz Visit · Apr 8',participants:['Dr. Goudz','Charlene G.','Sarah K.'],roles:['Vet','Barn','Owner'],lastMsg:'Sarah K. booked Luna · Seasonal Shots',time:'Mar 21',unread:2,icon:'📅',iconBg:'var(--md-secondary-container)'},
-  {id:'t3',title:'Mike Farrell · Farrier Visit Mar 28',participants:['Mike F.','Charlene G.','David P.'],roles:['Farrier','Barn','Owner'],lastMsg:'Mike confirmed for Mar 28 9am–noon',time:'Mar 19',unread:0,icon:'🔨',iconBg:'var(--md-warning-container)'},
-  {id:'t4',title:'Apollo · Training check-in',participants:['Jordan M.','Charlene G.'],roles:['Trainer','Barn'],lastMsg:'Found his balance today — great session',time:'Mar 18',unread:1,icon:'⬜',iconBg:'var(--md-tertiary-container)'},
-];
+  {id:'t1',title:'Rivendell · Colic incident',participants:['Sarah K.','Charlene G.','Dr. Goudz'],roles:['Owner','Barn','Vet'],lastMsg:'Payment confirmed · $540.00',time:'Mar 22',unread:0,icon:msiIcon('pets',20,'var(--md-primary)'),iconBg:'var(--md-primary-container)'},
+  {id:'t2',title:'Dr. Goudz Visit · Apr 8',participants:['Dr. Goudz','Charlene G.','Sarah K.'],roles:['Vet','Barn','Owner'],lastMsg:'Sarah K. booked Luna · Seasonal Shots',time:'Mar 21',unread:2,icon:msiIcon('event',20,'var(--md-secondary)'),iconBg:'var(--md-secondary-container)'},
+  {id:'t3',title:'Mike Farrell · Farrier Visit Mar 28',participants:['Mike F.','Charlene G.','David P.'],roles:['Farrier','Barn','Owner'],lastMsg:'Mike confirmed for Mar 28 9am–noon',time:'Mar 19',unread:0,icon:msiIcon('build',20,'var(--md-warning)'),iconBg:'var(--md-warning-container)'},
+  {id:'t4',title:'Apollo · Training check-in',participants:['Jordan M.','Charlene G.'],roles:['Trainer','Barn'],lastMsg:'Found his balance today — great session',time:'Mar 18',unread:1,icon:msiIcon('crop_square'),iconBg:'var(--md-tertiary-container)'},
+  {id:'t5',title:'Spring Shots & Coggins',participants:['Jordan M.','Dr. Goudz'],roles:['Manager','Vet'],lastMsg:"I'll send over the horse list this afternoon.",time:'Today 10:51 AM',unread:{manager:0,vet:1},icon:msiIcon('vaccines',20,'var(--md-secondary)'),iconBg:'var(--md-secondary-container)'},
+  {id:'t6',title:'Farrier Visit — Apr 6',participants:['Jordan M.','Mike Farrell'],roles:['Manager','Farrier'],lastMsg:'Perfect. Horses will be ready.',time:'Today 9:18 AM',unread:{manager:0,farrier:1},icon:msiIcon('build',20,'var(--md-warning)'),iconBg:'var(--md-warning-container)'},
+  {id:'t7',title:'Vet & Farrier Dates — Heads Up',participants:['Jordan M.','Sarah K.'],roles:['Manager','Owner'],lastMsg:"I'll send invoices once everything is completed.",time:'Today 11:05 AM',unread:{manager:0,owner:1},icon:msiIcon('assignment',20,'var(--md-tertiary)'),iconBg:'var(--md-tertiary-container)'},
+  {id:'t8',title:'PPE Follow-up — Bay Gelding',participants:['Sarah K.','Dr. Goudz'],roles:['Owner','Vet'],lastMsg:'Happy to discuss further if you need anything else.',time:'Yesterday',unread:{owner:1,vet:0},icon:msiIcon('stethoscope',20,'var(--md-primary)'),iconBg:'var(--md-primary-container)'},
+]
 
 // Thread-specific messages keyed by thread id
 const THREAD_MESSAGES={
@@ -3539,10 +3806,45 @@ const THREAD_MESSAGES={
     {sender:'barn',name:'Charlene G.',role:'Barn',time:'Mar 18 · 7:02 PM',text:"That's great to hear! His owner will be happy. Anything to flag for tomorrow?"},
     {sender:'trainer',name:'Jordan M.',role:'Trainer',time:'Mar 18 · 7:14 PM',text:'Nothing urgent. Maybe a slightly lighter session tomorrow — he worked hard today.'},
   ],
+  // Thread 5: Manager <-> Vet (Spring Shots & Coggins)
+  't5':[
+    {sender:'manager',name:'Jordan M.',time:'Mon 9:08 AM',text:"Hi Dr. Goudz, we're ready to schedule spring shots and Coggins for the barn. We currently have 12 horses that need to be done."},
+    {sender:'vet',name:'Dr. Goudz',time:'Mon 9:24 AM',text:"Great. I can come out next Thursday morning if that works. I'll plan for vaccines and Coggins on all 12."},
+    {sender:'manager',name:'Jordan M.',time:'Mon 9:31 AM',text:'Thursday works well. Horses will be in and haltered by 8:30 AM.'},
+    {sender:'vet',name:'Dr. Goudz',time:'Mon 9:38 AM',text:"Perfect. I'll bring everything needed and plan to start around 9:00."},
+    {sender:'manager',name:'Jordan M.',time:'Mon 10:51 AM',text:"Sounds good. I'll send over the horse list this afternoon."},
+  ],
+  // Thread 6: Manager <-> Farrier (Confirming Visit)
+  't6':[
+    {sender:'manager',name:'Jordan M.',time:'Today 8:44 AM',text:'Hi Mike, just confirming your visit on Monday, April 6th.'},
+    {sender:'farrier',name:'Mike Farrell',time:'Today 8:52 AM',text:'Yes, I have you down for Monday morning.'},
+    {sender:'manager',name:'Jordan M.',time:'Today 9:01 AM',text:'Great. We have 10 trims and 2 full resets.'},
+    {sender:'farrier',name:'Mike Farrell',time:'Today 9:09 AM',text:"Got it. I'll plan to arrive around 8:00 AM."},
+    {sender:'manager',name:'Jordan M.',time:'Today 9:18 AM',text:'Perfect. Horses will be ready.'},
+  ],
+  // Thread 7: Manager <-> Owner (Vet & Farrier Dates)
+  't7':[
+    {sender:'manager',name:'Jordan M.',time:'Today 10:15 AM',text:'Hi Sarah, just a quick update. The vet will be here Thursday for spring shots and Coggins.'},
+    {sender:'owner',name:'Sarah K.',time:'Today 10:22 AM',text:'Thanks for letting me know. Will Luna be included?'},
+    {sender:'manager',name:'Jordan M.',time:'Today 10:30 AM',text:"Yes, she's on the list. The farrier will also be here Monday, April 6th."},
+    {sender:'owner',name:'Sarah K.',time:'Today 10:38 AM',text:'Perfect. Please go ahead with both.'},
+    {sender:'manager',name:'Jordan M.',time:'Today 11:05 AM',text:"Will do. I'll send invoices once everything is completed."},
+  ],
+  // Thread 8: Owner <-> Vet (PPE Follow-up)
+  't8':[
+    {sender:'owner',name:'Sarah K.',time:'Yesterday 2:05 PM',text:'Hi Dr. Goudz, thanks again for doing the PPE on the gelding yesterday. I wanted to follow up about the imaging results.'},
+    {sender:'vet',name:'Dr. Goudz',time:'Yesterday 2:18 PM',text:'Of course. The main finding was side bone in the front feet. It showed up clearly on the radiographs.'},
+    {sender:'owner',name:'Sarah K.',time:'Yesterday 2:24 PM',text:'Is that something that would concern you for a lower-level sport horse?'},
+    {sender:'vet',name:'Dr. Goudz',time:'Yesterday 2:31 PM',text:'Not necessarily. Many horses with side bone remain sound and perform well, especially with proper hoof care. In this case, the horse flexed cleanly and moved comfortably.'},
+    {sender:'owner',name:'Sarah K.',time:'Yesterday 2:40 PM',text:"That's reassuring. So overall impression?"},
+    {sender:'vet',name:'Dr. Goudz',time:'Yesterday 2:47 PM',text:"From a veterinary perspective, I didn't see anything that would automatically preclude purchase. It's something to be aware of and monitor, but the clinical exam was otherwise very good."},
+    {sender:'owner',name:'Sarah K.',time:'Yesterday 3:02 PM',text:'Thank you. That helps a lot with the decision.'},
+    {sender:'vet',name:'Dr. Goudz',time:'Yesterday 3:08 PM',text:'Happy to discuss further if you need anything else.'},
+  ],
 };
 
 // Role-to-sender mapping for perspective (what counts as "mine" / right side)
-const ROLE_SENDER_MAP={staff:'barn',manager:'barn',vet:'vet',trainer:'trainer',owner:'owner'};
+const ROLE_SENDER_MAP={staff:'barn',manager:'manager',vet:'vet',trainer:'trainer',owner:'owner'};
 
 function rMessages(role){
   const t=TH;
@@ -3551,17 +3853,65 @@ function rMessages(role){
   return rThreadView(S.selectedThread,role);
 }
 
+function detectScheduleIntent(messages){
+  if(!messages||!messages.length) return null;
+  const recent=messages.slice(-5).map(function(m){return (m.text||'').toLowerCase();}).join(' ');
+  const timeWords=['thursday','monday','tuesday','wednesday','friday','saturday','sunday','next week','apr ','april','9:00','8:00','10:00','morning','afternoon'];
+  const serviceWords=['shots','coggins','vaccine','dental','float','trim','reset','farrier','vet','lameness','follow-up','ppe','come out','schedule','book','confirm','arrive','visit'];
+  const hasTime=timeWords.some(function(w){return recent.includes(w);});
+  const hasService=serviceWords.some(function(w){return recent.includes(w);});
+  if(!hasTime||!hasService) return null;
+  var date='';
+  ['thursday morning','next thursday','thursday','monday, april 6','monday april 6','monday','tuesday','wednesday','friday'].forEach(function(d){if(!date&&recent.includes(d)) date=d.charAt(0).toUpperCase()+d.slice(1);});
+  var svc='Appointment';
+  [['shots','coggins','Spring shots & Coggins'],['vaccine','Vaccination'],['dental','float','Dental float'],['trim','reset','Farrier visit'],['lameness','Lameness eval'],['ppe','PPE follow-up'],['visit','come out','Barn visit']].forEach(function(s){
+    if(svc==='Appointment'){const kws=s.slice(0,-1);if(kws.some(function(k){return recent.includes(k);})) svc=s[s.length-1];}
+  });
+  return {date:date||'Upcoming',service:svc};
+}
+
+function rScheduleSuggestion(threadId,intent){
+  if(S.aiScheduleDismissed[threadId]||S.aiScheduleAdded[threadId]) return '';
+  var added=S.aiScheduleAdded[threadId];
+  return '<div style="margin:0 0 0 0;padding:8px 12px;">'
+    +'<div style="background:var(--md-primary-container);border:1.5px solid var(--md-primary)33;border-radius:14px;padding:12px 14px;">'
+    +'<div style="display:flex;align-items:flex-start;gap:10px;">'
+    +'<div style="font-size:20px;flex-shrink:0;">&#128197;</div>'
+    +'<div style="flex:1;min-width:0;">'
+    +'<div style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Add to calendar?</div>'
+    +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+intent.service+'</div>'
+    +'<div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:2px;">'+intent.date+'</div>'
+    +'</div>'
+    +'<button onclick="S.aiScheduleDismissed[\''+threadId+'\']=true;rerender()" style="background:none;border:none;padding:2px 6px;cursor:pointer;font-size:18px;line-height:1;color:var(--md-on-surface-dim);">&times;</button>'
+    +'</div>'
+    +'<div style="display:flex;gap:8px;margin-top:10px;">'
+    +'<button onclick="S.aiScheduleAdded[\''+threadId+'\']=true;rerender()" style="flex:1;font-family:\'DM Sans\',sans-serif;font-size:13px;font-weight:700;cursor:pointer;padding:9px;border-radius:10px;background:var(--md-primary);color:#fff;border:none;">Add to calendar</button>'
+    +'<button onclick="S.aiScheduleDismissed[\''+threadId+'\']=true;rerender()" style="font-family:\'DM Sans\',sans-serif;font-size:13px;font-weight:600;cursor:pointer;padding:9px 14px;border-radius:10px;background:transparent;color:var(--md-primary);border:1.5px solid var(--md-primary)44;">Dismiss</button>'
+    +'</div>'
+    +'</div>'
+    +'</div>';
+}
+
 function rThreadList(role){
   const t=TH;
   const mySender=ROLE_SENDER_MAP[role]||'barn';
+  function getUnread(th){
+    if(typeof th.unread==='number') return th.unread;
+    if(typeof th.unread==='object'&&th.unread!==null) return th.unread[mySender]||0;
+    return 0;
+  }
   // Filter threads relevant to this role
-  const visibleThreads=MESSAGE_THREADS.filter(function(th){
-    if(role==='staff')return th.id==='t1'||th.id==='t4';
-    if(role==='owner')return th.id==='t1'||th.id==='t2'||th.id==='t3';
-    if(role==='vet')return th.id==='t1'||th.id==='t2';
-    if(role==='trainer')return th.id==='t4';
-    return true; // manager sees all
-  });
+  var THREAD_VISIBILITY={
+    staff:   ['t1','t4'],
+    manager: ['t1','t2','t3','t4','t5','t6','t7'],
+    vet:     ['t1','t2','t5','t8'],
+    trainer: ['t4'],
+    owner:   ['t1','t2','t3','t7','t8'],
+  };
+  var myVisibleIds=[];
+  S.roles.forEach(function(r){(THREAD_VISIBILITY[r]||[]).forEach(function(id){if(myVisibleIds.indexOf(id)<0)myVisibleIds.push(id);});});
+  if(myVisibleIds.length===0) myVisibleIds=THREAD_VISIBILITY[role]||[];
+  const visibleThreads=MESSAGE_THREADS.filter(function(th){return myVisibleIds.indexOf(th.id)>=0;});
   const header='<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1.5px solid var(--md-outline-variant);background:var(--md-surface);"><span style="font-size:16px;font-weight:700;color:var(--md-on-surface);">Messages</span><button style="background:var(--md-primary);color:#fff;border:none;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">+ New</button></div>';
   const rows=visibleThreads.map(function(th){
     return '<div onclick="S.selectedThread=\''+th.id+'\';rerender()" style="display:flex;align-items:flex-start;gap:11px;padding:13px 16px;border-bottom:1px solid var(--md-outline-variant);cursor:pointer;background:var(--md-surface);">'
@@ -3569,7 +3919,7 @@ function rThreadList(role){
       +'<div style="flex:1;min-width:0;">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;"><span style="font-size:13px;font-weight:700;color:var(--md-on-surface);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;">'+th.title+'</span><span style="font-size:11px;color:var(--md-on-surface-dim);flex-shrink:0;margin-left:6px;">'+th.time+'</span></div>'
       +'<div style="font-size:12px;color:var(--md-on-surface-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px;">'+th.participants.join(', ')+'</div>'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12px;color:var(--md-on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">'+th.lastMsg+'</span>'+(th.unread>0?'<div style="width:18px;height:18px;border-radius:50%;background:var(--md-primary);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;margin-left:6px;">'+th.unread+'</div>':'')+'</div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12px;color:var(--md-on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">'+th.lastMsg+'</span>'+(getUnread(th)>0?'<div style="width:18px;height:18px;border-radius:50%;background:var(--md-primary);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;margin-left:6px;">'+getUnread(th)+'</div>':'')+'</div>'
       +'</div></div>';
   }).join('');
   return '<div style="display:flex;flex-direction:column;height:100%;">'+header+'<div style="flex:1;overflow-y:auto;">'+rows+'</div></div>';
@@ -3586,7 +3936,7 @@ function rThreadView(threadId,role){
 
   if(threadId==='t1'){
     // Use original MSG_THREAD rendering
-    const senderStyle=function(s){if(s==='vet')return{av:t.TL,avtx:t.T,init:'KG',nc:t.T,isR:mySender==='vet',bub:t.TL,bb:t.TB};if(s==='owner')return{av:'var(--md-tertiary-container)',avtx:'var(--md-tertiary)',init:'SK',nc:'var(--md-tertiary)',isR:mySender==='owner',bub:t.CARD,bb:t.BRD};return{av:t.SUB,avtx:t.TX2,init:'CG',nc:t.TX2,isR:mySender==='barn',bub:t.CARD,bb:t.BRD};};
+    const senderStyle=function(s){if(s==='vet')return{av:t.TL,avtx:t.T,init:'KG',nc:t.T,isR:mySender==='vet',bub:t.TL,bb:t.TB};if(s==='owner')return{av:'var(--md-tertiary-container)',avtx:'var(--md-tertiary)',init:'SK',nc:'var(--md-tertiary)',isR:mySender==='owner',bub:t.CARD,bb:t.BRD};return{av:t.SUB,avtx:t.TX2,init:'CG',nc:t.TX2,isR:mySender==='barn'||mySender==='manager',bub:t.CARD,bb:t.BRD};};
     const bubbles=MSG_THREAD.map(function(msg){
       if(msg.sender==='system'){
         if(msg.appt)return '<div style="display:flex;justify-content:center;margin:10px 0;"><div style="background:var(--md-secondary-container);border:1.5px solid var(--md-secondary)44;border-radius:12px;padding:9px 13px;max-width:280px;text-align:center;"><div style="font-size:10px;font-weight:700;color:var(--md-secondary);text-transform:uppercase;margin-bottom:3px;">NayNay</div><div style="font-size:12px;font-weight:700;color:var(--md-secondary);margin-bottom:1px;">'+msg.appt.label+'</div><div style="font-size:11px;color:var(--md-on-surface-variant);">'+msg.appt.detail+'</div></div></div>';
@@ -3601,12 +3951,13 @@ function rThreadView(threadId,role){
       if(st.isR)return '<div style="display:flex;justify-content:flex-end;margin-bottom:12px;padding:0 10px;"><div style="display:flex;gap:7px;align-items:flex-start;flex-direction:row-reverse;"><div style="margin-top:2px;">'+av+'</div><div style="text-align:right;">'+meta+bub+'</div></div></div>';
       return '<div style="margin-bottom:12px;padding:0 10px;"><div style="display:flex;gap:7px;align-items:flex-start;"><div style="margin-top:2px;">'+av+'</div><div>'+meta+bub+'</div></div></div>';
     }).join('');
-    return '<div style="display:flex;flex-direction:column;height:100%;">'+topBar+'<div style="flex:1;overflow-y:auto;padding:12px 0;">'+bubbles+'</div>'+inputBar+'</div>';
+    const _i1=detectScheduleIntent(MSG_THREAD.map(function(m){return{text:m.text||''};}));
+    return '<div style="display:flex;flex-direction:column;height:100%;">'+topBar+'<div style="flex:1;overflow-y:auto;padding:12px 0;">'+bubbles+'</div>'+(_i1?rScheduleSuggestion(threadId,_i1):'')+inputBar+'</div>';
   }
 
   // Generic thread renderer with visit system cards
   if(!messages)return '<div style="padding:20px;text-align:center;color:var(--md-on-surface-dim);">No messages yet.</div>';
-  const SENDER_COLORS={vet:{bg:t.TL,tc:t.T,init:'KG'},barn:{bg:t.SUB,tc:t.TX2,init:'CG'},owner:{bg:'var(--md-tertiary-container)',tc:'var(--md-tertiary)',init:'SK'},farrier:{bg:'var(--md-warning-container)',tc:'var(--md-warning)',init:'MF'},trainer:{bg:'var(--md-tertiary-container)',tc:'var(--md-tertiary)',init:'JM'}};
+  const SENDER_COLORS={vet:{bg:t.TL,tc:t.T,init:'KG'},barn:{bg:t.SUB,tc:t.TX2,init:'CG'},manager:{bg:t.SUB,tc:t.TX2,init:'JM'},farrier:{bg:'var(--md-warning-container)',tc:'var(--md-on-warning-container)',init:'MF'},owner:{bg:'var(--md-tertiary-container)',tc:'var(--md-tertiary)',init:'SK'},farrier:{bg:'var(--md-warning-container)',tc:'var(--md-warning)',init:'MF'},trainer:{bg:'var(--md-tertiary-container)',tc:'var(--md-tertiary)',init:'JM'}};
   const bubbles=messages.map(function(msg){
     if(msg.sender==='system'){
       if(msg.visitCard){
@@ -3627,7 +3978,8 @@ function rThreadView(threadId,role){
     if(isMe)return '<div style="display:flex;justify-content:flex-end;margin-bottom:12px;padding:0 12px;"><div style="display:flex;gap:7px;flex-direction:row-reverse;align-items:flex-start;"><div style="margin-top:2px;">'+av+'</div><div style="text-align:right;">'+meta+bub+'</div></div></div>';
     return '<div style="margin-bottom:12px;padding:0 12px;"><div style="display:flex;gap:7px;align-items:flex-start;"><div style="margin-top:2px;">'+av+'</div><div>'+meta+bub+'</div></div></div>';
   }).join('');
-  return '<div style="display:flex;flex-direction:column;height:100%;">'+topBar+'<div style="flex:1;overflow-y:auto;padding:12px 0;">'+bubbles+'</div>'+inputBar+'</div>';
+  const _ig=detectScheduleIntent(messages);
+  return '<div style="display:flex;flex-direction:column;height:100%;">'+topBar+'<div style="flex:1;overflow-y:auto;padding:12px 0;">'+bubbles+'</div>'+(_ig?rScheduleSuggestion(threadId,_ig):'')+inputBar+'</div>';
 }
 
 // --- EVENT HANDLERS -------------------------------------------
