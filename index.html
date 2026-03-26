@@ -56,6 +56,7 @@ body{background:var(--nn-bg-page);display:flex;flex-direction:column;font-family
 <div id="app" style="width:100%;height:100vh;display:flex;flex-direction:column;background:var(--nn-bg-page);font-family:'DM Sans',sans-serif;overflow:hidden;"></div>
 <script>
 
+
 // --- THEME ----------------------------------------------------
 function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
 const TH={
@@ -314,15 +315,301 @@ const FEED_ALERTS=[
   {horse:'Bill',  type:'feed',      change:'Feed amount reduced', detail:'Morning hay to ¾ flake. Vet monitoring metabolic issue.'},
 ];
 
-const HORSES=[
-  {id:'h1',name:'Apollo',age:'8 years',breed:'Warmblood',    color:'Bay',     sex:'Gelding',note:'Primary competition horse.',avatar:{bg:'#4A2A0A',mane:'#1A0A00',sock:'#F5EDE0',marking:'blaze'}},
-  {id:'h2',name:'Vader', age:'12 years',breed:'Friesian',    color:'Black',   sex:'Gelding',note:'Bold personality. Bring treats.',avatar:{bg:'#1A1A1A',mane:'#0A0A0A',sock:null,marking:null}},
-  {id:'h3',name:'Luna',  age:'6 years', breed:'Arabian',     color:'Gray',    sex:'Mare',   note:'Sensitive to fly spray.',avatar:{bg:'#B0B0A8',mane:'#D8D8D0',sock:'#F0F0EE',marking:'star'}},
-  {id:'h4',name:'Bill',  age:'14 years',breed:'Quarter Horse',color:'Chestnut',sex:'Gelding',note:'Watch for stiffness.',avatar:{bg:'#8B3A0A',mane:'#C8701A',sock:'#F5EDE0',marking:null}},
-  {id:'h5',name:'Maple', age:'3 years', breed:'Thoroughbred',color:'Sorrel',  sex:'Filly',  note:'Still in training.',avatar:{bg:'#A04818',mane:'#C87840',sock:'#F5EDE0',marking:'blaze'}},
-  {id:'h6',name:'Duchess',age:'18 months',breed:'Paint',     color:'Tobiano', sex:'Filly',  note:'Bonded with Maple.',avatar:{bg:'#8A5A30',mane:'#F5EDE0',sock:'#F5EDE0',marking:'star'}},
+// ─── MASTER HORSE POPULATION ─────────────────────────────────
+// 18 horses across 3 barns. Multiple owners per horse supported.
+// relationship types: 'own', 'train', 'vet', 'manage', 'farrier', 'dentist'
+
+const BARNS={
+  'sunrise':{id:'sunrise',name:'Sunrise Stables',   location:'Greenwich, CT'},
+  'ridgeline':{id:'ridgeline',name:'Ridgeline Equestrian',location:'Bedford, NY'},
+  'blueridge':{id:'blueridge',name:'Blue Ridge Farm',location:'Katonah, NY'},
+};
+
+const HORSES_ALL=[
+  // ── Sunrise Stables ──────────────────────────────────────────
+  {id:'h1',name:'Apollo',   breed:'Warmblood',      color:'Bay',         age:'9 years', sex:'Gelding',
+   barn:'sunrise', stall:'A1',
+   owners:[{name:'Sarah K.',userId:'owner-sarah',share:'Full'}],
+   trainer:'Jordan M.',vet:'Dr. Goudz',
+   avatar:{bg:'#4A2A0A',mane:'#1A0A00',sock:'#F5EDE0',marking:'blaze'},
+   note:'Primary competition horse. Right lead tendency.',
+   alerts:[],passId:null,
+   lastVisit:'Mar 10',nextVaccine:'Jun 2026',coggins:'Jan 2027',
+   lastVitals:'Mar 14',lastObs:'Mar 15',
+   discipline:'Hunter/Jumper',level:'Pre-green',
+   pros:[{role:'Farrier',name:'Mike Farrell',next:'Apr 4'},{role:'Dentist',name:'Dr. Nair',next:'May 2026'}],
+  },
+  {id:'h2',name:'Vader',    breed:'Friesian',        color:'Black',       age:'7 years', sex:'Gelding',
+   barn:'sunrise', stall:'A2',
+   owners:[{name:'Sarah K.',userId:'owner-sarah',share:'Full'}],
+   trainer:'Jordan M.',vet:'Dr. Goudz',
+   avatar:{bg:'#1A1A1A',mane:'#0A0A0A',sock:null,marking:null},
+   note:'Bold personality. Bring treats.',
+   alerts:[],passId:null,
+   lastVisit:'Feb 28',nextVaccine:'May 2026',coggins:'Jan 2027',
+   lastVitals:'Mar 10',lastObs:'Mar 12',
+   discipline:'Dressage',level:'Training level',
+   pros:[{role:'Farrier',name:'Mike Farrell',next:'Apr 4'}],
+  },
+  {id:'h3',name:'Luna',     breed:'Arabian',         color:'Gray',        age:'6 years', sex:'Mare',
+   barn:'sunrise', stall:'B1',
+   owners:[{name:'Sarah K.',userId:'owner-sarah',share:'Full'},{name:'Dana L.',userId:'owner-dana',share:'Lease'}],
+   trainer:'Jordan M.',vet:'Dr. Goudz',
+   avatar:{bg:'#B0B0A8',mane:'#D8D8D0',sock:'#F0F0EE',marking:'star'},
+   note:'Sensitive to fly spray. Event pass active — Tri-State Spring Classic.',
+   alerts:[{type:'med',msg:'Magnesium increased — effective today',urgent:false}],
+   passId:'ep1',
+   lastVisit:'Mar 16',nextVaccine:'Jul 2026',coggins:'Jan 2027',
+   lastVitals:'Mar 16',lastObs:'Mar 16',
+   discipline:'Hunter',level:'Short stirrup',
+   pros:[{role:'Farrier',name:'Mike Farrell',next:'Apr 18'},{role:'Masseuse',name:'Sofia Reyes',next:'Mar 28'}],
+  },
+  {id:'rv',name:'Rivendell', breed:'Hanoverian',     color:'Dark Bay',    age:'11 years',sex:'Mare',
+   barn:'sunrise', stall:'B2',
+   owners:[{name:'Sarah K.',userId:'owner-sarah',share:'Full'}],
+   trainer:null,vet:'Dr. Goudz',
+   avatar:{bg:'#3A1A06',mane:'#1A0800',sock:'#F5EDE0',marking:'star'},
+   note:'Post-colic recovery. Soaked hay protocol through Mar 18. Watch right hock.',
+   alerts:[{type:'alert',msg:'Post-colic follow-up — Mar 22 with Dr. Goudz',urgent:true},{type:'feed',msg:'Soaked hay protocol active through Mar 18',urgent:false}],
+   passId:'ep2',
+   lastVisit:'Mar 14',nextVaccine:'Nov 2026',coggins:'Feb 2027',
+   lastVitals:'Mar 15',lastObs:'Mar 16',
+   discipline:null,level:null,
+   pros:[{role:'Farrier',name:'Mike Farrell',next:'Apr 18'}],
+  },
+  {id:'h4',name:'Maple',    breed:'Quarter Horse',   color:'Chestnut',    age:'14 years',sex:'Mare',
+   barn:'sunrise', stall:'C1',
+   owners:[{name:'Lisa T.',userId:'owner-lisa',share:'Full'}],
+   trainer:'Jordan M.',vet:'Dr. Goudz',
+   avatar:{bg:'#8B3A0A',mane:'#C8701A',sock:'#F5EDE0',marking:null},
+   note:'Watch for stiffness after cold nights. Joint supplement ongoing.',
+   alerts:[{type:'med',msg:'Joint supplement — daily, with morning feed',urgent:false}],
+   passId:null,
+   lastVisit:'Feb 20',nextVaccine:'May 2026',coggins:'Dec 2026',
+   lastVitals:'Mar 8',lastObs:'Mar 10',
+   discipline:'Western Pleasure',level:'Open',
+   pros:[{role:'Farrier',name:'Mike Farrell',next:'Apr 4'},{role:'Dentist',name:'Dr. Nair',next:'Jun 2026'}],
+  },
+  {id:'h5',name:'Bill',     breed:'Mustang',          color:'Dun',         age:'5 years', sex:'Gelding',
+   barn:'sunrise', stall:'C2',
+   owners:[{name:'Mike R.',userId:'owner-mike',share:'Full'}],
+   trainer:'Jordan M.',vet:'Dr. Goudz',
+   avatar:{bg:'#9A7A30',mane:'#5A4010',sock:null,marking:null},
+   note:'Still in training. Needs work on trailer loading.',
+   alerts:[],passId:null,
+   lastVisit:'Feb 15',nextVaccine:'Apr 2026',coggins:'Jan 2027',
+   lastVitals:'Mar 5',lastObs:'Mar 8',
+   discipline:'Trail',level:'Green',
+   pros:[{role:'Farrier',name:'Mike Farrell',next:'Mar 28'}],
+  },
+  {id:'h6',name:'Duchess',  breed:'Paint',            color:'Tobiano',     age:'10 years',sex:'Mare',
+   barn:'sunrise', stall:'D1',
+   owners:[{name:'Emma S.',userId:'owner-emma',share:'Full'},{name:'Claire B.',userId:'owner-claire',share:'Half-lease'}],
+   trainer:'Jordan M.',vet:'Dr. Goudz',
+   avatar:{bg:'#8A5A30',mane:'#F5EDE0',sock:'#F5EDE0',marking:'star'},
+   note:'Bonded with Maple. Dental float due.',
+   alerts:[{type:'alert',msg:'Dental float overdue — schedule with Dr. Nair',urgent:true}],
+   passId:null,
+   lastVisit:'Jan 30',nextVaccine:'Apr 2026',coggins:'Nov 2026',
+   lastVitals:'Mar 1',lastObs:'Mar 3',
+   discipline:'Hunter',level:'Children\'s',
+   pros:[{role:'Farrier',name:'Mike Farrell',next:'Apr 4'},{role:'Dentist',name:'Dr. Nair',next:'Apr 2026'}],
+  },
+  {id:'h7',name:'Comet',    breed:'Thoroughbred',     color:'Gray',        age:'4 years', sex:'Gelding',
+   barn:'sunrise', stall:'D2',
+   owners:[{name:'Emma S.',userId:'owner-emma',share:'Full'}],
+   trainer:'Jordan M.',vet:'Dr. Goudz',
+   avatar:{bg:'#9A9A92',mane:'#C0C0B8',sock:'#F0F0EE',marking:'blaze'},
+   note:'OTTB — second year off track. Excellent progress.',
+   alerts:[],passId:null,
+   lastVisit:'Mar 5',nextVaccine:'May 2026',coggins:'Jan 2027',
+   lastVitals:'Mar 12',lastObs:'Mar 14',
+   discipline:'Hunter/Jumper',level:'Green',
+   pros:[{role:'Farrier',name:'Mike Farrell',next:'Apr 18'}],
+  },
+  // ── Ridgeline Equestrian ─────────────────────────────────────
+  {id:'r1',name:'Bella',    breed:'Thoroughbred',     color:'Bay',         age:'7 years', sex:'Mare',
+   barn:'ridgeline', stall:'1',
+   owners:[{name:'Chloe W.',userId:'owner-chloe',share:'Full'}],
+   trainer:'Alex P.',vet:'Dr. Goudz',
+   avatar:{bg:'#5A2A08',mane:'#2A0A00',sock:'#F5EDE0',marking:'star'},
+   note:'Annual vaccines due Apr 3. Good overall condition.',
+   alerts:[{type:'alert',msg:'Annual vaccines due Apr 3',urgent:true}],
+   passId:null,
+   lastVisit:'Oct 2025',nextVaccine:'Apr 2026',coggins:'Mar 2027',
+   lastVitals:null,lastObs:'Feb 20',
+   discipline:'Dressage',level:'First level',
+   pros:[],
+  },
+  {id:'r2',name:'Storm',    breed:'Warmblood',        color:'Dapple Gray', age:'8 years', sex:'Gelding',
+   barn:'ridgeline', stall:'2',
+   owners:[{name:'Chloe W.',userId:'owner-chloe',share:'Full'},{name:'James W.',userId:'owner-james',share:'Co-owner'}],
+   trainer:'Alex P.',vet:'Dr. Goudz',
+   avatar:{bg:'#8A8A8A',mane:'#C0C0C0',sock:null,marking:'blaze'},
+   note:'Recovering from suspensory — light work only through April.',
+   alerts:[{type:'alert',msg:'Suspensory rehab protocol — light work only',urgent:false}],
+   passId:null,
+   lastVisit:'Mar 2',nextVaccine:'Jun 2026',coggins:'Feb 2027',
+   lastVitals:'Mar 2',lastObs:'Mar 10',
+   discipline:'Dressage',level:'Second level',
+   pros:[{role:'Farrier',name:'Tom H.',next:'Apr 10'}],
+  },
+  {id:'r3',name:'Duchess II',breed:'Quarter Horse',  color:'Buckskin',    age:'12 years',sex:'Mare',
+   barn:'ridgeline', stall:'3',
+   owners:[{name:'Paul B.',userId:'owner-paul',share:'Full'}],
+   trainer:'Alex P.',vet:'Dr. Goudz',
+   avatar:{bg:'#C8A030',mane:'#3A2800',sock:'#F5EDE0',marking:null},
+   note:'Sound and healthy. Easy keeper.',
+   alerts:[],passId:null,
+   lastVisit:'Feb 10',nextVaccine:'Aug 2026',coggins:'Dec 2026',
+   lastVitals:null,lastObs:'Feb 15',
+   discipline:'Western',level:'Amateur',
+   pros:[],
+  },
+  {id:'r4',name:'Rocket',   breed:'Thoroughbred',     color:'Chestnut',    age:'6 years', sex:'Gelding',
+   barn:'ridgeline', stall:'4',
+   owners:[{name:'Paul B.',userId:'owner-paul',share:'Full'}],
+   trainer:'Alex P.',vet:'Dr. Goudz',
+   avatar:{bg:'#9A3A0A',mane:'#C06828',sock:'#F5EDE0',marking:'blaze'},
+   note:'Competition season starts May. Building fitness.',
+   alerts:[],passId:null,
+   lastVisit:'Feb 25',nextVaccine:'May 2026',coggins:'Jan 2027',
+   lastVitals:'Feb 25',lastObs:'Mar 5',
+   discipline:'Eventing',level:'Beginner Novice',
+   pros:[{role:'Farrier',name:'Tom H.',next:'Mar 30'}],
+  },
+  {id:'r5',name:'Pepper',   breed:'Arabian',          color:'Black',       age:'9 years', sex:'Mare',
+   barn:'ridgeline', stall:'5',
+   owners:[{name:'Paul B.',userId:'owner-paul',share:'Full'}],
+   trainer:'Alex P.',vet:'Dr. Nair',
+   avatar:{bg:'#1A1A1A',mane:'#0A0A0A',sock:null,marking:null},
+   note:'Dental patient only — Dr. Nair. Current vet for regular care: Dr. Santos.',
+   alerts:[],passId:null,
+   lastVisit:'Mar 2026',nextVaccine:null,coggins:'Dec 2026',
+   lastVitals:null,lastObs:null,
+   discipline:'Endurance',level:'Open',
+   pros:[{role:'Dentist',name:'Dr. Nair',next:'Sep 2026'}],
+  },
+  {id:'r6',name:'Cirrus',   breed:'Warmblood',        color:'Cremello',    age:'5 years', sex:'Stallion',
+   barn:'ridgeline', stall:'6',
+   owners:[{name:'Paul B.',userId:'owner-paul',share:'Full'},{name:'Ridgeline Equestrian LLC',userId:'owner-ridgeline',share:'Syndicate'}],
+   trainer:'Alex P.',vet:'Dr. Goudz',
+   avatar:{bg:'#F0E8C8',mane:'#E0D0A0',sock:'#F8F4E8',marking:null},
+   note:'Licensed breeding stallion. Handle with extra care.',
+   alerts:[],passId:null,
+   lastVisit:'Mar 1',nextVaccine:'Jun 2026',coggins:'Jan 2027',
+   lastVitals:'Mar 1',lastObs:'Mar 8',
+   discipline:'Dressage/Breeding',level:'PSG',
+   pros:[{role:'Farrier',name:'Tom H.',next:'Apr 10'}],
+  },
+  // ── Blue Ridge Farm ──────────────────────────────────────────
+  {id:'b1',name:'Scout',    breed:'Quarter Horse',    color:'Bay',         age:'11 years',sex:'Gelding',
+   barn:'blueridge', stall:'1',
+   owners:[{name:'Dana L.',userId:'owner-dana',share:'Full'}],
+   trainer:'Jordan M.',vet:'Dr. Goudz',
+   avatar:{bg:'#4A2208',mane:'#2A0E00',sock:null,marking:null},
+   note:'Reliable all-rounder. Dana\'s primary trail horse.',
+   alerts:[],passId:null,
+   lastVisit:'Feb 18',nextVaccine:'Apr 2026',coggins:'Jan 2027',
+   lastVitals:'Feb 18',lastObs:'Mar 1',
+   discipline:'Trail/Western',level:'Open',
+   pros:[{role:'Farrier',name:'Mike Farrell',next:'Apr 10'}],
+  },
+  {id:'b2',name:'Nova',     breed:'Warmblood',        color:'Blue Roan',   age:'6 years', sex:'Mare',
+   barn:'blueridge', stall:'2',
+   owners:[{name:'Dana L.',userId:'owner-dana',share:'Full'},{name:'Tom F.',userId:'owner-tom',share:'Training lease'}],
+   trainer:'Jordan M.',vet:'Dr. Goudz',
+   avatar:{bg:'#6070A0',mane:'#3A4070',sock:'#F0F0EE',marking:'star'},
+   note:'Promising young mare. Lots of scope.',
+   alerts:[],passId:null,
+   lastVisit:'Mar 3',nextVaccine:'Jun 2026',coggins:'Dec 2026',
+   lastVitals:'Mar 3',lastObs:'Mar 10',
+   discipline:'Hunter/Jumper',level:'Pre-green',
+   pros:[{role:'Farrier',name:'Mike Farrell',next:'Apr 10'}],
+  },
+  {id:'b3',name:'Echo',     breed:'Warmblood',        color:'Pinto',       age:'8 years', sex:'Gelding',
+   barn:'blueridge', stall:'3',
+   owners:[{name:'Tom F.',userId:'owner-tom',share:'Full'}],
+   trainer:'Jordan M.',vet:'Dr. Goudz',
+   avatar:{bg:'#8A5A30',mane:'#F5EDE0',sock:'#F5EDE0',marking:'blaze'},
+   note:'Tom\'s competition horse. Consistent performer.',
+   alerts:[],passId:null,
+   lastVisit:'Feb 28',nextVaccine:'May 2026',coggins:'Jan 2027',
+   lastVitals:'Feb 28',lastObs:'Mar 5',
+   discipline:'Hunter',level:'Modified',
+   pros:[],
+  },
+  {id:'b4',name:'Solstice', breed:'Thoroughbred',     color:'Bay',         age:'7 years', sex:'Mare',
+   barn:'blueridge', stall:'4',
+   owners:[{name:'Tom F.',userId:'owner-tom',share:'Full'},{name:'Rachel M.',userId:'owner-rachel',share:'Half-lease'}],
+   trainer:'Jordan M.',vet:'Dr. Goudz',
+   avatar:{bg:'#3A1A06',mane:'#1A0800',sock:'#F5EDE0',marking:'star'},
+   note:'Former racehorse. Great temperament.',
+   alerts:[],passId:null,
+   lastVisit:'Mar 5',nextVaccine:'Jun 2026',coggins:'Feb 2027',
+   lastVitals:'Mar 5',lastObs:'Mar 12',
+   discipline:'Hunter',level:'Short stirrup',
+   pros:[],
+  },
 ];
-const VET_HORSE={id:'rv',name:'Rivendell',age:'11 years',breed:'Hanoverian',color:'Dark Bay',sex:'Mare',note:'Watch right hock.',avatar:{bg:'#3A1A06',mane:'#1A0800',sock:'#F5EDE0',marking:'star'}};
+
+// Map old HORSES ids to HORSES_ALL for backwards compat
+// HORSES still used in task/training assignment logic — keep it pointing to Sunrise horses
+const HORSES=HORSES_ALL.filter(function(h){return h.barn==='sunrise';});
+
+// ─── ROLE-AWARE HORSE FILTERING ──────────────────────────────
+function getHorsesForUser(){
+  var role=S.role;
+  var roles=S.roles;
+  var result=[];
+
+  if(hasRole('vet')){
+    // Vet sees all horses they're listed as vet for
+    HORSES_ALL.forEach(function(h){
+      if(h.vet==='Dr. Goudz'){
+        var rel=result.find(function(r){return r.horse.id===h.id;});
+        if(!rel) result.push({horse:h,rel:'vet',barn:BARNS[h.barn]});
+      }
+    });
+  }
+  if(hasRole('trainer')){
+    HORSES_ALL.forEach(function(h){
+      if(h.trainer==='Jordan M.'){
+        var rel=result.find(function(r){return r.horse.id===h.id;});
+        if(!rel) result.push({horse:h,rel:'train',barn:BARNS[h.barn]});
+        else if(rel.rel!=='own') rel.rel='train';
+      }
+    });
+  }
+  if(hasRole('manager')){
+    HORSES_ALL.filter(function(h){return h.barn==='sunrise';}).forEach(function(h){
+      var rel=result.find(function(r){return r.horse.id===h.id;});
+      if(!rel) result.push({horse:h,rel:'manage',barn:BARNS[h.barn]});
+      else if(rel.rel!=='own'&&rel.rel!=='train') rel.rel='manage';
+    });
+  }
+  if(hasRole('staff')){
+    HORSES_ALL.filter(function(h){return h.barn==='sunrise';}).forEach(function(h){
+      var rel=result.find(function(r){return r.horse.id===h.id;});
+      if(!rel) result.push({horse:h,rel:'manage',barn:BARNS[h.barn]});
+    });
+  }
+  if(hasRole('owner')){
+    // Owner (Sarah K.) sees horses she owns or leases
+    var myId='owner-sarah';
+    HORSES_ALL.forEach(function(h){
+      var isOwner=h.owners.some(function(o){return o.userId===myId;});
+      if(isOwner){
+        var rel=result.find(function(r){return r.horse.id===h.id;});
+        if(!rel) result.push({horse:h,rel:'own',barn:BARNS[h.barn]});
+        else rel.rel='own'; // own takes priority
+      }
+    });
+  }
+
+  return result;
+}
+
 
 const STAFF_LIST=['Jordan M.','Sam R.','Taylor B.'];
 const STAFF_META={'Jordan M.':{status:'Active now',active:true},'Sam R.':{status:'Last seen 12:34 PM',active:false},'Taylor B.':{status:'Off today',active:false}};
@@ -442,7 +729,7 @@ let S={
   feedCardExpanded:false,feedCardHorse:null,
   expandedTraining:null,loggingTraining:null,
   ownerEventPass:null,ownerPassScanState:{},
-  quickAction:null,trainerHorseFilter:null,
+  quickAction:null,trainerHorseFilter:null,horseSearch:'',horseFilter:'all',expandedHorse:null,
   showNotifPanel:false,selectedDate:TODAY,horseTab:'overview',
   selectedThread:null,bookingVisitId:null,
   notifyCtx:null,
@@ -526,7 +813,7 @@ function rFeedMedHorseDetail(horse,regimen,globalAllDone){
   if(regimen.supplements?.length)sections.push(`<div style="padding:0 14px;"><div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;padding:8px 0 2px;">Supplements</div>${regimen.supplements.map(i=>itemRow(i,'var(--md-tertiary)','var(--md-tertiary-container)')).join('')}</div>`);
   if(regimen.medications?.length)sections.push(`<div style="padding:0 14px;"><div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;padding:8px 0 2px;">Medications</div>${regimen.medications.map(i=>itemRow(i,t.DNG,t.DNGBG)).join('')}</div>`);
   if(regimen.vetNotes)sections.push(`<div style="padding:8px 14px;"><div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Vet notes</div><div style="font-size:12px;color:var(--md-on-surface-variant);line-height:1.5;font-style:italic;">${regimen.vetNotes}</div></div>`);
-  return `<div style="background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:12px;overflow:hidden;margin-bottom:10px;"><div style="padding:10px 14px;border-bottom:1.5px solid var(--md-outline-variant);display:flex;align-items:center;gap:8px;"><button onclick="S.feedCardHorse=null;rerender()" style="background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:7px;padding:4px 9px;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:3px;flex-shrink:0;"><svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8l4 4" stroke="var(--md-on-primary-container)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-size:11px;font-weight:700;color:var(--md-on-primary-container);">Back</span></button><div style="flex:1;display:flex;align-items:center;gap:7px;">${horseAvatar(horse,28)}<span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">${horse.name}</span></div><div style="display:flex;gap:3px;">${prevH?`<button onclick="S.feedCardHorse='${prevH.id}';rerender()" style="width:26px;height:26px;border-radius:7px;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8l4 4" stroke="var(--md-on-primary-container)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`:''}${nextH?`<button onclick="S.feedCardHorse='${nextH.id}';rerender()" style="width:26px;height:26px;border-radius:7px;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="var(--md-on-primary-container)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`:''}</div></div>${horseDone?`<div style="padding:7px 14px;background:var(--md-secondary-container);border-bottom:1px solid var(--md-secondary)33;display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="var(--md-secondary)22" stroke="var(--md-secondary)" stroke-width="1.2"/><path d="M3.5 7l2.5 2.5 4.5-4.5" stroke="var(--md-secondary)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-size:12px;font-weight:700;color:var(--md-secondary);">All changes confirmed</span></div>`:`<div style="padding:6px 14px;background:var(--md-warning-container);border-bottom:1px solid var(--md-warning)33;"><span style="font-size:11px;font-weight:600;color:var(--md-warning);">Check off each change as you prepare ${horse.name}'s feed.</span></div>`}${sections.join(`<div style="height:1px;background:${TH.mdOutlineVar};"></div>`)}</div>`;
+  return `<div style="background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:12px;overflow:hidden;margin-bottom:10px;"><div style="padding:10px 14px;border-bottom:1.5px solid var(--md-outline-variant);display:flex;align-items:center;gap:8px;"><button onclick="S.feedCardHorse=null;rerender()" style="background:none;border:none;padding:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M14 5L8 11l6 6" stroke="var(--md-on-surface)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div style="flex:1;display:flex;align-items:center;gap:7px;">${horseAvatar(horse,28)}<span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">${horse.name}</span></div><div style="display:flex;gap:3px;">${prevH?`<button onclick="S.feedCardHorse='${prevH.id}';rerender()" style="width:26px;height:26px;border-radius:7px;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8l4 4" stroke="var(--md-on-primary-container)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`:''}${nextH?`<button onclick="S.feedCardHorse='${nextH.id}';rerender()" style="width:26px;height:26px;border-radius:7px;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="var(--md-on-primary-container)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`:''}</div></div>${horseDone?`<div style="padding:7px 14px;background:var(--md-secondary-container);border-bottom:1px solid var(--md-secondary)33;display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="var(--md-secondary)22" stroke="var(--md-secondary)" stroke-width="1.2"/><path d="M3.5 7l2.5 2.5 4.5-4.5" stroke="var(--md-secondary)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-size:12px;font-weight:700;color:var(--md-secondary);">All changes confirmed</span></div>`:`<div style="padding:6px 14px;background:var(--md-warning-container);border-bottom:1px solid var(--md-warning)33;"><span style="font-size:11px;font-weight:600;color:var(--md-warning);">Check off each change as you prepare ${horse.name}'s feed.</span></div>`}${sections.join(`<div style="height:1px;background:${TH.mdOutlineVar};"></div>`)}</div>`;
 }
 
 // --- NAV -----------------------------------------------------
@@ -541,10 +828,10 @@ function buildNav(isMgr,isVet,showBack,showHorse){
   const notifRows=notifItems.map(function(n){return '<div style="padding:10px 14px;border-bottom:1px solid var(--md-outline-variant);display:flex;gap:9px;align-items:flex-start;background:'+(n.unread?t.TL:'transparent')+'"><span style="font-size:16px;flex-shrink:0;">'+n.icon+'</span><div style="flex:1"><div style="font-size:13px;font-weight:'+(n.unread?700:500)+';color:var(--md-on-surface);">'+n.title+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+n.sub+'</div></div>'+(n.unread?'<div style="width:7px;height:7px;border-radius:50%;background:var(--md-primary);flex-shrink:0;margin-top:3px;"></div>':'')+'</div>';}).join('');
   const notifPanel=S.showNotifPanel?('<div onclick="S.showNotifPanel=false;rerender()" style="position:fixed;inset:0;z-index:1000;"></div><div style="position:absolute;top:52px;right:10px;width:300px;background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.18);z-index:1001;overflow:hidden;"><div style="padding:11px 14px;border-bottom:1px solid var(--md-outline-variant);display:flex;align-items:center;justify-content:space-between;"><span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Notifications</span><span style="font-size:10px;font-weight:700;background:var(--md-error);color:#fff;padding:2px 7px;border-radius:10px;">2 new</span></div>'+notifRows+'</div>') :'';
   let leftEl;
-  if(showBack)leftEl='<button onclick="S.mgrView=\'home\';rerender()" style="background:var(--nn-bg-subtle);border:1px solid var(--nn-border);border-radius:8px;padding:5px 10px;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:\'DM Sans\',sans-serif;"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8l4 4" stroke="var(--nn-tx)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-size:12px;font-weight:600;color:var(--nn-tx);">Home</span></button>';
-  else if(showHorse)leftEl='<button onclick="S.selectedHorse=null;S.horseTab=\'overview\';rerender()" style="background:var(--nn-bg-subtle);border:1px solid var(--nn-border);border-radius:8px;padding:5px 10px;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:\'DM Sans\',sans-serif;"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8l4 4" stroke="var(--nn-tx)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-size:12px;font-weight:600;color:var(--nn-tx);">Horses</span></button>';
-  else if(isVet&&S.vetSignedIn&&S.vetView==='vaxform')leftEl='<button onclick="S.vetView=S.prevVetView||\'home\';rerender()" style="background:var(--nn-bg-subtle);border:1px solid var(--nn-border);border-radius:8px;padding:5px 10px;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:\'DM Sans\',sans-serif;"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8l4 4" stroke="var(--nn-tx)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-size:12px;font-weight:600;color:var(--nn-tx);">Back</span></button>';
-  else if(isVet&&S.vetSignedIn&&S.vetView==='setup'&&svcEditId!==null)leftEl='<button onclick="svcEditId=null;rerender()" style="background:var(--nn-bg-subtle);border:1px solid var(--nn-border);border-radius:8px;padding:5px 10px;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:\'DM Sans\',sans-serif;"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8l4 4" stroke="var(--nn-tx)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-size:12px;font-weight:600;color:var(--nn-tx);">Services</span></button>';
+  if(showBack)leftEl='<button onclick="S.mgrView=\'home\';rerender()" style="background:none;border:none;padding:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M14 5L8 11l6 6" stroke="var(--nn-tx)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
+  else if(showHorse)leftEl='<button onclick="S.selectedHorse=null;S.horseTab=\'overview\';rerender()" style="background:none;border:none;padding:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M14 5L8 11l6 6" stroke="var(--nn-tx)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
+  else if(isVet&&S.vetSignedIn&&S.vetView==='vaxform')leftEl='<button onclick="S.vetView=S.prevVetView||\'home\';rerender()" style="background:none;border:none;padding:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M14 5L8 11l6 6" stroke="var(--nn-tx)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
+  else if(isVet&&S.vetSignedIn&&S.vetView==='setup'&&svcEditId!==null)leftEl='<button onclick="svcEditId=null;rerender()" style="background:none;border:none;padding:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M14 5L8 11l6 6" stroke="var(--nn-tx)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
   else leftEl='<div style="display:flex;align-items:center;gap:7px;">'+logoSVG(24,'var(--nn-tx)')+'<span style="font-size:16px;font-weight:700;color:var(--nn-tx);letter-spacing:-0.3px;">NayNay</span></div>';
   const rolePickerSheet=S.showRolePicker?rRolePickerSheet():'';
   return '<div style="position:relative;">'+rolePickerSheet+'<div style="background:linear-gradient(135deg,var(--nn-bg-card) 0%,var(--nn-bg-card) 100%);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(58,172,190,0.25);position:relative;min-height:52px;">'+leftEl+'<div style="position:absolute;left:50%;transform:translateX(-50%);">'+rolePill+'</div>'+notifBell+notifPanel+'</div></div>';
@@ -572,7 +859,7 @@ function navTo(tab){S.activeTab=tab;S.selectedHorse=null;S.horseTab='overview';S
 function rerender(){
   const app=document.getElementById('app');if(!app.querySelector('#content-area')){render();return;}
   const t=TH,isVet=S.roles.length===1&&S.role==='vet',isMgr=S.roles.length===1&&S.role==='manager',isOwner=S.roles.length===1&&S.role==='owner',isTrainer=S.roles.length===1&&S.role==='trainer';
-  const showHorse=!!S.selectedHorse&&!isVet&&!isOwner&&!isTrainer,showBack=isMgr&&S.mgrView==='assignments';
+  const showHorse=!!S.selectedHorse&&!isVet,showBack=isMgr&&S.mgrView==='assignments';
   app.querySelector('#nav-bar').innerHTML=buildNav(isMgr,isVet,showBack,showHorse);
   const bb=app.querySelector('#bottom-bar');const showBB=!isVet||(isVet&&S.vetSignedIn);
   if(bb)bb.innerHTML=showBB?bottomBar(isMgr,isVet):'';
@@ -589,7 +876,7 @@ function getPad(isVet,showHorse){
 }
 function render(){
   const app=document.getElementById('app');const t=TH,isVet=S.roles.length===1&&S.role==='vet',isMgr=S.roles.length===1&&S.role==='manager',isOwner=S.roles.length===1&&S.role==='owner',isTrainer=S.roles.length===1&&S.role==='trainer';
-  const showHorse=!!S.selectedHorse&&!isVet&&!isOwner&&!isTrainer,showBack=isMgr&&S.mgrView==='assignments';
+  const showHorse=!!S.selectedHorse&&!isVet,showBack=isMgr&&S.mgrView==='assignments';
   const showBB=!isVet||(isVet&&S.vetSignedIn);const pad=getPad(isVet,showHorse);
   app.innerHTML='<div id="nav-bar">'+buildNav(isMgr,isVet,showBack,showHorse)+'</div><div id="content-area" style="background:var(--md-background);flex:1;padding:'+pad+';overflow-y:auto;"></div><div id="bottom-bar">'+(showBB?bottomBar(isMgr,isVet):'')+'</div>';
   app.querySelector('#content-area').innerHTML=getContent(isVet,isMgr,showHorse);
@@ -601,33 +888,35 @@ function getContent(isVet,isMgr,showHorse){
     if(!S.vetSignedIn){if(S.vetConfirmPage==='confirmed')return rVetConfirmedPage();if(S.vetConfirmPage==='declined')return rVetDeclinedPage();return rVetUnauth();}
     if(S.quickAction==='request-barn-visit')return rRequestVisitForm();
     if(S.quickAction)return rQuickActionForm(S.quickAction);
-    if(S.vetView==='home')return rVetHome();if(S.vetView==='horses')return rVetHorses();
+    if(S.vetView==='home')return rVetHome();if(S.vetView==='horses')return rHorseList();
     if(S.vetView==='messages')return rMessages('vet');if(S.vetView==='setup')return rVetSetup();
     if(S.vetView==='vaxform')return rVaxForm();return rVetHome();
   }
   if(S.role==='trainer'){
+    if(showHorse)return rHorseDetail(HORSES_ALL.find(function(h){return h.id===S.selectedHorse;})||HORSES.find(function(h){return h.id===S.selectedHorse;}));
     if(S.quickAction==='document-observation')return rObservationForm();
     if(S.quickAction==='request-barn-visit')return rScheduleVisitForm();
     if(S.quickAction==='create-regimen')return rCreateRegimenForm();
     if(S.quickAction)return rQuickActionForm(S.quickAction);
-    if(S.activeTab==='horses')return rHorses();
+    if(S.activeTab==='horses')return rHorseList();
     if(S.activeTab==='messages')return rMessages('trainer');
     return rTrainerHome();
   }
   if(S.role==='owner'){
+    if(showHorse)return rHorseDetail(HORSES_ALL.find(function(h){return h.id===S.selectedHorse;})||HORSES.find(function(h){return h.id===S.selectedHorse;}));
     if(S.bookingVisitId)return rBookAppointment(S.bookingVisitId);
     if(S.ownerEventPass)return rEventPass(S.ownerEventPass);
     if(S.quickAction==='request-appointment')return rRequestAppointmentForm();
     if(S.quickAction)return rQuickActionForm(S.quickAction);
-    if(S.activeTab==='horses')return rOwnerHorses();
+    if(S.activeTab==='horses')return rHorseList();
     if(S.activeTab==='messages')return rMessages('owner');
     return rOwnerHome();
   }
-  if(showHorse)return rHorseDetail(HORSES.find(function(h){return h.id===S.selectedHorse;}));
+  if(showHorse)return rHorseDetail(HORSES_ALL.find(function(h){return h.id===S.selectedHorse;})||HORSES.find(function(h){return h.id===S.selectedHorse;}));
   if(S.quickAction==='request-barn-visit')return rScheduleVisitForm();
   if(S.quickAction==='document-observation')return rObservationForm();
   if(S.quickAction)return rQuickActionForm(S.quickAction);
-  if(S.activeTab==='horses')return rHorses();if(S.activeTab==='messages')return rMessages(S.role);
+  if(S.activeTab==='horses')return rHorseList();if(S.activeTab==='messages')return rMessages(S.role);
   if(isMgr){if(S.activeTab==='setup')return rSetup();if(S.mgrView==='assignments')return rAssignments();return rMgrHome();}
   return rStaff();
 }
@@ -875,8 +1164,8 @@ function rMgrHome(){
   const pendingVisits=BARN_VISITS.filter(function(v){return v.status==='pending_barn_confirm';});
   const pendingVisitSection=pendingVisits.length?'<div style="margin-bottom:14px;"><div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="'+TH.WARN+'" stroke-width="1.3"/><path d="M8 5v3.5L10 10" stroke="'+TH.WARN+'" stroke-width="1.3" stroke-linecap="round"/></svg><span style="font-size:12px;font-weight:700;color:'+TH.WARN+';">Visit requests pending your approval</span></div>'+pendingVisits.map(function(v){return visitCard(v,'manager');}).join('')+'</div>':'';
   const confirmedVisits=BARN_VISITS.filter(function(v){return v.status==='confirmed';});
-  const visitsSection=confirmedVisits.length?'<div style="margin-bottom:14px;"><div style="font-size:12px;font-weight:700;color:'+TH.mdOnSurfDim+';text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;">Upcoming visits</div>'+confirmedVisits.map(function(v){return visitCard(v,'manager');}).join('')+'</div>':'';
-  return dateBanner()+mgrHeader+pendingVisitSection+statsRow+assignBtn+quickActionsBar('manager')+visitsSection+trainingList+staffCards;
+  const visitsSection=confirmedVisits.length?'<div style="margin-bottom:14px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Upcoming visits</div>'+confirmedVisits.map(function(v){return visitCard(v,'manager');}).join('')+'</div>':'';
+  return dateBanner()+mgrHeader+pendingVisitSection+statsRow+assignBtn+visitsSection+trainingList+staffCards+quickActionsBar('manager');
 }
 
 // --- MANAGER ASSIGNMENTS --------------------------------------
@@ -1087,13 +1376,13 @@ function vetSignIn(){S.vetSignedIn=true;S.vetView='home';rerender();}
 // trainer: document-vitals, document-observation, request-barn-visit, create-regimen
 // owner:   upload-lab, request-appointment
 const QUICK_ACTIONS={
-  'document-vitals':      {id:'document-vitals',       label:'Document Vitals',         icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',              color:'var(--md-primary)', bg:'var(--md-primary-container)', roles:['staff','manager','vet','trainer']},
-  'document-observation': {id:'document-observation',  label:'Document Observation',    icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg>',   color:'var(--md-error)', bg:'var(--md-error-container)', roles:['staff','manager','trainer']},
-  'document-vaccine':     {id:'document-vaccine',      label:'Document Vaccine',        icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M7 10l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="6" width="11" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M16 10h2M16 14h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',                  color:'var(--md-secondary)', bg:'var(--md-secondary-container)', roles:['manager','vet']},
-  'upload-lab':           {id:'upload-lab',            label:'Upload Lab Test',         icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 3v8l-3 5a2 2 0 001.7 3h10.6A2 2 0 0017 16l-3-5V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 3h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7 13h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',   color:'var(--md-tertiary)', bg:'var(--md-tertiary-container)', roles:['vet','owner']},
-  'request-barn-visit':   {id:'request-barn-visit',    label:'Request Barn Visit',      icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 22V12h6v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',                                                            color:'var(--md-tertiary)', bg:'var(--md-tertiary-container)', roles:['manager','vet','trainer']},
-  'create-regimen':       {id:'create-regimen',        label:'Create Training Regimen', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',                                                               color:'var(--md-tertiary)', bg:'var(--md-tertiary-container)', roles:['trainer']},
-  'request-appointment':  {id:'request-appointment',   label:'Request Appointment',     icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', color:'var(--md-warning)', bg:'var(--md-warning-container)', roles:['owner']},
+  'document-vitals':      {id:'document-vitals',       roles:['staff','manager','vet','trainer'],label:'Document Vitals',         icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',              color:'var(--md-primary)', bg:'var(--md-primary-container)'},
+  'document-observation': {id:'document-observation',  roles:['staff','manager','trainer'],     label:'Document Observation',    icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg>',   color:'var(--md-error)', bg:'var(--md-error-container)'},
+  'document-vaccine':     {id:'document-vaccine',      roles:['manager','vet'],                 label:'Document Vaccine',        icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M7 10l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="6" width="11" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M16 10h2M16 14h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',                  color:'var(--md-secondary)', bg:'var(--md-secondary-container)'},
+  'upload-lab':           {id:'upload-lab',            roles:['vet','owner'],                   label:'Upload Lab Test',         icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 3v8l-3 5a2 2 0 001.7 3h10.6A2 2 0 0017 16l-3-5V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 3h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7 13h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',   color:'var(--md-tertiary)', bg:'var(--md-tertiary-container)'},
+  'request-barn-visit':   {id:'request-barn-visit',    roles:['manager','vet','trainer'],        label:'Request Barn Visit',      icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 22V12h6v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',                                                            color:'var(--md-tertiary)', bg:'var(--md-tertiary-container)'},
+  'create-regimen':       {id:'create-regimen',        roles:['trainer'],                        label:'Create Training Regimen', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',                                                               color:'var(--md-tertiary)', bg:'var(--md-tertiary-container)'},
+  'request-appointment':  {id:'request-appointment',   roles:['owner'],                          label:'Request Appointment',     icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', color:'var(--md-warning)', bg:'var(--md-warning-container)'},
 };
 
 function quickActionsBar(role){
@@ -1133,7 +1422,7 @@ function rVitalsForm(){
   const dateStr=vs.date||now.toISOString().split('T')[0];
 
   const backBtn='<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">'
-    +'<button onclick="S.quickAction=null;window.vitalsState={horseId:\'\',date:\'\',time:\'\',activeField:null,hr:\'\',rr:\'\',temp:\'\',bcs:\'\',hg:\'\',bl:\'\',notes:\'\'};rerender()" style="background:var(--md-primary-container);border:1.5px solid var(--md-outline);border-radius:8px;padding:6px 11px;cursor:pointer;font-family:\'DM Sans\',sans-serif;display:flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8l4 4" stroke="var(--md-on-primary-container)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-size:12px;font-weight:700;color:var(--md-on-primary-container);">Back</span></button>'
+    +'<button onclick="S.quickAction=null;window.vitalsState={horseId:\'\',date:\'\',time:\'\',activeField:null,hr:\'\',rr:\'\',temp:\'\',bcs:\'\',hg:\'\',bl:\'\',notes:\'\'};rerender()" style="background:none;border:none;padding:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M14 5L8 11l6 6" stroke="var(--md-on-surface)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'
     +'<div style="flex:1;display:flex;align-items:center;justify-content:space-between;">'
     +'<div style="display:flex;align-items:center;gap:7px;"><div style="width:28px;height:28px;border-radius:7px;background:var(--md-primary-container);display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="var(--md-primary)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span style="font-size:15px;font-weight:700;color:var(--md-on-surface);">Vitals Journal</span></div>'
     +'<span style="font-size:12px;font-weight:600;color:var(--md-on-surface-dim);">New Entry</span>'
@@ -1149,38 +1438,36 @@ function rVitalsForm(){
   const dtRow='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">'
     +'<div style="background:var(--md-primary-container);border:1.5px solid var(--md-outline);border-radius:11px;padding:10px 12px;">'
     +'<div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;">Date</div>'
-    +'<div style="display:flex;align-items:center;justify-content:space-between;">'
+    +'<div>'
     +'<input type="date" value="'+dateStr+'" onchange="window.vitalsState.date=this.value;rerender()" style="font-size:13px;font-weight:600;color:var(--md-on-surface);background:transparent;border:none;outline:none;font-family:\'DM Sans\',sans-serif;width:100%;cursor:pointer;"/>'
-    +'<svg width="17" height="17" viewBox="0 0 18 18" fill="none" style="flex-shrink:0;"><rect x="2" y="3" width="14" height="13" rx="1.5" stroke="var(--md-primary)" stroke-width="1.2"/><path d="M6 1.5v3M12 1.5v3M2 8h14" stroke="var(--md-primary)" stroke-width="1.2" stroke-linecap="round"/></svg>'
     +'</div></div>'
     +'<div style="background:var(--md-primary-container);border:1.5px solid var(--md-outline);border-radius:11px;padding:10px 12px;">'
     +'<div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;">Time</div>'
-    +'<div style="display:flex;align-items:center;justify-content:space-between;">'
+    +'<div>'
     +'<input type="time" value="'+timeStr+'" onchange="window.vitalsState.time=this.value;rerender()" style="font-size:13px;font-weight:600;color:var(--md-on-surface);background:transparent;border:none;outline:none;font-family:\'DM Sans\',sans-serif;width:100%;cursor:pointer;"/>'
-    +'<svg width="17" height="17" viewBox="0 0 18 18" fill="none" style="flex-shrink:0;"><circle cx="9" cy="9" r="7" stroke="var(--md-primary)" stroke-width="1.2"/><path d="M9 5v4.5l2.5 2" stroke="var(--md-primary)" stroke-width="1.2" stroke-linecap="round"/></svg>'
     +'</div></div></div>';
 
-  // Vital field cards -- 2-column grid, each shows icon + label on rest, expands inline when tapped
+  // Vital field cards -- 2-column grid, always expanded, no onclick/rerender on card
   const fieldGrid='<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px;">'
     +VITAL_FIELDS.map(function(f){
       const val=vs[f.id];
-      const active=vs.activeField===f.id;
       const hasVal=val&&val!=='';
 
-      // BCS gets a special 1-9 button strip
-      const bcsInput=f.type==='bcs'?'<div style="margin-top:9px;"><div style="display:flex;gap:3px;flex-wrap:wrap;justify-content:center;">'+[1,2,3,4,5,6,7,8,9].map(function(n){const sel=parseInt(val)===n;const ideal=n>=4&&n<=6;return '<button onclick="window.vitalsState.bcs=\''+n+'\';rerender()" style="font-family:\'DM Sans\',sans-serif;width:26px;height:26px;border-radius:6px;border:1.5px solid '+(sel?t.T:ideal?TH.mdPrim+'44':t.BRD)+';background:'+(sel?t.T:ideal?t.TL:'transparent')+';color:'+(sel?'#fff':ideal?t.T:t.TX3)+';font-size:12px;font-weight:700;cursor:pointer;">'+n+'</button>';}).join('')+'</div>'+'<div style="font-size:10px;color:var(--md-on-surface-dim);text-align:center;margin-top:4px;">4–6 ideal</div></div>'
-      :'<input id="vit-'+f.id+'" type="'+f.type+'" placeholder="'+f.placeholder+'" value="'+val+'" oninput="window.vitalsState[\''+f.id+'\']=this.value" style="width:100%;margin-top:9px;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:8px;padding:8px 10px;font-size:15px;font-weight:700;color:var(--md-on-surface);outline:none;box-sizing:border-box;text-align:center;font-family:\'DM Sans\',sans-serif;" />';
+      // BCS gets a special 1-9 button strip (works fine, buttons call rerender individually)
+      const fieldInput=f.type==='bcs'
+        ?'<div style="margin-top:9px;"><div style="display:flex;gap:3px;flex-wrap:wrap;justify-content:center;">'+[1,2,3,4,5,6,7,8,9].map(function(n){const sel=parseInt(val)===n;const ideal=n>=4&&n<=6;return '<button onclick="window.vitalsState.bcs=\''+n+'\';rerender()" style="font-family:\'DM Sans\',sans-serif;width:26px;height:26px;border-radius:6px;border:1.5px solid '+(sel?t.T:ideal?TH.mdPrim+'44':t.BRD)+';background:'+(sel?t.T:ideal?t.TL:'transparent')+';color:'+(sel?'#fff':ideal?t.T:t.TX3)+';font-size:12px;font-weight:700;cursor:pointer;">'+n+'</button>';}).join('')+'</div><div style="font-size:10px;color:var(--md-on-surface-dim);text-align:center;margin-top:4px;">4–6 ideal</div></div>'
+        // Numeric/decimal input -- inputmode ensures numeric keyboard on mobile, no onclick on wrapper
+        :'<input id="vit-'+f.id+'" type="text" inputmode="'+(f.type==='number'?'decimal':'text')+'" placeholder="'+f.placeholder+'" value="'+val+'" oninput="window.vitalsState[\''+f.id+'\']=this.value" style="width:100%;margin-top:9px;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:8px;padding:8px 10px;font-size:15px;font-weight:700;color:var(--md-on-surface);outline:none;box-sizing:border-box;text-align:center;font-family:\'DM Sans\',sans-serif;" />';
 
-      return '<div onclick="'+(active?'window.vitalsState.activeField=null':'window.vitalsState.activeField=\''+f.id+'\'')+';rerender()" style="background:'+(active?t.TL:t.CARD)+';border:1.5px solid '+(active?t.T:hasVal?TH.mdPrim+'66':t.BRD)+';border-radius:13px;padding:13px 10px;cursor:pointer;min-height:80px;position:relative;transition:all 0.1s;">'
-        // Filled value badge
-        +(hasVal&&!active?'<div style="position:absolute;top:7px;right:7px;background:var(--md-primary);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;">'+val+(f.unit==='°F'||f.unit==='/9'?f.unit:' '+f.unit)+'</div>':'')
-        +'<div style="color:'+(active?t.T:hasVal?t.T:t.TX3)+';margin-bottom:5px;display:flex;justify-content:center;">'+f.icon+'</div>'
-        +'<div style="font-size:12px;font-weight:700;color:'+(active?t.T:hasVal?t.T:t.TX3)+';text-align:center;line-height:1.2;">'+f.label+'</div>'
-        +(active?bcsInput:'')
+      // Card — no onclick, cursor default, always shows input
+      return '<div style="background:'+(hasVal?t.TL:t.CARD)+';border:1.5px solid '+(hasVal?t.T:t.BRD)+';border-radius:13px;padding:13px 10px;min-height:80px;position:relative;">'
+        +'<div style="color:'+(hasVal?t.T:t.TX3)+';margin-bottom:5px;display:flex;justify-content:center;">'+f.icon+'</div>'
+        +'<div style="font-size:12px;font-weight:700;color:'+(hasVal?t.T:t.TX3)+';text-align:center;line-height:1.2;margin-bottom:4px;">'+f.label+'</div>'
+        +fieldInput
         +'</div>';
     }).join('')+'</div>';
 
-  // Normal ranges hint -- shown subtly
+    // Normal ranges hint -- shown subtly
   const ranges='<div style="background:var(--md-primary-container);border-radius:10px;border:1px solid var(--md-outline);padding:9px 12px;margin-bottom:14px;">'
     +'<div style="font-size:10px;font-weight:700;color:var(--md-on-primary-container);text-transform:uppercase;margin-bottom:5px;">Normal ranges</div>'
     +'<div style="display:flex;flex-wrap:wrap;gap:5px;">'+VITAL_FIELDS.slice(0,4).map(function(f){return '<span style="font-size:11px;color:var(--md-on-surface-variant);">'+f.label.split(' ')[0]+': <strong>'+f.normal+'</strong></span>';}).join('<span style="color:var(--md-outline-variant);">·</span>')+'</div></div>';
@@ -1227,7 +1514,7 @@ function rQuickActionForm(actionId){
   const action=QUICK_ACTIONS[actionId];
   if(!action)return '';
   const backBtn=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
-    <button onclick="S.quickAction=null;rerender()" style="background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:8px;padding:6px 11px;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8l4 4" stroke="var(--md-on-primary-container)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-size:12px;font-weight:700;color:var(--md-on-primary-container);">Back</span></button>
+    <button onclick="S.quickAction=null;rerender()" style="background:none;border:none;padding:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M14 5L8 11l6 6" stroke="var(--md-on-surface)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <div style="display:flex;align-items:center;gap:7px;"><div style="width:28px;height:28px;border-radius:7px;background:${action.bg};display:flex;align-items:center;justify-content:center;color:${action.color};">${action.icon.replace('width="20" height="20"','width="15" height="15"')}</div><span style="font-size:15px;font-weight:700;color:var(--md-on-surface);">${action.label}</span></div>
   </div>`;
   const horseSelect=`<div style="margin-bottom:12px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Horse</label><select style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"><option value="">Select a horse…</option>${HORSES.map(h=>`<option value="${h.id}">${h.name} — ${h.breed}</option>`).join('')}</select></div>`;
@@ -1280,7 +1567,7 @@ function rCreateRegimenForm(){
 
   if(rs.submitted){
     return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">'
-      +'<button onclick="S.quickAction=null;window.regimenState={horseId:\'\',type:\'Flat\',duration:45,intensity:3,days:[],timesPerDay:1,times:[\'\'],dateFrom:\'\',dateTo:\'\',submitted:false};rerender()" style="background:var(--md-primary-container);border:1.5px solid var(--md-outline);border-radius:8px;padding:6px 11px;cursor:pointer;font-family:\'DM Sans\',sans-serif;display:flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8l4 4" stroke="var(--md-on-primary-container)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-size:12px;font-weight:700;color:var(--md-on-primary-container);">Back</span></button></div>'
+      +'<button onclick="S.quickAction=null;window.regimenState={horseId:\'\',type:\'Flat\',duration:45,intensity:3,days:[],timesPerDay:1,times:[\'\'],dateFrom:\'\',dateTo:\'\',submitted:false};rerender()" style="background:none;border:none;padding:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M14 5L8 11l6 6" stroke="var(--md-on-surface)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>'
       +'<div style="background:var(--md-secondary-container);border:1.5px solid var(--md-secondary)44;border-radius:14px;padding:20px;text-align:center;">'
       +'<div style="font-size:30px;margin-bottom:8px;">📋</div>'
       +'<div style="font-size:16px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Regimen created</div>'
@@ -1289,7 +1576,7 @@ function rCreateRegimenForm(){
   }
 
   const backBtn='<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">'
-    +'<button onclick="S.quickAction=null;window.regimenState={horseId:\'\',type:\'Flat\',duration:45,intensity:3,days:[],timesPerDay:1,times:[\'\'],dateFrom:\'\',dateTo:\'\',submitted:false};rerender()" style="background:var(--md-primary-container);border:1.5px solid var(--md-outline);border-radius:8px;padding:6px 11px;cursor:pointer;font-family:\'DM Sans\',sans-serif;display:flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8l4 4" stroke="var(--md-on-primary-container)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-size:12px;font-weight:700;color:var(--md-on-primary-container);">Back</span></button>'
+    +'<button onclick="S.quickAction=null;window.regimenState={horseId:\'\',type:\'Flat\',duration:45,intensity:3,days:[],timesPerDay:1,times:[\'\'],dateFrom:\'\',dateTo:\'\',submitted:false};rerender()" style="background:none;border:none;padding:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M14 5L8 11l6 6" stroke="var(--md-on-surface)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'
     +'<div style="flex:1;display:flex;align-items:center;gap:8px;">'
     +'<div style="font-size:11px;font-weight:600;color:var(--md-primary);background:var(--md-primary-container);padding:2px 9px;border-radius:6px;">Training</div>'
     +'<div style="font-size:15px;font-weight:700;color:var(--md-on-surface);">New Regimen</div></div>'
@@ -1368,12 +1655,10 @@ function rCreateRegimenForm(){
     +'<div><label style="font-size:13px;font-weight:600;color:var(--md-on-surface-dim);display:block;margin-bottom:6px;">From</label>'
     +'<div style="background:var(--md-primary-container);border:1.5px solid var(--md-outline);border-radius:10px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;">'
     +'<input type="date" value="'+(rs.dateFrom||todayStr)+'" onchange="window.regimenState.dateFrom=this.value" style="background:transparent;border:none;outline:none;font-size:13px;font-weight:500;color:var(--md-on-surface);font-family:\'DM Sans\',sans-serif;flex:1;"/>'
-    +'<svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2" y="3" width="14" height="13" rx="1.5" stroke="var(--md-on-surface-dim)" stroke-width="1.2"/><path d="M6 1.5v3M12 1.5v3M2 8h14" stroke="var(--md-on-surface-dim)" stroke-width="1.2" stroke-linecap="round"/></svg>'
     +'</div></div>'
     +'<div><label style="font-size:13px;font-weight:600;color:var(--md-on-surface-dim);display:block;margin-bottom:6px;">Date</label>'
     +'<div style="background:var(--md-primary-container);border:1.5px solid var(--md-outline);border-radius:10px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;">'
     +'<input type="date" value="'+rs.dateTo+'" onchange="window.regimenState.dateTo=this.value" style="background:transparent;border:none;outline:none;font-size:13px;font-weight:500;color:var(--md-on-surface);font-family:\'DM Sans\',sans-serif;flex:1;"/>'
-    +'<svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2" y="3" width="14" height="13" rx="1.5" stroke="var(--md-on-surface-dim)" stroke-width="1.2"/><path d="M6 1.5v3M12 1.5v3M2 8h14" stroke="var(--md-on-surface-dim)" stroke-width="1.2" stroke-linecap="round"/></svg>'
     +'</div></div></div>';
 
   const canCreate=!!rs.horseId&&rs.days.length>0;
@@ -1392,7 +1677,7 @@ function rRequestAppointmentForm(){
   const t=TH;
   const ra=window.reqApptState;
   const backBtn='<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">'
-    +'<button onclick="S.quickAction=null;window.reqApptState={horseId:\'\',proType:\'\',proId:\'\',description:\'\',preferredDate:\'\',preferredTime:\'\',submitted:false};rerender()" style="background:var(--md-primary-container);border:1.5px solid var(--md-outline);border-radius:8px;padding:6px 11px;cursor:pointer;font-family:\'DM Sans\',sans-serif;display:flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8l4 4" stroke="var(--md-on-primary-container)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-size:12px;font-weight:700;color:var(--md-on-primary-container);">Back</span></button>'
+    +'<button onclick="S.quickAction=null;window.reqApptState={horseId:\'\',proType:\'\',proId:\'\',description:\'\',preferredDate:\'\',preferredTime:\'\',submitted:false};rerender()" style="background:none;border:none;padding:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M14 5L8 11l6 6" stroke="var(--md-on-surface)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'
     +'<div style="flex:1;display:flex;align-items:center;gap:7px;"><div style="width:28px;height:28px;border-radius:7px;background:var(--md-warning-container);display:flex;align-items:center;justify-content:center;font-size:14px;">📅</div><span style="font-size:15px;font-weight:700;color:var(--md-on-surface);">Request Appointment</span></div></div>';
 
   if(ra.submitted){
@@ -1437,11 +1722,11 @@ function rRequestAppointmentForm(){
     +'<div><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Preferred date</label>'
     +'<div style="background:var(--md-primary-container);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;display:flex;align-items:center;justify-content:space-between;">'
     +'<input type="date" value="'+(ra.preferredDate||'')+'" onchange="window.reqApptState.preferredDate=this.value" style="background:transparent;border:none;outline:none;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);flex:1;"/>'
-    +'<svg width="15" height="15" viewBox="0 0 18 18" fill="none"><rect x="2" y="3" width="14" height="13" rx="1.5" stroke="var(--md-primary)" stroke-width="1.2"/><path d="M6 1.5v3M12 1.5v3M2 8h14" stroke="var(--md-primary)" stroke-width="1.2" stroke-linecap="round"/></svg></div></div>'
+    +'<svg width="15" height="15" viewBox="0 0 18 18" fill="none"><rect x="2" y="3" width="14" height="13" rx="1.5" stroke="var(--md-primary)" stroke-width="1.2"/></div></div>'
     +'<div><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Preferred time</label>'
     +'<div style="background:var(--md-primary-container);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;display:flex;align-items:center;justify-content:space-between;">'
     +'<input type="time" value="'+(ra.preferredTime||'')+'" onchange="window.reqApptState.preferredTime=this.value" style="background:transparent;border:none;outline:none;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);flex:1;"/>'
-    +'<svg width="15" height="15" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="var(--md-primary)" stroke-width="1.2"/><path d="M9 5.5v4l2 1.5" stroke="var(--md-primary)" stroke-width="1.2" stroke-linecap="round"/></svg></div></div></div>';
+    +'</div></div></div>';
 
   const canSend=!!ra.horseId&&!!ra.proType&&!!ra.proId;
   const sendBtn='<button onclick="'+(canSend?'window.reqApptState.submitted=true;rerender()':'void 0')+'" style="width:100%;background:'+(canSend?t.T:t.BRD)+';color:#fff;border:none;padding:13px;border-radius:var(--md-shape-md);font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(canSend?'pointer':'default')+';">Send request</button>';
@@ -1584,7 +1869,7 @@ function rObservationForm(){
   const selType=OBS_TYPES.find(function(o){return o.id===os.obsType;});
 
   const backBtn='<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">'
-    +'<button onclick="S.quickAction=null;window.obsState={horseId:\'\',obsType:\'\',notes:\'\',photos:[],videos:[],date:\'\',time:\'\'};rerender()" style="background:var(--md-primary-container);border:1.5px solid var(--md-outline);border-radius:8px;padding:6px 11px;cursor:pointer;font-family:\'DM Sans\',sans-serif;display:flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8l4 4" stroke="var(--md-on-primary-container)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-size:12px;font-weight:700;color:var(--md-on-primary-container);">Back</span></button>'
+    +'<button onclick="S.quickAction=null;window.obsState={horseId:\'\',obsType:\'\',notes:\'\',photos:[],videos:[],date:\'\',time:\'\'};rerender()" style="background:none;border:none;padding:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M14 5L8 11l6 6" stroke="var(--md-on-surface)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'
     +'<div style="flex:1;display:flex;align-items:center;gap:7px;">'
     +'<div style="width:28px;height:28px;border-radius:7px;background:var(--md-error-container);display:flex;align-items:center;justify-content:center;font-size:14px;">👁</div>'
     +'<span style="font-size:15px;font-weight:700;color:var(--md-on-surface);">Document Observation</span></div></div>';
@@ -1599,15 +1884,13 @@ function rObservationForm(){
   const dtRow='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">'
     +'<div style="background:var(--md-primary-container);border:1.5px solid var(--md-outline);border-radius:11px;padding:10px 12px;">'
     +'<div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;">Date</div>'
-    +'<div style="display:flex;align-items:center;justify-content:space-between;">'
+    +'<div>'
     +'<input type="date" value="'+dateStr+'" onchange="window.obsState.date=this.value;rerender()" style="font-size:13px;font-weight:600;color:var(--md-on-surface);background:transparent;border:none;outline:none;font-family:\'DM Sans\',sans-serif;width:100%;cursor:pointer;"/>'
-    +'<svg width="16" height="16" viewBox="0 0 18 18" fill="none" style="flex-shrink:0;"><rect x="2" y="3" width="14" height="13" rx="1.5" stroke="var(--md-primary)" stroke-width="1.2"/><path d="M6 1.5v3M12 1.5v3M2 8h14" stroke="var(--md-primary)" stroke-width="1.2" stroke-linecap="round"/></svg>'
     +'</div></div>'
     +'<div style="background:var(--md-primary-container);border:1.5px solid var(--md-outline);border-radius:11px;padding:10px 12px;">'
     +'<div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;">Time</div>'
-    +'<div style="display:flex;align-items:center;justify-content:space-between;">'
+    +'<div>'
     +'<input type="time" value="'+timeStr+'" onchange="window.obsState.time=this.value;rerender()" style="font-size:13px;font-weight:600;color:var(--md-on-surface);background:transparent;border:none;outline:none;font-family:\'DM Sans\',sans-serif;width:100%;cursor:pointer;"/>'
-    +'<svg width="16" height="16" viewBox="0 0 18 18" fill="none" style="flex-shrink:0;"><circle cx="9" cy="9" r="7" stroke="var(--md-primary)" stroke-width="1.2"/><path d="M9 5v4.5l2.5 2" stroke="var(--md-primary)" stroke-width="1.2" stroke-linecap="round"/></svg>'
     +'</div></div>'
     +'</div>';
 
@@ -1823,6 +2106,286 @@ function rVaxForm(){
 }
 
 // --- SHARED HORSE/MESSAGES/SETUP ------------------------------
+function rHorseList(){
+  var t=TH;
+  var entries=getHorsesForUser();
+  var search=(S.horseSearch||'').toLowerCase().trim();
+  var filter=S.horseFilter||'all';
+  var isOwner=hasRole('owner');
+  var isMgr=hasRole('manager')||hasRole('staff');
+  var isTrainer=hasRole('trainer');
+  var isVet=hasRole('vet');
+
+  // Apply search
+  if(search){
+    entries=entries.filter(function(e){
+      var h=e.horse;
+      return h.name.toLowerCase().includes(search)
+        ||h.breed.toLowerCase().includes(search)
+        ||h.color.toLowerCase().includes(search)
+        ||h.owners.some(function(o){return o.name.toLowerCase().includes(search);})
+        ||(e.barn&&e.barn.name.toLowerCase().includes(search));
+    });
+  }
+
+  // Apply filter
+  if(filter==='mine'&&isOwner){
+    entries=entries.filter(function(e){return e.rel==='own';});
+  } else if(filter==='alerts'){
+    entries=entries.filter(function(e){return e.horse.alerts&&e.horse.alerts.length>0;});
+  } else if(filter==='vaccine-due'){
+    entries=entries.filter(function(e){
+      var nv=e.horse.nextVaccine;
+      if(!nv) return false;
+      // Show if due within 60 days
+      var parts=nv.split(' ');
+      if(parts.length<2) return true;
+      var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      var mo=months.indexOf(parts[0]);
+      var yr=parseInt(parts[1]);
+      if(mo<0||isNaN(yr)) return false;
+      var due=new Date(yr,mo,1);
+      var now=new Date(2026,2,25); // TODAY
+      return (due-now)/(1000*60*60*24)<=60;
+    });
+  } else if(filter==='event-pass'){
+    entries=entries.filter(function(e){return !!e.horse.passId;});
+  } else if(filter.startsWith('barn:')){
+    var barnId=filter.split(':')[1];
+    entries=entries.filter(function(e){return e.horse.barn===barnId;});
+  }
+
+  // Sort: alerts first, then by name
+  entries.sort(function(a,b){
+    var aAlert=a.horse.alerts&&a.horse.alerts.some(function(x){return x.urgent;});
+    var bAlert=b.horse.alerts&&b.horse.alerts.some(function(x){return x.urgent;});
+    if(aAlert&&!bAlert) return -1;
+    if(!aAlert&&bAlert) return 1;
+    return a.horse.name.localeCompare(b.horse.name);
+  });
+
+  // Sex chip helper
+  function sc(sex){
+    if(sex==='Mare'||sex==='Filly') return {bg:'var(--md-error-container)',color:'var(--md-error)'};
+    if(sex==='Stallion'||sex==='Colt') return {bg:'var(--md-tertiary-container)',color:'var(--md-tertiary)'};
+    return {bg:'var(--md-secondary-container)',color:'var(--md-secondary)'};
+  }
+
+  // Rel badge
+  function relBadge(rel){
+    var cfg={
+      own:     {label:'Owner',       bg:'var(--md-tertiary-container)',  color:'var(--md-tertiary)'},
+      train:   {label:'Trainer',     bg:'var(--md-primary-container)',   color:'var(--md-primary)'},
+      vet:     {label:'Vet',         bg:'var(--md-secondary-container)', color:'var(--md-secondary)'},
+      manage:  {label:'Manager',     bg:'var(--md-surface-variant)',     color:'var(--md-on-surface-variant)'},
+    }[rel]||{label:rel,bg:'var(--md-surface-variant)',color:'var(--md-on-surface-variant)'};
+    return '<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;background:'+cfg.bg+';color:'+cfg.color+';">'+cfg.label+'</span>';
+  }
+
+  // Filter chips
+  var allBarns=[...new Set(entries.map(function(e){return e.horse.barn;}))];
+  var chips=[{id:'all',label:'All'}];
+  if(isOwner) chips.push({id:'mine',label:'My horses'});
+  if(isOwner) chips.push({id:'event-pass',label:'Event passes'});
+  if(isVet||isMgr) chips.push({id:'alerts',label:'Alerts'});
+  if(isVet||isMgr) chips.push({id:'vaccine-due',label:'Vaccine due'});
+  if(allBarns.length>1) allBarns.forEach(function(bid){
+    chips.push({id:'barn:'+bid,label:(BARNS[bid]&&BARNS[bid].name)||bid});
+  });
+
+  var chipRow='<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px;-webkit-overflow-scrolling:touch;">'
+    +chips.map(function(ch){
+      var on=filter===ch.id;
+      return '<button onclick="S.horseFilter=\''+ch.id+'\';rerender()" style="font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:5px 12px;border-radius:20px;white-space:nowrap;background:'+(on?t.T:t.CARD)+';color:'+(on?'#fff':t.T)+';border:1.5px solid '+(on?t.T:t.BRD)+';">'+ch.label+'</button>';
+    }).join('')
+    +'</div>';
+
+  // Search bar
+  var searchBar='<div style="position:relative;margin-bottom:10px;">'
+    +'<svg width="15" height="15" viewBox="0 0 16 16" fill="none" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;"><circle cx="6.5" cy="6.5" r="5" stroke="var(--md-on-surface-dim)" stroke-width="1.4"/><path d="M11 11l3 3" stroke="var(--md-on-surface-dim)" stroke-width="1.4" stroke-linecap="round"/></svg>'
+    +'<input type="text" placeholder="Search horses, breeds, owners…" value="'+(S.horseSearch||'')+'" oninput="S.horseSearch=this.value;rerender()" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:10px;padding:9px 12px 9px 32px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/>'
+    +'</div>';
+
+  // Count by type
+  var totalCount=entries.length;
+  var urgentCount=entries.filter(function(e){return e.horse.alerts&&e.horse.alerts.some(function(a){return a.urgent;});}).length;
+
+  // Header
+  var header='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">'
+    +'<div>'
+    +'<div style="font-size:16px;font-weight:700;color:var(--md-on-surface);">Horses</div>'
+    +'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:1px;">'
+    +(isVet?'Your caseload':'Your horses')+' &middot; '+totalCount+' shown'
+    +(urgentCount>0?' &middot; <span style="color:var(--md-error);font-weight:700;">'+urgentCount+' urgent</span>':'')
+    +'</div>'
+    +'</div>'
+    +(isMgr?'<button style="background:var(--md-primary);color:#fff;border:none;padding:6px 12px;border-radius:var(--md-shape-sm);font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">+ Add</button>':'')
+    +'</div>';
+
+  if(entries.length===0){
+    return header+searchBar+chipRow
+      +'<div style="text-align:center;padding:32px 16px;color:var(--md-on-surface-dim);">'
+      +'<div style="font-size:24px;margin-bottom:8px;">🐴</div>'
+      +'<div style="font-size:14px;font-weight:600;">No horses match</div>'
+      +'<div style="font-size:12px;margin-top:4px;">Try a different search or filter</div>'
+      +'</div>';
+  }
+
+  // Horse cards
+  var cards=entries.map(function(entry){
+    var h=entry.horse;
+    var rel=entry.rel;
+    var barn=entry.barn;
+    var s=sc(h.sex);
+    var urgentAlert=h.alerts&&h.alerts.find(function(a){return a.urgent;});
+    var pass=h.passId?EVENT_PASSES.find(function(p){return p.id===h.passId;}):null;
+    var isExpanded=S.expandedHorse===h.id;
+    var ownersStr=h.owners.length===1
+      ?h.owners[0].name
+      :h.owners.map(function(o){return o.name+(o.share!=='Full'?' ('+o.share+')':'');}).join(', ');
+
+    // Compact row
+    var topRow='<div onclick="S.selectedHorse=\''+h.id+'\';S.horseTab=\'overview\';rerender()" style="display:flex;align-items:stretch;cursor:pointer;">'
+      // Avatar column
+      +'<div style="width:70px;background:'+h.avatar.bg+'22;display:flex;align-items:center;justify-content:center;padding:10px 6px;flex-shrink:0;border-right:1.5px solid var(--md-outline-variant);">'
+      +horseAvatar(h,52)
+      +'</div>'
+      // Info column
+      +'<div style="flex:1;padding:10px 12px;min-width:0;">'
+      // Row 1: name + sex chip + rel badge
+      +'<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;flex-wrap:wrap;">'
+      +'<span style="font-size:15px;font-weight:700;color:var(--md-on-surface);">'+h.name+'</span>'
+      +'<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:'+s.bg+';color:'+s.color+';">'+h.sex+'</span>'
+      +(S.roles.length>1?relBadge(rel):'')
+      +(urgentAlert?'<span style="font-size:10px;font-weight:700;background:var(--md-error-container);color:var(--md-error);padding:2px 7px;border-radius:20px;">⚠ Alert</span>':'')
+      +(pass?'<span style="font-size:9px;font-weight:700;background:var(--md-secondary-container);color:var(--md-secondary);padding:2px 7px;border-radius:20px;">Event Pass</span>':'')
+      +'</div>'
+      // Row 2: breed · color · age
+      +'<div style="font-size:11px;color:var(--md-on-surface-variant);margin-bottom:2px;">'+h.breed+' &middot; '+h.color+' &middot; '+h.age+'</div>'
+      // Row 3: barn + owner info
+      +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'
+      +(barn?barn.name+' &middot; ':'')+ownersStr
+      +'</div>'
+      +'</div>'
+      // Expand/collapse chevron (does not navigate)
+      +'<div onclick="event.stopPropagation();S.expandedHorse=S.expandedHorse===\''+h.id+'\'?null:\''+h.id+'\';rerender()" style="display:flex;align-items:center;padding:0 12px;flex-shrink:0;cursor:pointer;">'
+      +chevron(isExpanded)
+      +'</div>'
+      +'</div>';
+
+    // Expanded detail drawer
+    var drawer='';
+    if(isExpanded){
+      // Alerts
+      var alertsHtml='';
+      if(h.alerts&&h.alerts.length){
+        alertsHtml='<div style="padding:8px 12px;background:var(--md-warning-container);border-top:1.5px solid var(--md-warning)33;">'
+          +h.alerts.map(function(a){
+            var bg=a.urgent?'var(--md-error-container)':'var(--md-warning-container)';
+            var col=a.urgent?'var(--md-error)':'var(--md-warning)';
+            return '<div style="display:flex;gap:7px;align-items:flex-start;margin-bottom:4px;">'
+              +'<span style="font-size:13px;flex-shrink:0;">'+(a.urgent?'⚠️':'💊')+'</span>'
+              +'<span style="font-size:12px;color:'+col+';font-weight:600;">'+a.msg+'</span>'
+              +'</div>';
+          }).join('')
+          +'</div>';
+      }
+
+      // Key info grid
+      var infoGrid='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 12px;">';
+      function infoCell(label,value,urgent){
+        return '<div style="background:var(--md-surface-variant);border-radius:8px;padding:7px 9px;">'
+          +'<div style="font-size:9px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">'+label+'</div>'
+          +'<div style="font-size:12px;font-weight:600;color:'+(urgent?'var(--md-error)':'var(--md-on-surface)')+';">'+(value||'—')+'</div>'
+          +'</div>';
+      }
+      if(isVet||isMgr){
+        infoGrid+=infoCell('Next vaccine',h.nextVaccine,h.nextVaccine&&h.nextVaccine.includes('Apr 2026'));
+        infoGrid+=infoCell('Coggins expiry',h.coggins);
+        infoGrid+=infoCell('Last vitals',h.lastVitals);
+        infoGrid+=infoCell('Last observation',h.lastObs);
+      }
+      if(isTrainer){
+        var tp=TRAINER_HORSE_PROGRESS.find(function(x){return x.horseId===h.id;});
+        infoGrid+=infoCell('Discipline',h.discipline);
+        infoGrid+=infoCell('Level',h.level);
+        infoGrid+=infoCell('Last session',tp?tp.lastSession:h.lastObs);
+        infoGrid+=infoCell('Sessions this month',tp?tp.thisMonth+'':null);
+      }
+      if(isOwner){
+        infoGrid+=infoCell('Discipline',h.discipline);
+        infoGrid+=infoCell('Next appointment',h.lastVisit?'Mar 22':null);
+        infoGrid+=infoCell('Last vitals',h.lastVitals);
+        infoGrid+=infoCell('Vet',h.vet);
+      }
+      infoGrid+='</div>';
+
+      // Associated people
+      var peopleHtml='';
+      var people=[];
+      if(h.owners.length) h.owners.forEach(function(o){people.push({role:'Owner',name:o.name+(o.share!=='Full'?' ('+o.share+')':'')});});
+      if(h.trainer) people.push({role:'Trainer',name:h.trainer});
+      if(h.vet) people.push({role:'Vet',name:h.vet});
+      h.pros.forEach(function(p){people.push({role:p.role,name:p.name+(p.next?', next '+p.next:'')});});
+      if(people.length){
+        peopleHtml='<div style="padding:0 12px 10px;">'
+          +'<div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Associated people</div>'
+          +'<div style="display:flex;flex-direction:column;gap:3px;">'
+          +people.map(function(p){
+            return '<div style="display:flex;gap:6px;align-items:baseline;">'
+              +'<span style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);min-width:56px;">'+p.role+'</span>'
+              +'<span style="font-size:12px;color:var(--md-on-surface);">'+p.name+'</span>'
+              +'</div>';
+          }).join('')
+          +'</div></div>';
+      }
+
+      // Current note
+      var noteHtml=h.note
+        ?'<div style="padding:0 12px 10px;font-size:12px;color:var(--md-on-surface-variant);font-style:italic;line-height:1.55;">'+h.note+'</div>'
+        :'';
+
+      // Quick actions
+      var qaHtml='<div style="padding:8px 12px 10px;display:flex;gap:7px;flex-wrap:wrap;">';
+      if(isOwner&&pass){
+        qaHtml+='<button onclick="event.stopPropagation();S.ownerEventPass=\''+pass.id+'\';rerender()" style="font-family:\'DM Sans\',sans-serif;font-size:11px;font-weight:700;cursor:pointer;padding:6px 11px;border-radius:20px;background:var(--md-secondary-container);color:var(--md-secondary);border:1.5px solid var(--md-secondary)44;">Event Pass</button>';
+      }
+      if(!hasRole('owner')){
+        qaHtml+='<button onclick="event.stopPropagation();S.selectedHorse=\''+h.id+'\';S.horseTab=\'overview\';rerender()" style="font-family:\'DM Sans\',sans-serif;font-size:11px;font-weight:700;cursor:pointer;padding:6px 11px;border-radius:20px;background:var(--md-primary-container);color:var(--md-primary);border:1.5px solid var(--md-primary)44;">View profile</button>';
+      } else {
+        qaHtml+='<button onclick="event.stopPropagation();S.selectedHorse=\''+h.id+'\';S.horseTab=\'overview\';rerender()" style="font-family:\'DM Sans\',sans-serif;font-size:11px;font-weight:700;cursor:pointer;padding:6px 11px;border-radius:20px;background:var(--md-primary-container);color:var(--md-primary);border:1.5px solid var(--md-primary)44;">View profile</button>';
+      }
+      if(isVet||isMgr||isTrainer){
+        qaHtml+='<button onclick="event.stopPropagation();window.vitalsState.horseId=\''+h.id+'\';S.quickAction=\'document-vitals\';rerender()" style="font-family:\'DM Sans\',sans-serif;font-size:11px;font-weight:700;cursor:pointer;padding:6px 11px;border-radius:20px;background:var(--md-surface-variant);color:var(--md-on-surface-variant);border:1.5px solid var(--md-outline);">Log vitals</button>';
+      }
+      qaHtml+='</div>';
+
+      // Event pass banner
+      var passBanner='';
+      if(pass&&isOwner){
+        passBanner='<div onclick="event.stopPropagation();S.ownerEventPass=\''+pass.id+'\';rerender()" style="cursor:pointer;background:linear-gradient(135deg,#0E1E2E 0%,#1A3048 100%);padding:9px 12px;display:flex;align-items:center;gap:8px;border-top:1.5px solid var(--md-outline-variant);">'
+          +'<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" fill="rgba(255,255,255,0.7)"/><rect x="9" y="2" width="5" height="5" rx="1" fill="rgba(255,255,255,0.7)"/><rect x="2" y="9" width="5" height="5" rx="1" fill="rgba(255,255,255,0.7)"/><rect x="9" y="9" width="3" height="3" rx="0.5" fill="rgba(255,255,255,0.7)"/><rect x="13" y="9" width="2" height="2" rx="0.5" fill="rgba(255,255,255,0.4)"/><rect x="9" y="13" width="2" height="2" rx="0.5" fill="rgba(255,255,255,0.4)"/><rect x="12" y="12" width="3" height="3" rx="0.5" fill="rgba(255,255,255,0.7)"/></svg>'
+          +'<span style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.9);flex:1;">Event Pass — '+OWNER_EVENTS.find(function(e){return e.passId===pass.id;})?.name+'</span>'
+          +'<span style="font-size:9px;font-weight:700;background:var(--md-secondary);color:#fff;padding:2px 8px;border-radius:20px;">\u2713 VALID</span>'
+          +'<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+          +'</div>';
+      }
+
+      drawer='<div style="border-top:1.5px solid var(--md-outline-variant);background:var(--md-surface-variant)22;">'
+        +alertsHtml+infoGrid+peopleHtml+noteHtml+qaHtml+passBanner
+        +'</div>';
+    }
+
+    var borderColor=urgentAlert?'var(--md-error)':'var(--md-outline-variant)';
+    var borderLeft=urgentAlert?'border-left:3px solid var(--md-error);':'';
+    return '<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1.5px solid '+borderColor+';'+borderLeft+'margin-bottom:9px;overflow:hidden;">'
+      +topRow+drawer
+      +'</div>';
+  }).join('');
+
+  return header+searchBar+chipRow+cards;
+}
+
 function rHorses(){const t=TH;function sc(sex){if(sex==='Mare'||sex==='Filly')return{bg:'var(--md-error-container)',color:'var(--md-error)'};if(sex==='Stallion'||sex==='Colt')return{bg:'var(--md-tertiary-container)',color:'var(--md-tertiary)'};return{bg:'var(--md-secondary-container)',color:'var(--md-secondary)'};}return `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><div><div style="font-size:16px;font-weight:700;color:var(--md-on-surface);">Horses</div><div style="font-size:11px;color:var(--md-on-surface-dim);">Sunrise Stables · ${HORSES.length} horses</div></div><button style="background:var(--md-primary);color:#fff;border:none;padding:6px 12px;border-radius:var(--md-shape-sm);font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;">+ Add</button></div>`+HORSES.map(h=>{const s=sc(h.sex);return `<div onclick="S.selectedHorse='${h.id}';S.horseTab='overview';rerender()" style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);margin-bottom:9px;overflow:hidden;cursor:pointer;display:flex;align-items:stretch;"><div style="width:74px;background:${h.avatar.bg}22;display:flex;align-items:center;justify-content:center;padding:10px 7px;flex-shrink:0;border-right:1.5px solid var(--md-outline-variant);">${horseAvatar(h,56)}</div><div style="flex:1;padding:11px 13px;min-width:0;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><div style="font-size:15px;font-weight:700;color:var(--md-on-surface);">${h.name}</div><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:${s.bg};color:${s.color};">${h.sex}</span></div><div style="font-size:11px;color:var(--md-on-surface-variant);margin-bottom:4px;">${h.breed} · ${h.color} · ${h.age}</div><div style="font-size:11px;color:var(--md-on-surface-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-style:italic;">${h.note}</div></div></div>`;}).join('');}
 
 function rSetup(){const t=TH;const tabs=['schedule','tasks'],labels=['Schedule','Tasks'];const tabRow=`<div style="display:flex;border-bottom:2px solid var(--md-outline-variant);margin:-12px -14px 14px;background:var(--md-surface);">${tabs.map((tab,i)=>`<button onclick="setSetupTab('${tab}')" style="flex:1;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;padding:11px 8px;background:transparent;color:${S.setupTab===tab?t.T:t.TX3};border:none;border-bottom:${S.setupTab===tab?`3px solid var(--md-primary)`:'3px solid transparent'};margin-bottom:-2px;">${labels[i]}</button>`).join('')}</div>`;return tabRow+(S.setupTab==='schedule'?rScheduleTab():rTasksTab());}
@@ -1989,7 +2552,7 @@ function rTrainerHome(){
     }).join('')}
   </div>`;
 
-  return dateBanner()+header+sessionBar+qa+sessionList+progressCards;
+  return dateBanner()+header+sessionBar+sessionList+progressCards+qa;
 }
 
 // --- OWNER VIEWS ---------------------------------------------
@@ -2019,7 +2582,7 @@ const EVENT_PASSES=[
   },
   {
     id:'ep2',horseId:'rv',horseName:'Rivendell',breed:'Hanoverian',age:'11 years',color:'Dark Bay',sex:'Mare',
-    event:{name:'Capital Region Dressage Classic',date:'April 12–13, 2026',venue:'Foxfield Equestrian Center',address:'88 Foxfield Ln, Warrenton, VA 20186',classes:['Training Level Test 1','First Level Test 2'],barnRef:'Sunrise Stables'},
+    event:{name:'Tri-State Spring Classic',date:'March 28–30, 2026',venue:'Stonegate Equestrian Park',address:'1240 Stonegate Rd, Ln, Warrenton, VA 20186',classes:['Training Level Test 1','First Level Test 2'],barnRef:'Sunrise Stables'},
     vaccinations:[
       {name:'Eastern/Western EEE/WEE',date:'Nov 3, 2025',nextDue:'Nov 3, 2026',vet:'Dr. Konstantine Goudz',lot:'C1109-EW',confirmed:true},
       {name:'Influenza / Rhinopneumonitis',date:'Dec 15, 2025',nextDue:'Jun 15, 2026',vet:'Dr. Konstantine Goudz',lot:'D1512-IR',confirmed:true},
@@ -2028,7 +2591,7 @@ const EVENT_PASSES=[
     labTests:[
       {name:'Coggins (EIA)',date:'Feb 2, 2026',result:'Negative',lab:'EquiPath Diagnostics',accession:'EQ-2026-007441',confirmed:true},
     ],
-    passId:'NNY-2026-R2M8Q',issued:'March 16, 2026',status:'valid',
+    passId:'NNY-2026-R9T2P',issued:'March 16, 2026',status:'valid',
   },
 ];
 
@@ -2045,8 +2608,9 @@ const OWNER_APPOINTMENTS=[
 ];
 
 const OWNER_EVENTS=[
-  {id:'ev1',name:'Tri-State Spring Classic',date:'Mar 28–30',venue:'Stonegate Equestrian Park, NY',horse:'Luna',passId:'ep1',passStatus:'valid',daysOut:12},
-  {id:'ev2',name:'Capital Region Dressage Classic',date:'Apr 12–13',venue:'Foxfield Equestrian Center, VA',horse:'Rivendell',passId:'ep2',passStatus:'valid',daysOut:27},
+  {id:'ev1',name:'Tri-State Spring Classic',date:'Mar 28–30',venue:'Stonegate Equestrian Park, NY',horse:'Luna',    passId:'ep1',passStatus:'valid',daysOut:12},
+  {id:'ev2',name:'Tri-State Spring Classic',date:'Mar 28–30',venue:'Stonegate Equestrian Park, NY',horse:'Rivendell',passId:'ep2',passStatus:'valid',daysOut:12},
+  // Scenario B (different weekends): change ev2 date to 'Apr 5-6' and name to 'Capital Region Dressage Classic'
 ];
 
 
@@ -2086,35 +2650,18 @@ function rMultiRoleHome(){
 
   // -- 1. Welcome block (always) --------------------------------
   // Use owner header if owner is in the combo, else trainer, else manager/staff
-  var welcomeBlock='';
-  if(isOwner){
-    const userName='Sarah';
-    welcomeBlock=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+  // -- 1. Welcome block (always shown) ----------------------
+  const _name=isOwner?'Sarah':isTrainer?'Jordan':isMgr?'Alex':hasRole('vet')?'Dr. Goudz':'Charlene';
+  const _avatarBg=isOwner?'linear-gradient(135deg,#4A1A8A,#2A8A9A)':isTrainer?'var(--md-tertiary-container)':isMgr?'var(--md-primary-container)':hasRole('vet')?'var(--md-secondary-container)':'var(--md-surface-variant)';
+  const _avatarColor=isOwner?'#fff':isTrainer?'var(--md-on-tertiary-container)':isMgr?'var(--md-on-primary-container)':hasRole('vet')?'var(--md-on-secondary-container)':'var(--md-on-surface-variant)';
+  const _initials=isOwner?'SK':isTrainer?'JM':isMgr?'AM':hasRole('vet')?'KG':'CG';
+  const welcomeBlock=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
     <div>
-      <div style="font-size:18px;font-weight:700;color:var(--md-on-surface);">Good morning, ${userName}</div>
-      <div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:1px;">Monday, Mar 16 · Sunrise Stables</div>
-    </div>
-    <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#4A1A8A,#2A8A9A);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;">SK</div>
-  </div>`;
-  } else if(isTrainer){
-    welcomeBlock=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-    <div>
-      <div style="font-size:18px;font-weight:700;color:var(--md-on-surface);">Good morning, Jordan</div>
+      <div style="font-size:18px;font-weight:700;color:var(--md-on-surface);">Good morning, ${_name}</div>
       <div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:1px;">Mon, Mar 16 · Sunrise Stables</div>
     </div>
-    <div style="width:38px;height:38px;border-radius:50%;background:var(--md-surface-variant);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--md-on-surface-variant);flex-shrink:0;">JM</div>
+    <div style="width:38px;height:38px;border-radius:50%;background:${_avatarBg};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:${_avatarColor};flex-shrink:0;">${_initials}</div>
   </div>`;
-  } else {
-    const mgName=isMgr?'Jordan':isStaff?'Charlene':'Jordan';
-    const mgInitials=isMgr?'JM':isStaff?'CG':'JM';
-    welcomeBlock=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-    <div>
-      <div style="font-size:18px;font-weight:700;color:var(--md-on-surface);">Good morning, ${mgName}</div>
-      <div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:1px;">Mon, Mar 16 · Sunrise Stables</div>
-    </div>
-    <div style="width:38px;height:38px;border-radius:50%;background:var(--md-surface-variant);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--md-on-surface-variant);flex-shrink:0;">${mgInitials}</div>
-  </div>`;
-  }
 
   // -- 2. Overview cards (manager/staff statsRow, trainer sessionBar) --
   // Manager statsRow is the canonical "overview" for manager combos
@@ -2145,7 +2692,7 @@ function rMultiRoleHome(){
       <div style="height:5px;background:var(--md-tertiary)22;border-radius:10px;overflow:hidden;"><div style="height:100%;width:${Math.round(tDone/tTotal*100)}%;background:var(--md-tertiary);border-radius:10px;"></div></div>
     </div>
   </div>`;
-  } else if(isTrainer&&!isOwner){
+  } else if(isTrainer){
     // Trainer session bar (from rTrainerHome)
     const done=TRAINING_DEFS.filter(d=>trainAssigns[d.id]?.status==='complete').length;
     const total=TRAINING_DEFS.length;
@@ -2205,48 +2752,12 @@ function rMultiRoleHome(){
   }
 
   // -- 4. Event passes (owner only) — exact from rOwnerHome -----
-  var eventPassesBlock='';
-  if(isOwner){
-    eventPassesBlock=`<div style="margin-bottom:14px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-      <span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Events & Event Passes</span>
-      <span style="font-size:10px;font-weight:700;background:var(--md-secondary-container);color:var(--md-secondary);padding:2px 8px;border-radius:10px;border:1px solid var(--md-secondary)44;">${EVENT_PASSES.length} active</span>
-    </div>
-    ${OWNER_EVENTS.map(ev=>{
-      return `<div onclick="S.ownerEventPass='${ev.passId}';rerender()" style="cursor:pointer;background:linear-gradient(135deg,#0E1E2E 0%,#1A3048 100%);border-radius:14px;padding:14px 15px;margin-bottom:9px;position:relative;overflow:hidden;">
-        <div style="position:absolute;right:-10px;top:-10px;width:80px;height:80px;border-radius:50%;background:rgba(58,172,190,0.08);"></div>
-        <div style="position:absolute;right:20px;bottom:-20px;width:60px;height:60px;border-radius:50%;background:rgba(74,26,138,0.12);"></div>
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;">
-          <div>
-            <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:2px;">${ev.name}</div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.6);">${ev.date} · ${ev.venue}</div>
-          </div>
-          <div style="background:var(--md-secondary);color:#fff;font-size:9px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap;margin-left:8px;flex-shrink:0;">✓ VALID</div>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <div style="display:flex;align-items:center;gap:6px;">
-            ${horseAvatar(HORSES.find(h=>h.id===ev.horse)||OWNER_HORSES.find(h=>h.id===ev.horse)||{avatar:{bg:'#3A3A3A',mane:'#1A1A1A',sock:null,marking:null}},22)}
-            <span style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.85);">${ev.horse}</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:5px;">
-            <div style="background:rgba(255,255,255,0.1);border-radius:8px;padding:4px 9px;display:flex;align-items:center;gap:4px;">
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" fill="rgba(255,255,255,0.7)"/><rect x="9" y="2" width="5" height="5" rx="1" fill="rgba(255,255,255,0.7)"/><rect x="2" y="9" width="5" height="5" rx="1" fill="rgba(255,255,255,0.7)"/><rect x="9" y="9" width="3" height="3" rx="0.5" fill="rgba(255,255,255,0.7)"/><rect x="13" y="9" width="2" height="2" rx="0.5" fill="rgba(255,255,255,0.4)"/><rect x="9" y="13" width="2" height="2" rx="0.5" fill="rgba(255,255,255,0.4)"/><rect x="12" y="12" width="3" height="3" rx="0.5" fill="rgba(255,255,255,0.7)"/></svg>
-              <span style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.7);">Event Pass</span>
-            </div>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-        </div>
-      </div>`;
-    }).join('')}
-  </div>`;
-  }
+  var eventPassesBlock=isOwner?rEventPassSection():'';
 
-  // -- 5a. Task schedule (staff/manager) — exact from rStaff/rMgrHome --
+  // -- 5a. Task schedule — staff sees task rows; manager sees manage button only (stats in overviewBlock) --
   var taskScheduleBlock='';
-  if(anyRole('staff','manager')){
-    const total=TASK_DEFS.length,complete=TASK_DEFS.filter(d=>assigns[d.id]?.status==='complete').length;
-    const reqLeft=TASK_DEFS.filter(d=>d.req&&assigns[d.id]?.status!=='complete').length;
-    const canComplete=reqLeft===0;
+  if(isStaff&&!isMgr){
+    // Staff in combo: full interleaved task+training list (same as rStaff)
     const morningTasks=TASK_DEFS.filter(d=>d.period==='Morning');
     const afternoonTasks=TASK_DEFS.filter(d=>d.period==='Afternoon');
     const morningTraining=TRAINING_DEFS.filter(d=>!['2:00 PM'].includes(d.startTime));
@@ -2268,10 +2779,10 @@ function rMultiRoleHome(){
       ].sort((a,b)=>a.sort-b.sort);
       html2+=aItems.map(item=>item.kind==='task'?rStaffCard(item.data,assigns[item.data.id]):rTrainingCard(item.data,trainAssigns[item.data.id])).join('');
     }
-    if(isMgr){
-      html2+=`<button onclick="S.mgrView='assignments';S.mgrAssignTab='tasks';S.assignDate='${TODAY}';rerender()" style="width:100%;background:var(--md-primary);color:#fff;border:none;padding:12px;border-radius:var(--md-shape-md);font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;margin-bottom:10px;">Manage Assignments</button>`;
-    }
     taskScheduleBlock=html2;
+  } else if(isMgr){
+    // Manager in combo: stats already in overviewBlock; just show the Manage Assignments button
+    taskScheduleBlock=`<button onclick="S.mgrView='assignments';S.mgrAssignTab='tasks';S.assignDate='${TODAY}';rerender()" style="width:100%;background:var(--md-primary);color:#fff;border:none;padding:12px;border-radius:var(--md-shape-md);font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;margin-bottom:10px;">Manage Assignments</button>`;
   }
 
   // -- 5b. Training session list (trainer) — exact from rTrainerHome --
@@ -2380,20 +2891,96 @@ function rMultiRoleHome(){
     const pendingVisits=BARN_VISITS.filter(v=>v.status==='pending_barn_confirm');
     const confirmedVisits=BARN_VISITS.filter(v=>v.status==='confirmed');
     const pendingVisitSection=pendingVisits.length?'<div style="margin-bottom:14px;"><div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="'+TH.WARN+'" stroke-width="1.3"/><path d="M8 5v3.5L10 10" stroke="'+TH.WARN+'" stroke-width="1.3" stroke-linecap="round"/></svg><span style="font-size:12px;font-weight:700;color:'+TH.WARN+';">Visit requests pending your approval</span></div>'+pendingVisits.map(v=>visitCard(v,'manager')).join('')+'</div>':'';
-    const confirmedVisitsSection=confirmedVisits.length?'<div style="margin-bottom:14px;"><div style="font-size:12px;font-weight:700;color:'+TH.mdOnSurfDim+';text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;">Upcoming visits</div>'+confirmedVisits.map(v=>visitCard(v,'manager')).join('')+'</div>':'';
+    const confirmedVisitsSection=confirmedVisits.length?'<div style="margin-bottom:14px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Upcoming visits</div>'+confirmedVisits.map(v=>visitCard(v,'manager')).join('')+'</div>':'';
     visitsBlock=pendingVisitSection+confirmedVisitsSection;
   } else if(isOwner){
     const ownerVisits=BARN_VISITS.filter(v=>v.status==='confirmed');
-    visitsBlock=ownerVisits.length?'<div style="margin-bottom:14px;"><div style="font-size:12px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;">Professionals visiting your barn</div>'+ownerVisits.map(v=>visitCard(v,'owner')).join('')+'</div>':'';
+    visitsBlock=ownerVisits.length?'<div style="margin-bottom:14px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Professionals visiting your barn</div>'+ownerVisits.map(v=>visitCard(v,'owner')).join('')+'</div>':'';
   }
 
   // -- 10. Quick actions (union of all roles) -------------------
-  const allActions=Object.values(QUICK_ACTIONS).filter(a=>S.roles.some(r=>a.roles.includes(r)));
-  const qaBlock=allActions.length?quickActionsBar(S.roles[0]):'';
+  // Build union of quick actions across all active roles, deduped
+  const _seenQA={};
+  const allActions=Object.values(QUICK_ACTIONS).filter(a=>{
+    if(!S.roles.some(r=>a.roles.includes(r))) return false;
+    if(_seenQA[a.id]) return false;
+    _seenQA[a.id]=true;
+    return true;
+  });
+  const _qaCols=allActions.length<=2?allActions.length:2;
+  const qaBlock=allActions.length?(`<div style="margin-bottom:14px;">
+    <div style="font-size:12px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Quick actions</div>
+    <div style="display:grid;grid-template-columns:repeat(${_qaCols},1fr);gap:8px;">
+      ${allActions.map(a=>`<button onclick="S.quickAction='${a.id}';rerender()" style="font-family:'DM Sans',sans-serif;background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:var(--md-shape-md);padding:11px 12px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:9px;width:100%;">
+        <div style="width:34px;height:34px;border-radius:9px;background:${a.bg};display:flex;align-items:center;justify-content:center;color:${a.color};flex-shrink:0;">${a.icon.replace('width="20" height="20"','width="16" height="16"')}</div>
+        <span style="font-size:12px;font-weight:700;color:var(--md-on-surface);line-height:1.3;">${a.label}</span>
+      </button>`).join('')}
+    </div>
+  </div>`):'';
 
   return dateBanner()+welcomeBlock+overviewBlock+alertsBlock+eventPassesBlock+taskScheduleBlock+trainingScheduleBlock+progressCardsBlock+apptBlock+visitsBlock+qaBlock;
 }
 
+
+
+function rEventPassSection(){
+  const t=TH;
+  if(!OWNER_EVENTS.length) return '';
+  
+  // Group events by name
+  const groups={};
+  OWNER_EVENTS.forEach(function(ev){
+    if(!groups[ev.name]) groups[ev.name]={name:ev.name,date:ev.date,venue:ev.venue,entries:[]};
+    groups[ev.name].entries.push(ev);
+  });
+  const groupList=Object.values(groups);
+  
+  const cards=groupList.map(function(g){
+    const allValid=g.entries.every(function(e){return e.passStatus==='valid';});
+    const horsesRow=g.entries.map(function(ev){
+      const horse=HORSES.find(function(h){return h.id===ev.horse;})||OWNER_HORSES.find(function(h){return h.id===ev.horse;})||{avatar:{bg:'#3A3A3A',mane:'#1A1A1A',sock:null,marking:null}};
+      // Each horse is a tappable row leading to their individual pass
+      return '<div onclick="event.stopPropagation();S.ownerEventPass=\''+ev.passId+'\';rerender()" style="display:flex;align-items:center;gap:8px;padding:9px 14px;border-top:1px solid rgba(255,255,255,0.08);cursor:pointer;">'
+        +horseAvatar(horse,24)
+        +'<span style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.9);flex:1;">'+ev.horse+'</span>'
+        +'<div style="display:flex;align-items:center;gap:4px;">'
+        +'<div style="background:rgba(255,255,255,0.1);border-radius:6px;padding:3px 8px;display:flex;align-items:center;gap:3px;">'
+        +'<svg width="10" height="10" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" fill="rgba(255,255,255,0.7)"/><rect x="9" y="2" width="5" height="5" rx="1" fill="rgba(255,255,255,0.7)"/><rect x="2" y="9" width="5" height="5" rx="1" fill="rgba(255,255,255,0.7)"/><rect x="9" y="9" width="3" height="3" rx="0.5" fill="rgba(255,255,255,0.7)"/><rect x="13" y="9" width="2" height="2" rx="0.5" fill="rgba(255,255,255,0.4)"/><rect x="9" y="13" width="2" height="2" rx="0.5" fill="rgba(255,255,255,0.4)"/><rect x="12" y="12" width="3" height="3" rx="0.5" fill="rgba(255,255,255,0.7)"/></svg>'
+        +'<span style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.7);">Pass</span>'
+        +'</div>'
+        +'<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+        +'</div>'
+        +'</div>';
+    }).join('');
+    
+    const horseCount=g.entries.length;
+    return '<div style="background:linear-gradient(135deg,#112030 0%,#1E3A52 100%);border:1.5px solid rgba(58,172,190,0.35);border-radius:14px;margin-bottom:9px;overflow:hidden;position:relative;">'
+      +'<div style="position:absolute;right:-10px;top:-10px;width:80px;height:80px;border-radius:50%;background:rgba(58,172,190,0.08);pointer-events:none;"></div>'
+      +'<div style="position:absolute;right:20px;bottom:-20px;width:60px;height:60px;border-radius:50%;background:rgba(74,26,138,0.12);pointer-events:none;"></div>'
+      // Event header row
+      +'<div style="padding:13px 14px 10px;display:flex;align-items:flex-start;justify-content:space-between;">'
+      +'<div style="flex:1;min-width:0;">'
+      +'<div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:2px;">'+g.name+'</div>'
+      +'<div style="font-size:11px;color:rgba(255,255,255,0.6);">'+g.date+' &middot; '+g.venue+'</div>'
+      +'</div>'
+      +'<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px;">'
+      +(horseCount>1?'<span style="font-size:9px;font-weight:700;background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);padding:2px 7px;border-radius:20px;">'+horseCount+' horses</span>':'')
+      +(allValid?'<div style="background:var(--md-secondary);color:#fff;font-size:9px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap;">✓ VALID</div>':'<div style="background:var(--md-warning);color:#fff;font-size:9px;font-weight:700;padding:3px 8px;border-radius:20px;">REVIEW</div>')
+      +'</div>'
+      +'</div>'
+      // Horse rows
+      +horsesRow
+      +'</div>';
+  }).join('');
+  
+  return '<div style="margin-bottom:14px;">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
+    +'<span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Events &amp; Event Passes</span>'
+    +'<span style="font-size:10px;font-weight:700;background:var(--md-secondary-container);color:var(--md-secondary);padding:2px 8px;border-radius:10px;border:1px solid var(--md-secondary)44;">'+EVENT_PASSES.length+' active</span>'
+    +'</div>'
+    +cards
+    +'</div>';
+}
 
 function rOwnerHome(){
   const t=TH;
@@ -2425,43 +3012,11 @@ function rOwnerHome(){
   </div>`;
 
   // Events & Event Passes
-  const eventsSection=`<div style="margin-bottom:14px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-      <span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Events & Event Passes</span>
-      <span style="font-size:10px;font-weight:700;background:var(--md-secondary-container);color:var(--md-secondary);padding:2px 8px;border-radius:10px;border:1px solid var(--md-secondary)44;">${EVENT_PASSES.length} active</span>
-    </div>
-    ${OWNER_EVENTS.map(ev=>{
-      const pass=EVENT_PASSES.find(p=>p.id===ev.passId);
-      return `<div onclick="S.ownerEventPass='${ev.passId}';rerender()" style="cursor:pointer;background:linear-gradient(135deg,#0E1E2E 0%,#1A3048 100%);border-radius:14px;padding:14px 15px;margin-bottom:9px;position:relative;overflow:hidden;">
-        <div style="position:absolute;right:-10px;top:-10px;width:80px;height:80px;border-radius:50%;background:rgba(58,172,190,0.08);"></div>
-        <div style="position:absolute;right:20px;bottom:-20px;width:60px;height:60px;border-radius:50%;background:rgba(74,26,138,0.12);"></div>
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;">
-          <div>
-            <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:2px;">${ev.name}</div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.6);">${ev.date} · ${ev.venue}</div>
-          </div>
-          <div style="background:var(--md-secondary);color:#fff;font-size:9px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap;margin-left:8px;flex-shrink:0;">✓ VALID</div>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <div style="display:flex;align-items:center;gap:6px;">
-            ${horseAvatar(HORSES.find(h=>h.id===ev.horse)||OWNER_HORSES.find(h=>h.id===ev.horse)||{avatar:{bg:'#3A3A3A',mane:'#1A1A1A',sock:null,marking:null}},22)}
-            <span style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.85);">${ev.horse}</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:5px;">
-            <div style="background:rgba(255,255,255,0.1);border-radius:8px;padding:4px 9px;display:flex;align-items:center;gap:4px;">
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" fill="rgba(255,255,255,0.7)"/><rect x="9" y="2" width="5" height="5" rx="1" fill="rgba(255,255,255,0.7)"/><rect x="2" y="9" width="5" height="5" rx="1" fill="rgba(255,255,255,0.7)"/><rect x="9" y="9" width="3" height="3" rx="0.5" fill="rgba(255,255,255,0.7)"/><rect x="13" y="9" width="2" height="2" rx="0.5" fill="rgba(255,255,255,0.4)"/><rect x="9" y="13" width="2" height="2" rx="0.5" fill="rgba(255,255,255,0.4)"/><rect x="12" y="12" width="3" height="3" rx="0.5" fill="rgba(255,255,255,0.7)"/></svg>
-              <span style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.7);">Event Pass</span>
-            </div>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-        </div>
-      </div>`;
-    }).join('')}
-  </div>`;
+  const eventsSection=rEventPassSection();
 
   const ownerVisits=BARN_VISITS.filter(function(v){return v.status==='confirmed';});
-  const ownerVisitSection=ownerVisits.length?'<div style="margin-bottom:14px;"><div style="font-size:12px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;">Professionals visiting your barn</div>'+ownerVisits.map(function(v){return visitCard(v,'owner');}).join('')+'</div>':'';
-  return dateBanner()+header+quickActionsBar('owner')+ownerVisitSection+apptSection+eventsSection;
+  const ownerVisitSection=ownerVisits.length?'<div style="margin-bottom:14px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Professionals visiting your barn</div>'+ownerVisits.map(function(v){return visitCard(v,'owner');}).join('')+'</div>':'';
+  return dateBanner()+header+ownerVisitSection+apptSection+eventsSection+quickActionsBar('owner');
 }
 
 function rOwnerHorses(){
@@ -2566,7 +3121,7 @@ function rEventPass(passId){
 
       // Back button
       <div style="padding:14px 16px 0;display:flex;align-items:center;justify-content:space-between;">
-        <button onclick="S.ownerEventPass=null;rerender()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:9px;padding:7px 12px;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8l4 4" stroke="var(--nn-tx)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-size:12px;font-weight:600;color:var(--nn-tx);">Back</span></button>
+        <button onclick="S.ownerEventPass=null;rerender()" style="background:none;border:none;padding:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M14 5L8 11l6 6" stroke="var(--md-on-surface)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         <div style="background:${pass.status==='valid'?t.SUC:'var(--md-warning)'};color:#fff;font-size:10px;font-weight:700;padding:4px 12px;border-radius:20px;letter-spacing:0.5px;">✓ VALID PASS</div>
       </div>
 
@@ -2781,7 +3336,7 @@ if(!window.bookApptState)window.bookApptState={visitId:null,horseId:null,service
 // --- VISIT FORM (MANAGER / PROFESSIONAL) ---------------------
 function rScheduleVisitForm(){
   const t=TH; const vf=window.visitFormState;
-  const backBtn='<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;"><button onclick="S.quickAction=null;window.visitFormState={step:1,professionalId:null,newPro:{name:\'\',type:\'Vet\',email:\'\',phone:\'\'},addingNew:false,date:\'\',timeStart:\'\',timeEnd:\'\',services:[{name:\'\',price:\'\',priceNote:\'\'}],note:\'\',notifyOwners:true,notifyMsg:\'\',submitted:false};rerender()" style="background:var(--md-primary-container);border:1.5px solid var(--md-outline);border-radius:8px;padding:6px 11px;cursor:pointer;font-family:\'DM Sans\',sans-serif;display:flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8l4 4" stroke="var(--md-on-primary-container)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-size:12px;font-weight:700;color:var(--md-on-primary-container);">Back</span></button><div style="flex:1;"><span style="font-size:15px;font-weight:700;color:var(--md-on-surface);">Schedule Visit</span></div><div style="display:flex;gap:5px;">'+'1234'.split('').map(function(n,i){return '<div style="width:22px;height:4px;border-radius:2px;background:'+(i<vf.step?t.T:t.BRD)+';"></div>';}).join('')+'</div></div>';
+  const backBtn='<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;"><button onclick="S.quickAction=null;window.visitFormState={step:1,professionalId:null,newPro:{name:\'\',type:\'Vet\',email:\'\',phone:\'\'},addingNew:false,date:\'\',timeStart:\'\',timeEnd:\'\',services:[{name:\'\',price:\'\',priceNote:\'\'}],note:\'\',notifyOwners:true,notifyMsg:\'\',submitted:false};rerender()" style="background:none;border:none;padding:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M14 5L8 11l6 6" stroke="var(--md-on-surface)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div style="flex:1;"><span style="font-size:15px;font-weight:700;color:var(--md-on-surface);">Schedule Visit</span></div><div style="display:flex;gap:5px;">'+'1234'.split('').map(function(n,i){return '<div style="width:22px;height:4px;border-radius:2px;background:'+(i<vf.step?t.T:t.BRD)+';"></div>';}).join('')+'</div></div>';
 
   if(vf.submitted){
     const pro=BARN_PROFESSIONALS.find(function(p){return p.id===vf.professionalId;})||{name:vf.newPro.name,type:vf.newPro.type,nayNay:false};
@@ -2870,7 +3425,7 @@ function submitVisit(){
 // --- REQUEST BARN VISIT (VET / PROFESSIONAL SIDE) ------------
 function rRequestVisitForm(){
   const t=TH; const vf=window.visitFormState;
-  const backBtn='<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;"><button onclick="S.quickAction=null;window.visitFormState={step:1,professionalId:null,newPro:{name:\'\',type:\'Vet\',email:\'\',phone:\'\'},addingNew:false,date:\'\',timeStart:\'\',timeEnd:\'\',services:[{name:\'\',price:\'\',priceNote:\'\'}],note:\'\',notifyOwners:true,notifyMsg:\'\',submitted:false};rerender()" style="background:var(--md-primary-container);border:1.5px solid var(--md-outline);border-radius:8px;padding:6px 11px;cursor:pointer;font-family:\'DM Sans\',sans-serif;display:flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8l4 4" stroke="var(--md-on-primary-container)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-size:12px;font-weight:700;color:var(--md-on-primary-container);">Back</span></button><span style="font-size:15px;font-weight:700;color:var(--md-on-surface);">Request Barn Visit</span></div>';
+  const backBtn='<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;"><button onclick="S.quickAction=null;window.visitFormState={step:1,professionalId:null,newPro:{name:\'\',type:\'Vet\',email:\'\',phone:\'\'},addingNew:false,date:\'\',timeStart:\'\',timeEnd:\'\',services:[{name:\'\',price:\'\',priceNote:\'\'}],note:\'\',notifyOwners:true,notifyMsg:\'\',submitted:false};rerender()" style="background:none;border:none;padding:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M14 5L8 11l6 6" stroke="var(--md-on-surface)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span style="font-size:15px;font-weight:700;color:var(--md-on-surface);">Request Barn Visit</span></div>';
   if(vf.submitted){return backBtn+'<div style="background:var(--md-secondary-container);border:1.5px solid var(--md-secondary)44;border-radius:14px;padding:18px;text-align:center;"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" style="margin:0 auto 8px;display:block;"><circle cx="16" cy="16" r="14" fill="var(--md-secondary)22" stroke="var(--md-secondary)" stroke-width="1.5"/><path d="M9 16l4.5 4.5 9-9" stroke="var(--md-secondary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><div style="font-size:16px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Visit request sent</div><div style="font-size:13px;color:var(--md-on-surface-variant);">Sunrise Stables · '+(vf.date||'Date TBD')+'</div><div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:6px;">The barn manager will receive a notification to accept or decline.</div></div>';}
   const barns=vetSetup.connectedBarns||[];
   return backBtn
@@ -2890,7 +3445,7 @@ function rBookAppointment(visitId){
   const visit=BARN_VISITS.find(function(v){return v.id===visitId;});
   if(!visit)return '';
   const bs=window.bookApptState;
-  const backBtn='<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;"><button onclick="window.bookApptState={visitId:null,horseId:null,service:null,step:1,card:{name:\'\',number:\'\',expiry:\'\',cvc:\'\'},submitted:false};S.bookingVisitId=null;rerender()" style="background:var(--md-primary-container);border:1.5px solid var(--md-outline);border-radius:8px;padding:6px 11px;cursor:pointer;font-family:\'DM Sans\',sans-serif;display:flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8l4 4" stroke="var(--md-on-primary-container)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-size:12px;font-weight:700;color:var(--md-on-primary-container);">Back</span></button><span style="font-size:15px;font-weight:700;color:var(--md-on-surface);">Book Appointment</span></div>';
+  const backBtn='<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;"><button onclick="window.bookApptState={visitId:null,horseId:null,service:null,step:1,card:{name:\'\',number:\'\',expiry:\'\',cvc:\'\'},submitted:false};S.bookingVisitId=null;rerender()" style="background:none;border:none;padding:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M14 5L8 11l6 6" stroke="var(--md-on-surface)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span style="font-size:15px;font-weight:700;color:var(--md-on-surface);">Book Appointment</span></div>';
   const visitCard='<div style="background:var(--md-primary-container);border:1.5px solid var(--md-outline);border-radius:12px;padding:11px 13px;margin-bottom:14px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+visit.professionalName+' <span style="font-size:11px;font-weight:600;color:var(--md-on-surface-dim);">· '+visit.professionalType+'</span></div><div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:2px;">'+visit.date+' · '+visit.timeStart+'–'+visit.timeEnd+'</div></div>';
   if(bs.submitted){return backBtn+visitCard+'<div style="background:var(--md-secondary-container);border:1.5px solid var(--md-secondary)44;border-radius:14px;padding:20px;text-align:center;"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" style="margin:0 auto 8px;display:block;"><circle cx="16" cy="16" r="14" fill="var(--md-secondary)22" stroke="var(--md-secondary)" stroke-width="1.5"/><path d="M9 16l4.5 4.5 9-9" stroke="var(--md-secondary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><div style="font-size:16px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Appointment booked!</div><div style="font-size:13px;color:var(--md-on-surface-variant);">'+bs.service+' · '+(bs.horseId==='h3'?'Luna':'your horse')+'</div><div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:8px;">Your card will be charged after the service is marked complete.</div></div>';}
 
