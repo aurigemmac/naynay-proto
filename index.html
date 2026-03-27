@@ -259,7 +259,7 @@ function selectRoleCombo(idx){
   S.activeTab='home';S.mgrView='home';S.selectedHorse=null;S.vetView='confirmation';
   S.vetConfirmPage=false;S.vetSignedIn=false;S.feedCardExpanded=false;S.feedCardHorse=null;
   S.expandedTraining=null;S.loggingTraining=null;svcEditId=null;S.ownerEventPass=null;
-  S.quickAction=null;S.showNotifPanel=false;S.horseTab='overview';S.selectedThread=null;
+  S.quickAction=null;S.showNotifPanel=false;S.horseTab='overview';S.horseSearch='';S.horseFilter='all';S.selectedThread=null;
   S.bookingVisitId=null;S.notifyCtx=null;S.vaxScanMode=false;
   window.obsState={horseId:'',obsType:'',notes:'',photos:[],videos:[],date:'',time:''};
   window.vitalsState={horseId:'',date:'',time:'',activeField:null,hr:'',rr:'',temp:'',bcs:'',hg:'',bl:'',notes:''};
@@ -777,6 +777,7 @@ let S={
   showScanOverlay:false,
   expandedVax:{},
   expandedSession:null,
+  showAddHorse:false,
 };
 
 function getAssign(date){if(!S.assignments[date])S.assignments[date]=makeDefaultAssignments();return S.assignments[date];}
@@ -1009,7 +1010,7 @@ function getContent(isVet,isMgr,showHorse){
     if(!S.vetSignedIn){if(S.vetConfirmPage==='confirmed')return rVetConfirmedPage();if(S.vetConfirmPage==='declined')return rVetDeclinedPage();return rVetUnauth();}
     if(S.quickAction==='request-barn-visit')return rRequestVisitForm();
     if(S.quickAction)return rQuickActionForm(S.quickAction);
-    if(S.vetView==='home')return rVetHome();if(S.vetView==='horses')return rHorseList();
+    if(S.vetView==='home')return rVetHome();if(S.vetView==='horses')return S.showAddHorse?rAddHorse():rHorseList();
     if(S.vetView==='messages')return rMessages('vet');if(S.vetView==='setup')return rVetSetup();
     if(S.vetView==='vaxform')return rVaxForm();return rVetHome();
   }
@@ -1019,7 +1020,7 @@ function getContent(isVet,isMgr,showHorse){
     if(S.quickAction==='request-barn-visit')return rScheduleVisitForm();
     if(S.quickAction==='create-regimen')return rCreateRegimenForm();
     if(S.quickAction)return rQuickActionForm(S.quickAction);
-    if(S.activeTab==='horses')return rHorseList();
+    if(S.activeTab==='horses')return S.showAddHorse?rAddHorse():rHorseList();
     if(S.activeTab==='messages')return rMessages('trainer');
     if(S.activeTab==='setup')return rTrainerSetup();
     return rTrainerHome();
@@ -1030,7 +1031,7 @@ function getContent(isVet,isMgr,showHorse){
     if(S.ownerEventPass)return rEventPass(S.ownerEventPass);
     if(S.quickAction==='request-appointment')return rRequestAppointmentForm();
     if(S.quickAction)return rQuickActionForm(S.quickAction);
-    if(S.activeTab==='horses')return rHorseList();
+    if(S.activeTab==='horses')return S.showAddHorse?rAddHorse():rHorseList();
     if(S.activeTab==='messages')return rMessages('owner');
     if(S.activeTab==='setup')return rOwnerSetup();
     return rOwnerHome();
@@ -1039,7 +1040,7 @@ function getContent(isVet,isMgr,showHorse){
   if(S.quickAction==='request-barn-visit')return rScheduleVisitForm();
   if(S.quickAction==='document-observation')return rObservationForm();
   if(S.quickAction)return rQuickActionForm(S.quickAction);
-  if(S.activeTab==='horses')return rHorseList();if(S.activeTab==='messages')return rMessages(S.role);
+  if(S.activeTab==='horses')return S.showAddHorse?rAddHorse():rHorseList();if(S.activeTab==='messages')return rMessages(S.role);
   if(isMgr){if(S.activeTab==='setup')return rMgrSetup();if(S.mgrView==='assignments')return rAssignments();return rMgrHome();}
   if(S.activeTab==='setup')return rStaffSetup();
   return rStaff();
@@ -1374,7 +1375,7 @@ function rStaffSetup(){
   const t=TH;
   const tabs=[{key:'account',label:'Account'},{key:'calendar',label:'Calendar'},{key:'notifications',label:'Notifications'}];
   S.staffSetupTab=S.staffSetupTab||'account';
-  const tabRow='<div style="display:flex;border-bottom:2px solid '+TH.mdOutlineVar+';margin:-12px -14px 14px;background:'+TH.mdSurf+';overflow-x:auto;">'+tabs.map(function(tab){return '<button onclick="S.staffSetupTab=\''+tab.key+'\';rerender()" style="font-family:\'DM Sans\',sans-serif;font-size:13px;font-weight:700;cursor:pointer;padding:10px 16px;background:transparent;color:'+(S.staffSetupTab===tab.key?t.T:t.TX3)+';border:none;border-bottom:'+(S.staffSetupTab===tab.key?'3px solid var(--md-primary)':'3px solid transparent')+';margin-bottom:-2px;white-space:nowrap;">'+tab.label+'</button>';}).join('')+'</div>';
+  const tabRow='<div style="display:flex;border-bottom:2px solid '+TH.mdOutlineVar+';margin:-12px -14px 14px;background:'+TH.mdSurf+';overflow-x:auto;">'+tabs.map(function(tab){return '<button onclick="S.staffSetupTab=\''+tab.key+'\';rerender()" style="font-family:\'DM Sans\',sans-serif;flex:1;font-size:12px;font-weight:700;cursor:pointer;padding:11px 5px;white-space:nowrap;background:transparent;color:'+(S.staffSetupTab===tab.key?t.T:t.TX3)+';border:none;border-bottom:'+(S.staffSetupTab===tab.key?'3px solid var(--md-primary)':'3px solid transparent')+';margin-bottom:-2px;white-space:nowrap;">'+tab.label+'</button>';}).join('')+'</div>';
   let body='';
   if(S.staffSetupTab==='account') body=rStaffSetupAccount();
   else if(S.staffSetupTab==='calendar') body=rStaffSetupCalendar();
@@ -1418,7 +1419,7 @@ function rOwnerSetup(){
   const t=TH;
   const tabs=[{key:'account',label:'Account'},{key:'calendar',label:'Calendar'},{key:'notifications',label:'Notifications'}];
   S.ownerSetupTab=S.ownerSetupTab||'account';
-  const tabRow='<div style="display:flex;border-bottom:2px solid '+TH.mdOutlineVar+';margin:-12px -14px 14px;background:'+TH.mdSurf+';overflow-x:auto;">'+tabs.map(function(tab){return '<button onclick="S.ownerSetupTab=\''+tab.key+'\';rerender()" style="font-family:\'DM Sans\',sans-serif;font-size:13px;font-weight:700;cursor:pointer;padding:10px 16px;background:transparent;color:'+(S.ownerSetupTab===tab.key?t.T:t.TX3)+';border:none;border-bottom:'+(S.ownerSetupTab===tab.key?'3px solid var(--md-primary)':'3px solid transparent')+';margin-bottom:-2px;white-space:nowrap;">'+tab.label+'</button>';}).join('')+'</div>';
+  const tabRow='<div style="display:flex;border-bottom:2px solid '+TH.mdOutlineVar+';margin:-12px -14px 14px;background:'+TH.mdSurf+';overflow-x:auto;">'+tabs.map(function(tab){return '<button onclick="S.ownerSetupTab=\''+tab.key+'\';rerender()" style="font-family:\'DM Sans\',sans-serif;flex:1;font-size:12px;font-weight:700;cursor:pointer;padding:11px 5px;white-space:nowrap;background:transparent;color:'+(S.ownerSetupTab===tab.key?t.T:t.TX3)+';border:none;border-bottom:'+(S.ownerSetupTab===tab.key?'3px solid var(--md-primary)':'3px solid transparent')+';margin-bottom:-2px;white-space:nowrap;">'+tab.label+'</button>';}).join('')+'</div>';
   let body='';
   if(S.ownerSetupTab==='account') body=rOwnerSetupAccount();
   else if(S.ownerSetupTab==='calendar') body=rOwnerSetupCalendar();
@@ -1446,7 +1447,7 @@ function rTrainerSetup(){
   const tabs=[{key:'account',label:'Account'},{key:'services',label:'Services'},{key:'barns',label:'Barns'},{key:'calendar',label:'Calendar'},{key:'notifications',label:'Notifications'}];
   S.trainerSetupTab=S.trainerSetupTab||'account';
   if(svcEditId!==null) S.trainerSetupTab='services';
-  const tabRow='<div style="display:flex;border-bottom:2px solid '+TH.mdOutlineVar+';margin:-12px -14px 14px;background:'+TH.mdSurf+';overflow-x:auto;">'+tabs.map(function(tab){return '<button onclick="S.trainerSetupTab=\''+tab.key+'\';rerender()" style="font-family:\'DM Sans\',sans-serif;font-size:13px;font-weight:700;cursor:pointer;padding:10px 12px;background:transparent;color:'+(S.trainerSetupTab===tab.key?t.T:t.TX3)+';border:none;border-bottom:'+(S.trainerSetupTab===tab.key?'3px solid var(--md-primary)':'3px solid transparent')+';margin-bottom:-2px;white-space:nowrap;">'+tab.label+'</button>';}).join('')+'</div>';
+  const tabRow='<div style="display:flex;border-bottom:2px solid '+TH.mdOutlineVar+';margin:-12px -14px 14px;background:'+TH.mdSurf+';overflow-x:auto;">'+tabs.map(function(tab){return '<button onclick="S.trainerSetupTab=\''+tab.key+'\';rerender()" style="font-family:\'DM Sans\',sans-serif;flex:1;font-size:12px;font-weight:700;cursor:pointer;padding:11px 5px;white-space:nowrap;background:transparent;color:'+(S.trainerSetupTab===tab.key?t.T:t.TX3)+';border:none;border-bottom:'+(S.trainerSetupTab===tab.key?'3px solid var(--md-primary)':'3px solid transparent')+';margin-bottom:-2px;white-space:nowrap;">'+tab.label+'</button>';}).join('')+'</div>';
   let body='';
   if(S.trainerSetupTab==='account') body=rTrainerSetupAccount();
   else if(S.trainerSetupTab==='services') body=rServicesTab();
@@ -1503,7 +1504,7 @@ function rMgrSetup(){
   const t=TH;
   const tabs=[{key:'account',label:'Account'},{key:'tasks',label:'Tasks'},{key:'services',label:'Services'},{key:'calendar',label:'Calendar'},{key:'notifications',label:'Notifications'}];
   S.mgrSetupTab=S.mgrSetupTab||'tasks';
-  const tabRow='<div style="display:flex;border-bottom:2px solid '+TH.mdOutlineVar+';margin:-12px -14px 14px;background:'+TH.mdSurf+';overflow-x:auto;">'+tabs.map(function(tab){return '<button onclick="S.mgrSetupTab=\''+tab.key+'\';rerender()" style="font-family:\'DM Sans\',sans-serif;font-size:13px;font-weight:700;cursor:pointer;padding:10px 12px;background:transparent;color:'+(S.mgrSetupTab===tab.key?t.T:t.TX3)+';border:none;border-bottom:'+(S.mgrSetupTab===tab.key?'3px solid var(--md-primary)':'3px solid transparent')+';margin-bottom:-2px;white-space:nowrap;">'+tab.label+'</button>';}).join('')+'</div>';
+  const tabRow='<div style="display:flex;border-bottom:2px solid '+TH.mdOutlineVar+';margin:-12px -14px 14px;background:'+TH.mdSurf+';overflow-x:auto;">'+tabs.map(function(tab){return '<button onclick="S.mgrSetupTab=\''+tab.key+'\';rerender()" style="font-family:\'DM Sans\',sans-serif;flex:1;font-size:12px;font-weight:700;cursor:pointer;padding:11px 5px;white-space:nowrap;background:transparent;color:'+(S.mgrSetupTab===tab.key?t.T:t.TX3)+';border:none;border-bottom:'+(S.mgrSetupTab===tab.key?'3px solid var(--md-primary)':'3px solid transparent')+';margin-bottom:-2px;white-space:nowrap;">'+tab.label+'</button>';}).join('')+'</div>';
   let body='';
   if(S.mgrSetupTab==='account') body=rMgrSetupAccount();
   else if(S.mgrSetupTab==='tasks') body=rMgrSetupTasks();
@@ -1734,14 +1735,14 @@ function vetSignIn(){S.vetSignedIn=true;S.vetView='home';rerender();}
 // owner:   upload-lab, request-appointment
 const QUICK_ACTIONS={
   'document-vitals':      {id:'document-vitals',       roles:['staff','manager','vet','trainer'],label:'Document Vitals',         icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',              color:'var(--md-primary)', bg:'var(--md-primary-container)'},
-  'document-observation': {id:'document-observation',  roles:['staff','manager','trainer'],     label:'Document Observation',    icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg>',   color:'var(--md-error)', bg:'var(--md-error-container)'},
-  'document-vaccine':     {id:'document-vaccine',      roles:['manager','vet','owner'],                 label:'Document Vaccine',        icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M7 10l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="6" width="11" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M16 10h2M16 14h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',                  color:'var(--md-secondary)', bg:'var(--md-secondary-container)'},
-  'upload-lab':           {id:'upload-lab',            roles:['vet','owner'],                   label:'Upload Lab Test',         icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 3v8l-3 5a2 2 0 001.7 3h10.6A2 2 0 0017 16l-3-5V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 3h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7 13h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',   color:'var(--md-tertiary)', bg:'var(--md-tertiary-container)'},
-  'request-barn-visit':   {id:'request-barn-visit',    roles:['manager','vet','trainer'],        label:'Request Visit',      icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 22V12h6v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',                                                            color:'var(--md-tertiary)', bg:'var(--md-tertiary-container)'},
-  'create-regimen':       {id:'create-regimen',        roles:['trainer'],                        label:'Create Training Regimen', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',                                                               color:'var(--md-tertiary)', bg:'var(--md-tertiary-container)'},
-  'request-appointment':  {id:'request-appointment',   roles:['owner'],                          label:'Request Appointment',     icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', color:'var(--md-warning)', bg:'var(--md-warning-container)'},
-  'document-exam':  {id:'document-exam',  roles:['vet'], label:'Document Exam', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="9" y="3" width="6" height="4" rx="1" stroke="currentColor" stroke-width="1.8"/><path d="M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>', bg:'var(--md-secondary-container)',color:'var(--md-secondary)'},
-  'upload-imaging': {id:'upload-imaging', roles:['vet','owner'], label:'Upload Imaging', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.8"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>', bg:'var(--md-tertiary-container)',color:'var(--md-tertiary)'}
+  'document-observation': {id:'document-observation',  roles:['staff','manager','trainer'],     label:'Document Observation',    icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg>',   color:'var(--md-primary)', bg:'var(--md-primary-container)'},
+  'document-vaccine':     {id:'document-vaccine',      roles:['manager','vet','owner'],                 label:'Document Vaccine',        icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M7 10l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="6" width="11" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M16 10h2M16 14h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',                  color:'var(--md-primary)', bg:'var(--md-primary-container)'},
+  'upload-lab':           {id:'upload-lab',            roles:['vet','owner'],                   label:'Upload Lab Test',         icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 3v8l-3 5a2 2 0 001.7 3h10.6A2 2 0 0017 16l-3-5V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 3h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7 13h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',   color:'var(--md-primary)', bg:'var(--md-primary-container)'},
+  'request-barn-visit':   {id:'request-barn-visit',    roles:['manager','vet','trainer'],        label:'Request Visit',      icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 22V12h6v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',                                                            color:'var(--md-primary)', bg:'var(--md-primary-container)'},
+  'create-regimen':       {id:'create-regimen',        roles:['trainer'],                        label:'Create Training Regimen', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',                                                               color:'var(--md-primary)', bg:'var(--md-primary-container)'},
+  'request-appointment':  {id:'request-appointment',   roles:['owner'],                          label:'Request Appointment',     icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', color:'var(--md-primary)', bg:'var(--md-primary-container)'},
+  'document-exam':  {id:'document-exam',  roles:['vet'], label:'Document Exam', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="9" y="3" width="6" height="4" rx="1" stroke="currentColor" stroke-width="1.8"/><path d="M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>', bg:'var(--md-primary-container)',color:'var(--md-primary)'},
+  'upload-imaging': {id:'upload-imaging', roles:['vet','owner'], label:'Upload Imaging', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.8"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>', bg:'var(--md-primary-container)',color:'var(--md-primary)'}
 };
 
 function quickActionsBar(role){
@@ -1762,6 +1763,7 @@ function quickActionsBar(role){
 }
 
 // --- VITALS FORM ---------------------------------------------
+if(!window.examState) window.examState={horseId:'',horsePreselect:null,date:'',time:'',examType:'Well Visit',systems:{},findings:'',diagnosis:'',treatment:'',followUp:'',includeVitals:false,includeVaccine:false,vaccineData:{vaccine:'',lot:'',expiry:'',site:'Neck',notes:''}};
 if(!window.vitalsState) window.vitalsState={horseId:'',date:'',time:'',activeField:null,hr:'',rr:'',temp:'',bcs:'',hg:'',bl:'',notes:''};
 
 const VITAL_FIELDS=[
@@ -1866,11 +1868,617 @@ window.vitalsNotifyDone=function(){
   showToast('Vitals logged','monitor_heart','success');
 };
 
+// ── EXAM FORM ──────────────────────────────────────────────────────────────
+// Body systems for Well/Sick visits (equine SOAP)
+// ── EXAM CONSTANTS ───────────────────────────────────────────────────────────
+
+const EXAM_SYSTEMS=[
+  {id:'general',   label:'General Appearance',  sub:'BAR/QAR/Dull, body condition, coat'},
+  {id:'mucous',    label:'Mucous Membranes',     sub:'Color, moisture, CRT'},
+  {id:'lymph',     label:'Lymph Nodes',          sub:'Submandibular, prescapular, superficial inguinal'},
+  {id:'cardio',    label:'Cardiovascular',       sub:'Heart rate, rhythm, murmurs, pulse quality'},
+  {id:'resp',      label:'Respiratory',          sub:'Rate, effort, lung sounds, nasal discharge'},
+  {id:'gi',        label:'Gastrointestinal',     sub:'Gut sounds (all 4 quadrants), borborygmi'},
+  {id:'musculo',   label:'Musculoskeletal',      sub:'Gait, symmetry, muscle mass, joint effusion'},
+  {id:'neuro',     label:'Neurological',         sub:'Mentation, cranial nerves, proprioception'},
+  {id:'skin',      label:'Skin & Coat',          sub:'Wounds, swelling, dermatitis, ectoparasites'},
+  {id:'eye',       label:'Eyes & Vision',        sub:'Discharge, opacity, pupillary response'},
+  {id:'dental',    label:'Mouth / Dental',       sub:'Teeth, gums, occlusion, TMJ, tongue'},
+  {id:'repro',     label:'Reproductive',         sub:'External genitalia, mammary (if applicable)'},
+  {id:'uro',       label:'Urinary',              sub:'Urination frequency, color, straining'},
+  {id:'hoof',      label:'Hoof & Foot',          sub:'Hoof wall, sole, frog, digital pulses'},
+  {id:'gait',      label:'Gait & Movement',      sub:'Stride length, evenness, toe-dragging'},
+  {id:'body_cond', label:'Body Condition Score', sub:'BCS 1-9 scale (Henneke)'},
+];
+
+// Which systems show for each exam type
+const EXAM_TYPE_SYSTEMS={
+  'Well Visit':              ['general','mucous','lymph','cardio','resp','gi','musculo','neuro','skin','eye','dental','repro','uro','hoof','gait','body_cond'],
+  'Sick Visit':              ['general','mucous','lymph','cardio','resp','gi','musculo','neuro','skin','eye','dental','repro','uro','hoof','gait','body_cond'],
+  'Emergency':               ['general','mucous','cardio','resp','gi','musculo','neuro','skin','eye','hoof','gait'],
+  'Lameness Exam':           ['general','musculo','neuro','hoof','gait','skin'],
+  'Dental Exam':             ['general','dental','lymph','neuro'],
+  'Ophthalmology Exam':      ['general','eye','neuro'],
+  'Reproductive Evaluation': ['general','mucous','repro','uro'],
+  'Chiropractic Exam':       ['general','musculo','neuro','gait','skin'],
+  'Prepurchase Exam':        ['general','mucous','lymph','cardio','resp','gi','musculo','neuro','skin','eye','dental','repro','uro','hoof','gait','body_cond'],
+};
+
+const SYSTEM_STATUSES=[
+  {val:'',         label:'\u2014',      color:'var(--md-outline)',          bg:'var(--md-surface-variant)'},
+  {val:'normal',   label:'Normal',  color:'var(--md-secondary)',        bg:'var(--md-secondary)22'},
+  {val:'abnormal', label:'Abnormal',color:'var(--md-error)',            bg:'var(--md-error)22'},
+  {val:'noobs',    label:'Not obs.',color:'var(--md-on-surface-dim)',   bg:'var(--md-surface-variant)'},
+];
+
+const COMMON_ABNORMALS={
+  general:   ['Depressed','Obtunded','Febrile','Poor BCS','Dehydrated','Colic signs'],
+  mucous:    ['Pale','Icteric','Cyanotic','Injected','Dry/tacky','Prolonged CRT'],
+  lymph:     ['Enlarged','Painful','Warm'],
+  cardio:    ['Tachycardia','Bradycardia','Murmur','Arrhythmia','Weak pulse'],
+  resp:      ['Tachypnea','Increased effort','Crackles','Wheezes','Nasal discharge'],
+  gi:        ['Reduced sounds','Absent sounds','Hypermotile','Distension','Pain'],
+  musculo:   ['Lameness','Swelling','Effusion','Atrophy','Asymmetry','Pain on palpation'],
+  neuro:     ['Ataxia','Head tilt','Weakness','Seizure','Altered mentation'],
+  skin:      ['Wound','Swelling','Urticaria','Alopecia','Ectoparasites'],
+  eye:       ['Discharge','Corneal opacity','Blepharospasm','Miosis','Mydriasis','Uveitis signs'],
+  dental:    ['Sharp points','Wave mouth','Missing teeth','Periodontal disease','Quidding','EOTRH signs'],
+  repro:     ['Discharge','Swelling','Asymmetry'],
+  uro:       ['Pollakiuria','Straining','Hematuria','Discolored urine'],
+  hoof:      ['Lameness','Thrush','White line disease','Laminitis signs','Cracked hoof wall','Digital pulse elevated'],
+  gait:      ['Short striding','Off at trot','Toe-dragging','Stumbling','Head bob'],
+  body_cond: ['Underweight (BCS<3)','Overweight (BCS>7)','Asymmetric fat deposits'],
+};
+
+// Diagnosis picklist
+const EXAM_DIAGNOSES={
+  'Musculoskeletal':['Lameness - forelimb','Lameness - hindlimb','Navicular syndrome','Laminitis','Soft tissue injury','Joint effusion','Muscle soreness','Osteoarthritis','Suspensory injury','Tendon injury'],
+  'Gastrointestinal':['Impaction colic','Gas colic','Spasmodic colic','Sand colic','Gastric ulcers (EGUS)','Diarrhea','Colitis','Choke','Liver disease'],
+  'Respiratory':['Upper respiratory infection','Heaves (RAO/IAD)','Pneumonia','Strangles','Nasal discharge - idiopathic','Laryngeal hemiplegia'],
+  'Dental':['Sharp enamel points','Wave mouth','EOTRH','Periodontal disease','Missing/fractured tooth','Quidding'],
+  'Dermatological':['Rain rot','Ringworm','Sweet itch','Scratches/mud fever','Wound/laceration','Abscess'],
+  'Metabolic':['EMS / IR','PPID (Cushings)','Hyperlipemia','Tying up (PSSM/RER)','Electrolyte imbalance'],
+  'Infectious':['EHV-1/4','Strangles','Influenza','West Nile','EEE/WEE','Potomac Horse Fever'],
+  'Ophthalmic':['Corneal ulcer','Uveitis (ERU)','Conjunctivitis','Cataracts','Glaucoma'],
+  'Reproductive':['Retained placenta','Endometritis','Ovarian cyst','Cryptorchidism'],
+  'Neurological':['EPM','Wobbler syndrome','Botulism','Tetanus','EMND'],
+  'Other':['Annual wellness - no abnormalities','Prepurchase - passed','Prepurchase - conditional pass','Observation only'],
+};
+
+// Recommendations data
+const COMMON_DIRECTIVES=[
+  'Stall rest','Restrict turnout','Hand-walk only','No jumping','No competition for 2 weeks',
+  'No competition for 4 weeks','Cold hose leg 2x daily','Poultice and wrap nightly',
+  'Monitor manure output','Soak hay','Soaked hay 48 hours','Feed mash only','No grain',
+  'Increase water intake','Monitor temperature twice daily','Recheck in 24-48 hours',
+  'Limit exercise to light hacking','No lunging','Slow introduction back to work',
+  'Ice leg 15 min 2x daily','Apply wound dressing daily','Keep dry and clean',
+];
+
+const COMMON_MEDS=[
+  {name:'Phenylbutazone (Bute)',   dose:'2.2 mg/kg',  route:'Oral',   freq:'BID',    unit:'g paste / powder'},
+  {name:'Flunixin (Banamine)',     dose:'1.1 mg/kg',  route:'IV/Oral',freq:'SID-BID',unit:'ml / paste'},
+  {name:'Dexamethasone',           dose:'0.02-0.1 mg/kg',route:'IV/IM',freq:'SID', unit:'ml'},
+  {name:'Omeprazole (GastroGard)', dose:'4 mg/kg',    route:'Oral',   freq:'SID',    unit:'syringe'},
+  {name:'Trimethoprim-sulfa (SMZ)',dose:'30 mg/kg',   route:'Oral',   freq:'BID',    unit:'tablets/bolus'},
+  {name:'Enrofloxacin',            dose:'5 mg/kg',    route:'Oral/IV',freq:'SID',    unit:'ml'},
+  {name:'Metronidazole',           dose:'15-25 mg/kg',route:'Oral',   freq:'TID',    unit:'g'},
+  {name:'Sucralfate',              dose:'20 mg/kg',   route:'Oral',   freq:'TID-QID',unit:'g'},
+  {name:'Previcox (Firocoxib)',    dose:'0.1 mg/kg',  route:'Oral',   freq:'SID',    unit:'tablet'},
+  {name:'Pergolide (Prascend)',    dose:'2 mcg/kg',   route:'Oral',   freq:'SID',    unit:'tablet'},
+  {name:'Acepromazine',            dose:'0.05 mg/kg', route:'IV/IM',  freq:'PRN',    unit:'ml'},
+  {name:'Xylazine',                dose:'0.5-1.1 mg/kg',route:'IV/IM',freq:'PRN',   unit:'ml'},
+];
+
+const FOLLOWUP_TIMEFRAMES=['1 week','2 weeks','3 weeks','1 month','6 weeks','2 months','3 months','6 months','1 year','Custom date'];
+
+const REFERRAL_SPECIALTIES=['Orthopedic surgeon','Internal medicine specialist','Ophthalmologist','Dentist / equine dental tech','Reproduction specialist','Farrier','Chiropractor / acupuncturist','Neurologist','Dermatologist','Cardiologist','Other specialist'];
+
+// ── EXAM STATE ───────────────────────────────────────────────────────────────
+if(!window.examState) window.examState={
+  horseId:'',horsePreselect:null,date:'',time:'',examType:'Well Visit',
+  systems:{},findings:'',prognosis:'',
+  diagnoses:[],         // [{id,label,custom}]
+  includeVitals:false,
+  includeVaccine:false,
+  vitals:{hr:'',rr:'',temp:'',gut:'Normal',notes:''},
+  vaccineData:{vaccine:'',lot:'',expiry:'',site:'Neck',notes:''},
+  recs:{
+    followups:[],       // [{timeframe,customDate,reason}]
+    directives:[],      // [{label,detail,custom}]
+    medications:[],     // [{name,dose,route,freq,duration,notes}]
+    referrals:[],       // [{specialty,provider,urgency,reason}]
+  },
+  customDirectives:[],
+  customMeds:[],
+  diagSearch:'',
+  dirSearch:'',
+  medSearch:'',
+  addCustomDir:'',
+  addCustomMed:'',
+  step:'exam',          // 'exam'|'recs'|'review'
+};
+
+// ── rExamForm ────────────────────────────────────────────────────────────────
+function rExamForm(){
+  var t=TH;
+  // Merge defaults — appointment card sets partial state, fill any missing fields
+  var _def={horseId:'',horsePreselect:null,date:'',time:'',examType:'Well Visit',systems:{},findings:'',prognosis:'',diagnoses:[],includeVitals:false,includeVaccine:false,vitals:{hr:'',rr:'',temp:'',gut:'Normal',notes:''},vaccineData:{vaccine:'',lot:'',expiry:'',site:'Neck',notes:''},recs:{followups:[],directives:[],medications:[],referrals:[]},customDirectives:[],customMeds:[],diagSearch:'',dirSearch:'',medSearch:'',step:'exam'};
+  if(!window.examState) window.examState=_def;
+  var es=window.examState;
+  // Fill any missing nested fields
+  if(!es.recs) es.recs={followups:[],directives:[],medications:[],referrals:[]};
+  if(!es.recs.followups) es.recs.followups=[];
+  if(!es.recs.directives) es.recs.directives=[];
+  if(!es.recs.medications) es.recs.medications=[];
+  if(!es.recs.referrals) es.recs.referrals=[];
+  if(!es.diagnoses) es.diagnoses=[];
+  if(!es.systems) es.systems={};
+  if(!es.vitals) es.vitals={hr:'',rr:'',temp:'',gut:'Normal',notes:''};
+  if(!es.vaccineData) es.vaccineData={vaccine:'',lot:'',expiry:'',site:'Neck',notes:''};
+  if(!es.customDirectives) es.customDirectives=[];
+  if(!es.customMeds) es.customMeds=[];
+  if(es.step===undefined) es.step='exam';
+  if(es.includeVitals===undefined) es.includeVitals=false;
+  if(es.includeVaccine===undefined) es.includeVaccine=false;
+  var h=es.horseId?HORSES_ALL.find(function(h){return h.id===es.horseId;}):null;
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+  function inp(label,key,val,type,ph){
+    return '<div style="margin-bottom:10px;"><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">'+label+'</label>'
+      +'<input type="'+(type||'text')+'" value="'+val+'" oninput="window.examState.'+key+'=this.value" placeholder="'+(ph||'')+'" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>';
+  }
+  function ta(label,key,val,ph,rows){
+    return '<div style="margin-bottom:10px;"><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">'+label+'</label>'
+      +'<textarea rows="'+(rows||3)+'" oninput="window.examState.'+key+'=this.value" placeholder="'+(ph||'')+'" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;resize:vertical;box-sizing:border-box;">'+val+'</textarea></div>';
+  }
+  function secHd(label,icon){
+    return '<div style="display:flex;align-items:center;gap:6px;margin:16px 0 10px;padding-bottom:6px;border-bottom:1.5px solid var(--md-primary)33;">'
+      +(icon?msiIcon(icon,14,'var(--md-primary)'):'')
+      +'<div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.6px;">'+label+'</div>'
+      +'</div>';
+  }
+  function chip(label,active,onclick,colorActive,bgActive){
+    var ca=colorActive||'var(--md-primary)';var ba=bgActive||'var(--md-primary-container)';
+    return '<button onclick="'+onclick+'" style="font-family:\'DM Sans\',sans-serif;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;border:1.5px solid '+(active?ca:'var(--md-outline)')+';background:'+(active?ba:'var(--md-surface)')+';color:'+(active?ca:'var(--md-on-surface-dim)')+';cursor:pointer;white-space:nowrap;">'+label+'</button>';
+  }
+
+  // ── STEP TABS ────────────────────────────────────────────────────────────────
+  var STEPS=[{key:'exam',label:'Exam'},{key:'recs',label:'Recommendations'},{key:'review',label:'Review'}];
+  var stepBar='<div style="display:flex;gap:0;margin:-14px -14px 14px;border-bottom:2px solid var(--md-outline-variant);background:var(--md-surface);">'
+    +STEPS.map(function(st){
+      var on=es.step===st.key;
+      return '<button onclick="window.examState.step=\''+st.key+'\';rerender()" style="flex:1;padding:11px 5px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;background:transparent;border:none;border-bottom:3px solid '+(on?'var(--md-primary)':'transparent')+';color:'+(on?t.T:t.TX3)+';cursor:pointer;margin-bottom:-2px;white-space:nowrap;">'+st.label+'</button>';
+    }).join('')
+    +'</div>';
+
+  // ── BACK BUTTON & HEADER ─────────────────────────────────────────────────────
+  var backBtn='<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">'
+    +'<button onclick="S.quickAction=null;window.examState={horseId:\'\',horsePreselect:null,date:\'\',time:\'\',examType:\'Well Visit\',systems:{},findings:\'\',prognosis:\'\',diagnoses:[],includeVitals:false,includeVaccine:false,vitals:{hr:\'\',rr:\'\',temp:\'\',gut:\'Normal\',notes:\'\'},vaccineData:{vaccine:\'\',lot:\'\',expiry:\'\',site:\'Neck\',notes:\'\'},recs:{followups:[],directives:[],medications:[],referrals:[]},customDirectives:[],customMeds:[],diagSearch:\'\',dirSearch:\'\',medSearch:\'\',addCustomDir:\'\',addCustomMed:\'\',step:\'exam\'};rerender()" style="background:none;border:none;cursor:pointer;padding:4px;display:flex;">'+msiIcon('arrow_back',22,'var(--md-on-surface)')+'</button>'
+    +'<div style="flex:1;">'
+    +'<div style="font-size:16px;font-weight:700;color:var(--md-on-surface);">Document Exam</div>'
+    +(es.horsePreselect||h?'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+(es.horsePreselect||h.name)+(es.date?' · '+es.date:'')+(es.time?' · '+es.time:'')+'</div>':'')
+    +'</div>'
+    +(h?horseAvatar(h,32):'')
+    +'</div>';
+
+  // ── EXAM STEP ────────────────────────────────────────────────────────────────
+  if(es.step==='exam'){
+    var EXAM_TYPES=['Well Visit','Sick Visit','Emergency','Lameness Exam','Dental Exam','Ophthalmology Exam','Reproductive Evaluation','Chiropractic Exam','Prepurchase Exam','Vaccination only','Other'];
+
+    // Horse picker (searchable) — only if not preselected
+    var horseSection='';
+    if(!es.horsePreselect){
+      var allHorses=getHorsesForUser().map(function(e){return e.horse;});
+      var horseChips=allHorses.map(function(hh){
+        var sel=es.horseId===hh.id;
+        return '<button onclick="window.examState.horseId=\''+hh.id+'\';rerender()" style="display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:10px;border:1.5px solid '+(sel?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(sel?'var(--md-primary-container)':'var(--md-surface)')+';cursor:pointer;font-family:\'DM Sans\',sans-serif;min-width:0;width:100%;text-align:left;margin-bottom:6px;">'
+          +horseAvatar(hh,28)
+          +'<div style="flex:1;min-width:0;">'
+          +'<div style="font-size:13px;font-weight:600;color:'+(sel?'var(--md-primary)':'var(--md-on-surface)')+';">'+hh.name+'</div>'
+          +'<div style="font-size:10px;color:var(--md-on-surface-dim);">'+hh.breed+' · '+hh.barn+'</div>'
+          +'</div>'
+          +(sel?msiIcon('check_circle',16,'var(--md-primary)'):'')
+          +'</button>';
+      }).join('');
+      horseSection=secHd('Select horse','pets')
+        +'<div style="margin-bottom:12px;">'
+        +'<input type="text" placeholder="Search horses..." oninput="window._examHorseSearch=this.value;rerender()" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;margin-bottom:8px;"/>'
+        // filter by search
+        +'</div>';
+      // Apply search filter
+      var hs=window._examHorseSearch||'';
+      var filtered=hs?allHorses.filter(function(hh){return hh.name.toLowerCase().includes(hs.toLowerCase())||hh.breed.toLowerCase().includes(hs.toLowerCase());}):allHorses;
+      horseChips=filtered.map(function(hh){
+        var sel=es.horseId===hh.id;
+        return '<button onclick="window.examState.horseId=\''+hh.id+'\';rerender()" style="display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:10px;border:1.5px solid '+(sel?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(sel?'var(--md-primary-container)':'var(--md-surface)')+';cursor:pointer;font-family:\'DM Sans\',sans-serif;min-width:0;width:100%;text-align:left;margin-bottom:6px;">'
+          +horseAvatar(hh,28)
+          +'<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:'+(sel?'var(--md-primary)':'var(--md-on-surface)')+';">'+hh.name+'</div><div style="font-size:10px;color:var(--md-on-surface-dim);">'+hh.breed+' · '+BARNS[hh.barn]?.name+'</div></div>'
+          +(sel?msiIcon('check_circle',16,'var(--md-primary)'):'')
+          +'</button>';
+      }).join('');
+      horseSection=secHd('Select horse','pets')
+        +'<input type="text" placeholder="Search horses..." oninput="window._examHorseSearch=this.value;rerender()" value="'+(window._examHorseSearch||'')+'" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;margin-bottom:8px;"/>'
+        +horseChips;
+    }
+
+    // Exam type selector
+    var typeRow=secHd('Exam type','medical_services')
+      +'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:2px;">'
+      +EXAM_TYPES.map(function(tp){
+        return chip(tp,es.examType===tp,'window.examState.examType=\''+tp+'\';window.examState.systems={};rerender()');
+      }).join('')
+      +'</div>';
+
+    // Date / time row
+    var dateTimeRow='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0;">'
+      +inp('Date','date',es.date,'date','')
+      +inp('Time','time',es.time,'time','')
+      +'</div>';
+
+    // Body systems
+    var systemsSection='';
+    var sysIds=EXAM_TYPE_SYSTEMS[es.examType]||[];
+    if(sysIds.length>0){
+      var systemRows=EXAM_SYSTEMS.filter(function(sys){return sysIds.includes(sys.id);}).map(function(sys){
+        var cur=es.systems[sys.id]||{status:'',notes:'',flags:[]};
+        var statusBtns=SYSTEM_STATUSES.map(function(st){
+          var active=cur.status===st.val;
+          return '<button onclick="if(!window.examState.systems[\''+sys.id+'\'])window.examState.systems[\''+sys.id+'\']={}; window.examState.systems[\''+sys.id+'\'].status=\''+(st.val||'')+'\';rerender()" style="padding:4px 9px;border-radius:6px;font-size:10px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;border:1.5px solid '+(active?st.color:t.BRD)+';background:'+(active?st.bg:t.CARD)+';color:'+(active?st.color:t.TX3)+';">'+st.label+'</button>';
+        }).join('');
+        var abnormals=cur.status==='abnormal'
+          ?'<div style="margin-top:8px;padding:8px;background:var(--md-error-container)33;border-radius:8px;">'
+            +'<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">'
+            +(COMMON_ABNORMALS[sys.id]||[]).map(function(flag){
+              var active=(cur.flags||[]).includes(flag);
+              return '<button onclick="var s=window.examState.systems[\''+sys.id+'\'];if(!s)s={};if(!s.flags)s.flags=[];var idx=s.flags.indexOf(\''+flag+'\');if(idx>=0)s.flags.splice(idx,1);else s.flags.push(\''+flag+'\');rerender()" style="padding:3px 8px;border-radius:12px;font-size:10px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;border:1.5px solid '+(active?'var(--md-error)':'var(--md-outline)')+';background:'+(active?'var(--md-error)22':'var(--md-surface)')+';color:'+(active?'var(--md-error)':'var(--md-on-surface-dim)')+';">'+flag+'</button>';
+            }).join('')
+            +'</div>'
+            +'<input type="text" value="'+(cur.notes||'')+'" placeholder="Additional findings for '+sys.label+'..." oninput="if(!window.examState.systems[\''+sys.id+'\'])window.examState.systems[\''+sys.id+'\']={}; window.examState.systems[\''+sys.id+'\'].notes=this.value" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-error)44;border-radius:8px;padding:7px 10px;font-size:12px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/>'
+            +'</div>'
+          :'';
+        return '<div style="padding:9px 0;border-bottom:1px solid var(--md-outline-variant);">'
+          +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">'
+          +'<div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:var(--md-on-surface);">'+sys.label+'</div>'
+          +'<div style="font-size:10px;color:var(--md-on-surface-dim);">'+sys.sub+'</div></div>'
+          +'<div style="display:flex;gap:4px;flex-shrink:0;">'+statusBtns+'</div></div>'
+          +abnormals+'</div>';
+      }).join('');
+      systemsSection=secHd('Physical examination','stethoscope')
+        +'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:0 14px;margin-bottom:14px;">'+systemRows+'</div>';
+    }
+
+    // Findings + diagnosis
+    var findingsSection=secHd('Findings & assessment','assignment')
+      +ta('Clinical findings','findings',es.findings,'Clinical observations, owner concerns, history...',3)
+      +ta('Prognosis','prognosis',es.prognosis,'Expected outcome...',2);
+
+    // Searchable diagnosis picker
+    var diagSearch=es.diagSearch||'';
+    var selectedDiags=es.diagnoses||[];
+    var diagChipsSelected=selectedDiags.map(function(d){
+      return '<div style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;background:var(--md-primary-container);border:1.5px solid var(--md-primary);font-size:11px;font-weight:700;color:var(--md-primary);margin:2px;">'
+        +d.label
+        +'<button onclick="window.examState.diagnoses=window.examState.diagnoses.filter(function(x){return x.id!==\''+d.id+'\';});rerender()" style="background:none;border:none;cursor:pointer;padding:0;line-height:1;color:var(--md-primary);">'+msiIcon('close',12,'var(--md-primary)')+'</button>'
+        +'</div>';
+    }).join('');
+    var diagMatches=[];
+    if(diagSearch.length>0){
+      Object.entries(EXAM_DIAGNOSES).forEach(function(entry){
+        var cat=entry[0],items=entry[1];
+        items.filter(function(it){return it.toLowerCase().includes(diagSearch.toLowerCase())&&!selectedDiags.find(function(d){return d.label===it;});}).forEach(function(it){
+          diagMatches.push({cat:cat,label:it,id:it.replace(/\s+/g,'_').toLowerCase()});
+        });
+      });
+    }
+    var diagDropdown=diagMatches.length>0
+      ?'<div style="background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:9px;overflow:hidden;margin-bottom:8px;max-height:160px;overflow-y:auto;">'
+        +diagMatches.slice(0,8).map(function(d){
+          return '<div onclick="window.examState.diagnoses.push({id:\''+d.id+'\',label:\''+d.label+'\',custom:false});window.examState.diagSearch=\'\';rerender()" style="padding:9px 12px;font-size:12px;color:var(--md-on-surface);cursor:pointer;border-bottom:1px solid var(--md-outline-variant);display:flex;align-items:center;justify-content:space-between;">'
+            +'<span>'+d.label+'</span><span style="font-size:10px;color:var(--md-on-surface-dim);">'+d.cat+'</span>'
+            +'</div>';
+        }).join('')
+        +'</div>'
+      :diagSearch.length>2
+        ?'<div onclick="window.examState.diagnoses.push({id:\'custom_\'+Date.now(),label:window.examState.diagSearch,custom:true});window.examState.diagSearch=\'\';rerender()" style="padding:9px 12px;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:9px;font-size:12px;color:var(--md-primary);cursor:pointer;margin-bottom:8px;display:flex;align-items:center;gap:6px;">'+msiIcon('add',14,'var(--md-primary)')+'Add "'+diagSearch+'" as custom diagnosis</div>'
+        :'';
+    var diagSection='<div style="margin-bottom:10px;">'
+      +'<label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">Diagnosis / Assessment</label>'
+      +(selectedDiags.length?'<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px;">'+diagChipsSelected+'</div>':'')
+      +'<input type="text" placeholder="Search diagnoses or type to add custom..." value="'+diagSearch+'" oninput="window.examState.diagSearch=this.value;rerender()" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;margin-bottom:4px;"/>'
+      +diagDropdown
+      +'</div>';
+
+    // Optional vitals
+    var vitalsSection='<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);overflow:hidden;margin-bottom:10px;">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;">'
+      +'<div style="display:flex;align-items:center;gap:8px;">'+msiIcon('monitor_heart',16,'var(--md-primary)')
+      +'<span style="font-size:13px;font-weight:600;color:var(--md-on-surface);">Include Vitals</span>'
+      +(es.date||es.time?'<span style="font-size:10px;color:var(--md-on-surface-dim);">'+(es.date||'')+(es.time?' · '+es.time:'')+'</span>':'')
+      +'</div>'
+      +mdToggle(es.includeVitals,'window.examState.includeVitals=!window.examState.includeVitals;rerender()')
+      +'</div>'
+      +(es.includeVitals
+        ?'<div style="padding:0 14px 12px;border-top:1px solid var(--md-outline-variant);padding-top:12px;">'
+          +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
+          +'<div><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;display:block;margin-bottom:4px;">Heart rate (bpm)</label><input type="number" value="'+(es.vitals.hr||'')+'" oninput="window.examState.vitals.hr=this.value" placeholder="36-44" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 10px;font-size:13px;font-family:\'DM Sans\',sans-serif;outline:none;box-sizing:border-box;"/></div>'
+          +'<div><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;display:block;margin-bottom:4px;">Resp. rate (brpm)</label><input type="number" value="'+(es.vitals.rr||'')+'" oninput="window.examState.vitals.rr=this.value" placeholder="8-16" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 10px;font-size:13px;font-family:\'DM Sans\',sans-serif;outline:none;box-sizing:border-box;"/></div>'
+          +'<div><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;display:block;margin-bottom:4px;">Temperature (°F)</label><input type="number" step="0.1" value="'+(es.vitals.temp||'')+'" oninput="window.examState.vitals.temp=this.value" placeholder="99-101.5" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 10px;font-size:13px;font-family:\'DM Sans\',sans-serif;outline:none;box-sizing:border-box;"/></div>'
+          +'<div><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;display:block;margin-bottom:4px;">Gut sounds</label><select oninput="window.examState.vitals.gut=this.value" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 10px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;"><option'+(es.vitals.gut==='Normal'?' selected':'')+'>Normal</option><option'+(es.vitals.gut==='Reduced'?' selected':'')+'>Reduced</option><option'+(es.vitals.gut==='Absent'?' selected':'')+'>Absent</option><option'+(es.vitals.gut==='Hypermotile'?' selected':'')+'>Hypermotile</option></select></div>'
+          +'</div>'
+          +'<div style="margin-top:8px;"><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;display:block;margin-bottom:4px;">Vitals notes</label><input type="text" value="'+(es.vitals.notes||'')+'" oninput="window.examState.vitals.notes=this.value" placeholder="Additional notes..." style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 10px;font-size:13px;font-family:\'DM Sans\',sans-serif;outline:none;box-sizing:border-box;"/></div>'
+          +'</div>'
+        :'')
+      +'</div>';
+
+    // Optional vaccine
+    var vaccSection='<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);overflow:hidden;margin-bottom:10px;">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;">'
+      +'<div style="display:flex;align-items:center;gap:8px;">'+msiIcon('vaccines',16,'var(--md-primary)')
+      +'<span style="font-size:13px;font-weight:600;color:var(--md-on-surface);">Include Vaccine</span></div>'
+      +mdToggle(es.includeVaccine,'window.examState.includeVaccine=!window.examState.includeVaccine;rerender()')
+      +'</div>'
+      +(es.includeVaccine
+        ?'<div style="padding:0 14px 12px;border-top:1px solid var(--md-outline-variant);padding-top:12px;">'
+          +'<div style="margin-bottom:8px;"><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;display:block;margin-bottom:4px;">Vaccine</label>'
+          +'<select oninput="window.examState.vaccineData.vaccine=this.value" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 10px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;">'
+          +EQUINE_VACCINES.map(function(v){return '<option'+(es.vaccineData.vaccine===v.name?' selected':'')+'>'+v.name+'</option>';}).join('')
+          +'</select></div>'
+          +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
+          +'<div><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;display:block;margin-bottom:4px;">Lot #</label><input type="text" value="'+(es.vaccineData.lot||'')+'" oninput="window.examState.vaccineData.lot=this.value" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 10px;font-size:13px;font-family:\'DM Sans\',sans-serif;outline:none;box-sizing:border-box;"/></div>'
+          +'<div><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;display:block;margin-bottom:4px;">Expiry</label><input type="text" value="'+(es.vaccineData.expiry||'')+'" oninput="window.examState.vaccineData.expiry=this.value" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 10px;font-size:13px;font-family:\'DM Sans\',sans-serif;outline:none;box-sizing:border-box;"/></div>'
+          +'<div><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;display:block;margin-bottom:4px;">Site</label><select oninput="window.examState.vaccineData.site=this.value" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 10px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;"><option>Neck</option><option>Pectoral</option><option>Gluteal</option></select></div>'
+          +'<div><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;display:block;margin-bottom:4px;">Notes</label><input type="text" value="'+(es.vaccineData.notes||'')+'" oninput="window.examState.vaccineData.notes=this.value" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 10px;font-size:13px;font-family:\'DM Sans\',sans-serif;outline:none;box-sizing:border-box;"/></div>'
+          +'</div></div>'
+        :'')
+      +'</div>';
+
+    var nextBtn='<button onclick="window.examState.step=\'recs\';rerender()" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:var(--md-shape-md);padding:13px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;margin-top:16px;">Recommendations '+msiIcon('arrow_forward',16,'#fff')+'</button>';
+
+    return '<div style="padding:14px;">'
+      +stepBar+backBtn+horseSection+typeRow+dateTimeRow
+      +systemsSection+findingsSection+diagSection
+      +'<div style="margin-bottom:14px;">'+vitalsSection+vaccSection+'</div>'
+      +nextBtn+'</div>';
+  }
+
+  // ── RECOMMENDATIONS STEP ─────────────────────────────────────────────────────
+  if(es.step==='recs'){
+    var recs=es.recs;
+
+    // ── Follow-ups ───────────────────────────────────────────────────────────
+    var followupCards=recs.followups.map(function(fu,i){
+      return '<div style="background:var(--md-surface-variant);border-radius:9px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:flex-start;gap:8px;">'
+        +msiIcon('event',16,'var(--md-primary)')
+        +'<div style="flex:1;min-width:0;">'
+        +'<div style="font-size:12px;font-weight:700;color:var(--md-on-surface);">'+fu.timeframe+(fu.customDate?' — '+fu.customDate:'')+'</div>'
+        +(fu.reason?'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+fu.reason+'</div>':'')
+        +'</div>'
+        +'<button onclick="window.examState.recs.followups.splice('+i+',1);rerender()" style="background:none;border:none;cursor:pointer;">'+msiIcon('close',14,'var(--md-on-surface-dim)')+'</button>'
+        +'</div>';
+    }).join('');
+    var fuState=window._fuState||{open:false,timeframe:'2 weeks',customDate:'',reason:''};
+    window._fuState=fuState;
+    var followupAdd=fuState.open
+      ?'<div style="background:var(--md-primary-container);border-radius:9px;padding:11px 12px;margin-bottom:8px;">'
+        +'<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;">'
+        +FOLLOWUP_TIMEFRAMES.map(function(tf){
+          var on=fuState.timeframe===tf;
+          return chip(tf,on,'window._fuState.timeframe=\''+tf+'\';rerender()');
+        }).join('')+'</div>'
+        +(fuState.timeframe==='Custom date'?'<input type="date" value="'+fuState.customDate+'" oninput="window._fuState.customDate=this.value" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 10px;font-size:13px;font-family:\'DM Sans\',sans-serif;outline:none;box-sizing:border-box;margin-bottom:8px;"/>':'')
+        +'<input type="text" placeholder="Reason for follow-up..." value="'+fuState.reason+'" oninput="window._fuState.reason=this.value" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 10px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;margin-bottom:8px;"/>'
+        +'<div style="display:flex;gap:8px;">'
+        +'<button onclick="window.examState.recs.followups.push({timeframe:window._fuState.timeframe,customDate:window._fuState.customDate,reason:window._fuState.reason});window._fuState={open:false,timeframe:\'2 weeks\',customDate:\'\',reason:\'\'};rerender()" style="flex:1;background:var(--md-primary);color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Add</button>'
+        +'<button onclick="window._fuState.open=false;rerender()" style="background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:8px;padding:9px 14px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface-dim);cursor:pointer;">Cancel</button>'
+        +'</div></div>'
+      :'<button onclick="window._fuState={open:true,timeframe:\'2 weeks\',customDate:\'\',reason:\'\'};rerender()" style="width:100%;background:var(--md-surface);border:2px dashed var(--md-outline);border-radius:9px;padding:9px;font-size:12px;font-weight:600;font-family:\'DM Sans\',sans-serif;color:var(--md-primary);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:4px;">'+msiIcon('add',14,'var(--md-primary)')+'Add follow-up appointment</button>';
+
+    // ── Directives ───────────────────────────────────────────────────────────
+    var selectedDirs=recs.directives||[];
+    var dirSearch=es.dirSearch||'';
+    var allDirs=[...COMMON_DIRECTIVES,...(es.customDirectives||[])];
+    var dirFiltered=dirSearch?allDirs.filter(function(d){return d.toLowerCase().includes(dirSearch.toLowerCase());}).slice(0,6):allDirs.slice(0,6);
+    var dirChipsSelected=selectedDirs.map(function(d,i){
+      return '<div style="background:var(--md-primary-container);border-radius:9px;padding:8px 11px;margin-bottom:6px;display:flex;align-items:flex-start;gap:7px;">'
+        +msiIcon('task_alt',14,'var(--md-primary)')
+        +'<div style="flex:1;min-width:0;">'
+        +'<div style="font-size:12px;font-weight:700;color:var(--md-primary);">'+d.label+(d.custom?' (custom)':'')+'</div>'
+        +'<input type="text" value="'+(d.detail||'')+'" oninput="window.examState.recs.directives['+i+'].detail=this.value" placeholder="Duration, detail..." style="width:100%;background:var(--md-surface);border:1px solid var(--md-outline-variant);border-radius:7px;padding:5px 8px;font-size:11px;font-family:\'DM Sans\',sans-serif;outline:none;box-sizing:border-box;margin-top:4px;"/>'
+        +'</div>'
+        +'<button onclick="window.examState.recs.directives.splice('+i+',1);rerender()" style="background:none;border:none;cursor:pointer;flex-shrink:0;">'+msiIcon('close',14,'var(--md-on-surface-dim)')+'</button>'
+        +'</div>';
+    }).join('');
+    var dirDropdown=(dirSearch||dirFiltered.length)
+      ?'<div style="background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:9px;overflow:hidden;margin-bottom:8px;">'
+        +dirFiltered.filter(function(d){return !selectedDirs.find(function(s){return s.label===d;});}).map(function(d){
+          return '<div onclick="window.examState.recs.directives.push({label:\''+d.replace(/'/g,"\\'")+'\'  ,detail:\'\',custom:false});window.examState.dirSearch=\'\';rerender()" style="padding:9px 12px;font-size:12px;color:var(--md-on-surface);cursor:pointer;border-bottom:1px solid var(--md-outline-variant);display:flex;align-items:center;gap:7px;">'+msiIcon('add',12,'var(--md-primary)')+d+'</div>';
+        }).join('')
+        +(dirSearch&&dirSearch.length>2&&!allDirs.includes(dirSearch)
+          ?'<div onclick="window.examState.customDirectives.push(\''+dirSearch+'\');window.examState.recs.directives.push({label:\''+dirSearch+'\',detail:\'\',custom:true});window.examState.dirSearch=\'\';rerender()" style="padding:9px 12px;font-size:12px;color:var(--md-primary);font-weight:600;cursor:pointer;border-bottom:1px solid var(--md-outline-variant);display:flex;align-items:center;gap:7px;">'+msiIcon('add',12,'var(--md-primary)')+'Save "'+dirSearch+'" as custom directive</div>'
+          :'')
+        +'</div>'
+      :'';
+
+    // ── Medications ──────────────────────────────────────────────────────────
+    var selectedMeds=recs.medications||[];
+    var medSearch=es.medSearch||'';
+    var allMedNames=COMMON_MEDS.map(function(m){return m.name;}).concat(es.customMeds||[]);
+    var medFiltered=medSearch?allMedNames.filter(function(m){return m.toLowerCase().includes(medSearch.toLowerCase());}).slice(0,5):allMedNames.slice(0,5);
+    var medCards=selectedMeds.map(function(med,i){
+      var preset=COMMON_MEDS.find(function(m){return m.name===med.name;});
+      return '<div style="background:var(--md-surface-variant);border-radius:9px;padding:10px 12px;margin-bottom:8px;">'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">'
+        +'<div style="font-size:12px;font-weight:700;color:var(--md-on-surface);">'+med.name+'</div>'
+        +'<button onclick="window.examState.recs.medications.splice('+i+',1);rerender()" style="background:none;border:none;cursor:pointer;">'+msiIcon('close',14,'var(--md-on-surface-dim)')+'</button>'
+        +'</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">'
+        +'<div><label style="font-size:9px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;display:block;margin-bottom:3px;">Dose</label>'
+        +'<input type="text" value="'+(med.dose||'')+'" oninput="window.examState.recs.medications['+i+'].dose=this.value" placeholder="'+(preset?preset.dose:'e.g. 2.2mg/kg')+'" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:7px;padding:6px 8px;font-size:12px;font-family:\'DM Sans\',sans-serif;outline:none;box-sizing:border-box;"/></div>'
+        +'<div><label style="font-size:9px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;display:block;margin-bottom:3px;">Route</label>'
+        +'<select oninput="window.examState.recs.medications['+i+'].route=this.value" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:7px;padding:6px 8px;font-size:12px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;"><option'+(med.route==='Oral'?' selected':'')+'>Oral</option><option'+(med.route==='IV'?' selected':'')+'>IV</option><option'+(med.route==='IM'?' selected':'')+'>IM</option><option'+(med.route==='Topical'?' selected':'')+'>Topical</option><option'+(med.route==='IV/Oral'?' selected':'')+'>IV/Oral</option></select></div>'
+        +'<div><label style="font-size:9px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;display:block;margin-bottom:3px;">Frequency</label>'
+        +'<input type="text" value="'+(med.freq||'')+'" oninput="window.examState.recs.medications['+i+'].freq=this.value" placeholder="'+(preset?preset.freq:'SID/BID')+'" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:7px;padding:6px 8px;font-size:12px;font-family:\'DM Sans\',sans-serif;outline:none;box-sizing:border-box;"/></div>'
+        +'<div><label style="font-size:9px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;display:block;margin-bottom:3px;">Duration</label>'
+        +'<input type="text" value="'+(med.duration||'')+'" oninput="window.examState.recs.medications['+i+'].duration=this.value" placeholder="e.g. 5 days" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:7px;padding:6px 8px;font-size:12px;font-family:\'DM Sans\',sans-serif;outline:none;box-sizing:border-box;"/></div>'
+        +'</div></div>';
+    }).join('');
+    var medDropdown=medFiltered.filter(function(m){return !selectedMeds.find(function(s){return s.name===m;});}).length
+      ?'<div style="background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:9px;overflow:hidden;margin-bottom:8px;">'
+        +medFiltered.filter(function(m){return !selectedMeds.find(function(s){return s.name===m;});}).map(function(mn){
+          var preset=COMMON_MEDS.find(function(m){return m.name===mn;})||{};
+          return '<div onclick="window.examState.recs.medications.push({name:\''+mn.replace(/'/g,"\\'")+'\'  ,dose:\''+(preset.dose||'')+'\',route:\''+(preset.route||'Oral')+'\',freq:\''+(preset.freq||'')+'\',duration:\'\',notes:\'\'});window.examState.medSearch=\'\';rerender()" style="padding:9px 12px;font-size:12px;color:var(--md-on-surface);cursor:pointer;border-bottom:1px solid var(--md-outline-variant);display:flex;align-items:center;justify-content:space-between;">'
+            +'<span>'+mn+'</span>'+(preset.dose?'<span style="font-size:10px;color:var(--md-on-surface-dim);">'+preset.dose+' '+preset.freq+'</span>':'')
+            +'</div>';
+        }).join('')
+        +(medSearch&&medSearch.length>1&&!allMedNames.includes(medSearch)
+          ?'<div onclick="window.examState.customMeds.push(\''+medSearch+'\');window.examState.recs.medications.push({name:\''+medSearch+'\',dose:\'\',route:\'Oral\',freq:\'\',duration:\'\',notes:\'\'});window.examState.medSearch=\'\';rerender()" style="padding:9px 12px;font-size:12px;color:var(--md-primary);font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;">'+msiIcon('add',12,'var(--md-primary)')+'Add "'+medSearch+'" as custom medication</div>'
+          :'')
+        +'</div>'
+      :'';
+
+    // ── Referrals ────────────────────────────────────────────────────────────
+    var refCards=recs.referrals.map(function(ref,i){
+      return '<div style="background:var(--md-surface-variant);border-radius:9px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:flex-start;gap:8px;">'
+        +msiIcon('person_pin',16,'var(--md-tertiary)')
+        +'<div style="flex:1;min-width:0;">'
+        +'<div style="font-size:12px;font-weight:700;color:var(--md-on-surface);">'+ref.specialty+'</div>'
+        +(ref.provider?'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+ref.provider+'</div>':'')
+        +'<div style="font-size:10px;color:'+(ref.urgency==='Urgent'?'var(--md-error)':'var(--md-on-surface-dim)')+';">'+ref.urgency+'</div>'
+        +(ref.reason?'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+ref.reason+'</div>':'')
+        +'</div>'
+        +'<button onclick="window.examState.recs.referrals.splice('+i+',1);rerender()" style="background:none;border:none;cursor:pointer;">'+msiIcon('close',14,'var(--md-on-surface-dim)')+'</button>'
+        +'</div>';
+    }).join('');
+    var refState=window._refState||{open:false,specialty:'Farrier',provider:'',urgency:'Routine',reason:''};
+    window._refState=refState;
+    var refAdd=refState.open
+      ?'<div style="background:var(--md-tertiary-container);border-radius:9px;padding:11px 12px;margin-bottom:8px;">'
+        +'<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;">'
+        +REFERRAL_SPECIALTIES.map(function(sp){return chip(sp,refState.specialty===sp,'window._refState.specialty=\''+sp+'\';rerender()','var(--md-tertiary)','var(--md-tertiary-container)');}).join('')
+        +'</div>'
+        +'<input type="text" value="'+refState.provider+'" oninput="window._refState.provider=this.value" placeholder="Provider name (optional)..." style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 10px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;margin-bottom:8px;"/>'
+        +'<div style="display:flex;gap:6px;margin-bottom:8px;">'
+        +['Routine','Soon','Urgent'].map(function(u){return chip(u,refState.urgency===u,'window._refState.urgency=\''+u+'\';rerender()',u==='Urgent'?'var(--md-error)':'var(--md-primary)',u==='Urgent'?'var(--md-error-container)':'var(--md-primary-container)');}).join('')
+        +'</div>'
+        +'<input type="text" value="'+refState.reason+'" oninput="window._refState.reason=this.value" placeholder="Reason for referral..." style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 10px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;margin-bottom:8px;"/>'
+        +'<div style="display:flex;gap:8px;">'
+        +'<button onclick="window.examState.recs.referrals.push({specialty:window._refState.specialty,provider:window._refState.provider,urgency:window._refState.urgency,reason:window._refState.reason});window._refState={open:false,specialty:\'Farrier\',provider:\'\',urgency:\'Routine\',reason:\'\'};rerender()" style="flex:1;background:var(--md-tertiary);color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Add referral</button>'
+        +'<button onclick="window._refState.open=false;rerender()" style="background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:8px;padding:9px 14px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface-dim);cursor:pointer;">Cancel</button>'
+        +'</div></div>'
+      :'<button onclick="window._refState={open:true,specialty:\'Farrier\',provider:\'\',urgency:\'Routine\',reason:\'\'};rerender()" style="width:100%;background:var(--md-surface);border:2px dashed var(--md-outline);border-radius:9px;padding:9px;font-size:12px;font-weight:600;font-family:\'DM Sans\',sans-serif;color:var(--md-tertiary);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">'+msiIcon('add',14,'var(--md-tertiary)')+'Add referral</button>';
+
+    var doneBtn='<button onclick="window.examState.step=\'review\';rerender()" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:var(--md-shape-md);padding:13px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;margin-top:16px;">Review & complete '+msiIcon('arrow_forward',16,'#fff')+'</button>';
+
+    return '<div style="padding:14px;">'
+      +stepBar+backBtn
+      +secHd('Follow-up appointments','event')
+      +followupCards+followupAdd
+      +secHd('Client directives','task_alt')
+      +dirChipsSelected
+      +'<input type="text" placeholder="Search directives..." value="'+dirSearch+'" oninput="window.examState.dirSearch=this.value;rerender()" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;margin-bottom:6px;"/>'
+      +dirDropdown
+      +secHd('Medications','medication')
+      +medCards
+      +'<input type="text" placeholder="Search medications..." value="'+medSearch+'" oninput="window.examState.medSearch=this.value;rerender()" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;margin-bottom:6px;"/>'
+      +medDropdown
+      +secHd('Referrals','person_pin')
+      +refCards+refAdd
+      +doneBtn+'</div>';
+  }
+
+  // ── REVIEW STEP ──────────────────────────────────────────────────────────────
+  var reviewHorse=h||null;
+  var reviewSystems=Object.entries(es.systems).filter(function(e){return e[1].status;}).map(function(e){
+    var sys=EXAM_SYSTEMS.find(function(s){return s.id===e[0];})||{label:e[0]};
+    var st=e[1];
+    var stCfg=SYSTEM_STATUSES.find(function(s){return s.val===st.status;})||{label:st.status};
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--md-outline-variant);">'
+      +'<div style="font-size:12px;color:var(--md-on-surface);">'+sys.label+'</div>'
+      +'<div style="display:flex;align-items:center;gap:5px;">'
+      +'<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:'+(st.status==='normal'?'var(--md-secondary-container)':st.status==='abnormal'?'var(--md-error-container)':'var(--md-surface-variant)')+';color:'+(st.status==='normal'?'var(--md-secondary)':st.status==='abnormal'?'var(--md-error)':'var(--md-on-surface-dim)')+'">'+(stCfg.label||st.status)+'</span>'
+      +((st.flags||[]).map(function(f){return '<span style="font-size:9px;background:var(--md-error-container);color:var(--md-error);border-radius:8px;padding:1px 5px;">'+f+'</span>';}).join(''))
+      +'</div></div>';
+  }).join('');
+
+  var completeBtn='<button onclick="completeExam()" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:var(--md-shape-md);padding:13px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;margin-top:8px;">'+msiIcon('check_circle',16,'#fff')+'Complete exam</button>';
+
+  return '<div style="padding:14px;">'
+    +stepBar+backBtn
+    +'<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);padding:13px 14px;margin-bottom:14px;">'
+    +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'
+    +(reviewHorse?horseAvatar(reviewHorse,36):'<div style="width:36px;height:36px;border-radius:50%;background:var(--md-primary-container);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon('pets',20,'var(--md-primary)')+'</div>')
+    +'<div><div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">'+((reviewHorse&&reviewHorse.name)||es.horsePreselect||'Unknown')+'</div>'
+    +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+es.examType+(es.date?' · '+es.date:'')+(es.time?' · '+es.time:'')+'</div>'
+    +'</div></div>'
+    +(reviewSystems?'<div style="margin-top:6px;">'+reviewSystems+'</div>':'')
+    +'</div>'
+    +(es.findings?'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:11px 14px;margin-bottom:10px;"><div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;margin-bottom:4px;">Findings</div><div style="font-size:12px;color:var(--md-on-surface-variant);line-height:1.5;">'+es.findings+'</div></div>':'')
+    +(es.diagnoses.length?'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:11px 14px;margin-bottom:10px;"><div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;margin-bottom:6px;">Diagnoses</div><div style="display:flex;flex-wrap:wrap;gap:4px;">'+es.diagnoses.map(function(d){return '<span style="padding:3px 9px;border-radius:12px;background:var(--md-primary-container);color:var(--md-primary);font-size:11px;font-weight:700;">'+d.label+'</span>';}).join('')+'</div></div>':'')
+    +((es.recs.followups.length||es.recs.directives.length||es.recs.medications.length||es.recs.referrals.length)
+      ?'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:11px 14px;margin-bottom:10px;"><div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;margin-bottom:6px;">Recommendations</div>'
+        +(es.recs.followups.length?'<div style="font-size:11px;font-weight:600;color:var(--md-on-surface-dim);margin-bottom:3px;">Follow-up: '+es.recs.followups.map(function(f){return f.timeframe+(f.reason?' — '+f.reason:'');}).join(', ')+'</div>':'')
+        +(es.recs.directives.length?'<div style="font-size:11px;font-weight:600;color:var(--md-on-surface-dim);margin-bottom:3px;">Directives: '+es.recs.directives.map(function(d){return d.label;}).join(', ')+'</div>':'')
+        +(es.recs.medications.length?'<div style="font-size:11px;font-weight:600;color:var(--md-on-surface-dim);margin-bottom:3px;">Medications: '+es.recs.medications.map(function(m){return m.name+(m.dose?' '+m.dose:'');}).join(', ')+'</div>':'')
+        +(es.recs.referrals.length?'<div style="font-size:11px;font-weight:600;color:var(--md-on-surface-dim);">Referrals: '+es.recs.referrals.map(function(r){return r.specialty;}).join(', ')+'</div>':'')
+        +'</div>'
+      :'')
+    +completeBtn+'</div>';
+}
+
+
+
+function completeExam(){
+  var es=window.examState;
+  var hid=es.horseId;
+  if(hid&&HORSE_HEALTH[hid]){
+    var ex={type:es.examType,date:es.date||'Mar 16, 2026',vet:'Dr. Goudz',findings:es.findings,treatment:'See recommendations'};
+    HORSE_HEALTH[hid].exams=HORSE_HEALTH[hid].exams||[];
+    HORSE_HEALTH[hid].exams.unshift(ex);
+  }
+  showToast('Exam documented','check_circle','success');
+  S.quickAction=null;
+  window.examState={horseId:'',horsePreselect:null,date:'',time:'',examType:'Well Visit',systems:{},findings:'',prognosis:'',diagnoses:[],includeVitals:false,includeVaccine:false,vitals:{hr:'',rr:'',temp:'',gut:'Normal',notes:''},vaccineData:{vaccine:'',lot:'',expiry:'',site:'Neck',notes:''},recs:{followups:[],directives:[],medications:[],referrals:[]},customDirectives:[],customMeds:[],diagSearch:'',dirSearch:'',medSearch:'',addCustomDir:'',addCustomMed:'',step:'exam'};
+  rerender();
+}
+
+function completeExam(){
+  var es=window.examState;
+  var hid=es.horseId;
+  if(hid&&HORSE_HEALTH[hid]){
+    var ex={type:es.examType,date:es.date||'Mar 16, 2026',vet:'Dr. Goudz',findings:es.findings,treatment:'See recommendations'};
+    HORSE_HEALTH[hid].exams=HORSE_HEALTH[hid].exams||[];
+    HORSE_HEALTH[hid].exams.unshift(ex);
+  }
+  showToast('Exam documented','check_circle','success');
+  S.quickAction=null;
+  window.examState={horseId:'',horsePreselect:null,date:'',time:'',examType:'Well Visit',systems:{},findings:'',prognosis:'',diagnoses:[],includeVitals:false,includeVaccine:false,vitals:{hr:'',rr:'',temp:'',gut:'Normal',notes:''},vaccineData:{vaccine:'',lot:'',expiry:'',site:'Neck',notes:''},recs:{followups:[],directives:[],medications:[],referrals:[]},customDirectives:[],customMeds:[],diagSearch:'',dirSearch:'',medSearch:'',addCustomDir:'',addCustomMed:'',step:'exam'};
+  rerender();
+}
+
+function completeExam(){
+  var es=window.examState;
+  var hid=es.horseId;
+  if(hid&&HORSE_HEALTH[hid]){
+    var ex={type:es.examType,date:es.date||'Mar 16, 2026',vet:'Dr. Goudz',findings:es.findings,treatment:'See recommendations'};
+    HORSE_HEALTH[hid].exams=HORSE_HEALTH[hid].exams||[];
+    HORSE_HEALTH[hid].exams.unshift(ex);
+  }
+  showToast('Exam documented','check_circle','success');
+  S.quickAction=null;
+  window.examState={horseId:'',horsePreselect:null,date:'',time:'',examType:'Well Visit',systems:{},findings:'',prognosis:'',diagnoses:[],includeVitals:false,includeVaccine:false,vitals:{hr:'',rr:'',temp:'',gut:'Normal',notes:''},vaccineData:{vaccine:'',lot:'',expiry:'',site:'Neck',notes:''},recs:{followups:[],directives:[],medications:[],referrals:[]},customDirectives:[],customMeds:[],diagSearch:'',dirSearch:'',medSearch:'',addCustomDir:'',addCustomMed:'',step:'exam'};
+  rerender();
+}
+
+
+
+
 function rQuickActionForm(actionId){
   const t=TH;
   // Document vitals gets its own dedicated renderer
   if(actionId==='document-vitals') return rVitalsForm();
 
+  if(actionId==='document-exam')return rExamForm();
   const action=QUICK_ACTIONS[actionId];
   if(!action)return '';
   const backBtn=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
@@ -2137,7 +2745,7 @@ function getNotifyGroups(ctx, role){
       {id:'vet',      label:'Veterinarian',    sub:'Dr. Konstantine Goudz', icon:msiIcon('stethoscope'), recommended:urgent},
       {id:'manager',  label:'Barn Manager',    sub:'Charlene G.',           icon:msiIcon('home'), recommended:true,  hideFor:'manager'},
       {id:'staff',    label:'Staff',           sub:'All assigned staff',    icon:msiIcon('engineering'), recommended:false, hideFor:'staff'},
-      {id:'trainers', label:'Trainer',         sub:'Jordan M.',             icon:msiIcon('sports_score'), recommended:urgent},
+      {id:'trainers', label:'Trainer',         sub:'Jordan M.',             icon:msiIcon('emoji_events'), recommended:urgent},
       {id:'owners',   label:'Horse Owner',     sub:'Owner of this horse',   icon:msiIcon('person'), recommended:true},
     ];
   }
@@ -2145,7 +2753,7 @@ function getNotifyGroups(ctx, role){
     return [
       {id:'owners',   label:'Horse Owners',    sub:'All owners at this barn',icon:msiIcon('person'),recommended:true},
       {id:'staff',    label:'Staff',           sub:'All barn staff',         icon:msiIcon('engineering'),recommended:true},
-      {id:'trainers', label:'Trainers',        sub:'All trainers',           icon:msiIcon('sports_score'),recommended:false},
+      {id:'trainers', label:'Trainers',        sub:'All trainers',           icon:msiIcon('emoji_events'),recommended:false},
     ];
   }
   if(ctx==='visit_requested'){
@@ -2360,7 +2968,25 @@ window.obsNotifyDone=function(){
   showToast('Observation saved','check_circle','success');
 };
 
-function rVetHome(){const t=TH;const appts=[{horse:'Rivendell',barn:'Sunrise Stables',month:'Mar',day:'22',time:'10:00 AM',type:'Follow-up — post colic',urgent:false},{horse:'Bella',barn:'Oakwood Farm',month:'Mar',day:'24',time:'2:00 PM',type:'Annual vaccinations',urgent:false},{horse:'Thunder',barn:'River Ranch',month:'Mar',day:'16',time:'11:30 AM',type:'Lameness eval',urgent:true}];const header=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><div><div style="font-size:17px;font-weight:700;color:var(--md-on-surface);">Good morning, Dr. Matthew</div><div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:2px;">Mon, Mar 16 · 3 upcoming appointments</div></div><div style="width:38px;height:38px;border-radius:50%;background:var(--md-secondary)22;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class=\"msi\" style=\"font-size:30px;color:var(--md-secondary);line-height:1;\">face_6</span></div></div>`;const stats=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;"><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-primary);">12</div><div style="font-size:11px;color:var(--md-on-surface-dim);">In care</div></div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-primary);">3</div><div style="font-size:11px;color:var(--md-on-surface-dim);">Appts</div></div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-warning);">2</div><div style="font-size:11px;color:var(--md-on-surface-dim);">Confirmations</div></div></div>`;const pending=`<div style="background:var(--md-warning-container);border:1.5px solid var(--md-warning)44;border-radius:12px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="S.vetSignedIn=false;S.vetView='confirmation';S.vetConfirmPage=false;rerender()"><div style="flex:1;"><div style="font-size:12px;font-weight:700;color:var(--md-warning);margin-bottom:2px;">Confirmation request pending</div><div style="font-size:12px;color:var(--md-on-surface-variant);">Rivendell · Potomavac + Imrab · Charlene Georgia</div></div><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="var(--md-warning)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;const apptCards=appts.map(a=>`<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid ${a.urgent?t.DNG:t.BRD};margin-bottom:8px;padding:11px 14px;display:flex;align-items:center;gap:10px;"><div style="width:36px;height:36px;border-radius:10px;background:${a.urgent?t.DNGBG:t.TL};display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;"><div style="font-size:9px;font-weight:700;color:${a.urgent?t.DNG:t.T};line-height:1;">${a.month}</div><div style="font-size:14px;font-weight:700;color:${a.urgent?t.DNG:t.T};line-height:1;">${a.day}</div></div><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:var(--md-on-surface);">${a.horse} <span style="font-size:11px;font-weight:400;color:var(--md-on-surface-dim);">· ${a.barn}</span></div><div style="font-size:11px;color:var(--md-on-surface-dim);">${a.time} · ${a.type}</div></div>${a.urgent?`<span style="font-size:10px;font-weight:700;background:var(--md-error-container);color:var(--md-error);padding:2px 8px;border-radius:10px;">Today</span>`:''}</div>`).join('');return header+stats+pending+`<div style="font-size:12px;font-weight:700;color:var(--md-on-surface);margin-bottom:9px;">Upcoming appointments</div>`+apptCards+quickActionsBar('vet');}
+function rVetHome(){const t=TH;const appts=[{horse:'Rivendell',barn:'Sunrise Stables',month:'Mar',day:'22',time:'10:00 AM',type:'Follow-up — post colic',urgent:false},{horse:'Bella',barn:'Oakwood Farm',month:'Mar',day:'24',time:'2:00 PM',type:'Annual vaccinations',urgent:false},{horse:'Thunder',barn:'River Ranch',month:'Mar',day:'16',time:'11:30 AM',type:'Lameness eval',urgent:true}];const header=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><div><div style="font-size:17px;font-weight:700;color:var(--md-on-surface);">Good morning, Dr. Matthew</div><div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:2px;">Mon, Mar 16 · 3 upcoming appointments</div></div><div style="width:38px;height:38px;border-radius:50%;background:var(--md-secondary)22;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class=\"msi\" style=\"font-size:30px;color:var(--md-secondary);line-height:1;\">face_6</span></div></div>`;const stats=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;"><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-primary);">12</div><div style="font-size:11px;color:var(--md-on-surface-dim);">In care</div></div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-primary);">3</div><div style="font-size:11px;color:var(--md-on-surface-dim);">Appts</div></div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-warning);">2</div><div style="font-size:11px;color:var(--md-on-surface-dim);">Confirmations</div></div></div>`;const pending=`<div style="background:var(--md-warning-container);border:1.5px solid var(--md-warning)44;border-radius:12px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="S.vetSignedIn=false;S.vetView='confirmation';S.vetConfirmPage=false;rerender()"><div style="flex:1;"><div style="font-size:12px;font-weight:700;color:var(--md-warning);margin-bottom:2px;">Confirmation request pending</div><div style="font-size:12px;color:var(--md-on-surface-variant);">Rivendell · Potomavac + Imrab · Charlene Georgia</div></div><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="var(--md-warning)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;const apptCards=appts.map(function(a){
+  var horseObj=HORSES_ALL.find(function(h){return h.name===a.horse;})||null;
+  var horseId=horseObj?horseObj.id:'';
+  var typeKeys={'Follow-up':'Well Visit','Annual vac':'Well Visit','Lameness':'Lameness Exam','colic':'Sick Visit','Sick':'Sick Visit','Dental':'Dental Exam','Ophthal':'Ophthalmology Exam','Repro':'Reproductive Evaluation','Chiro':'Chiropractic Exam','Prepurchase':'Prepurchase Exam'};
+  var examType='Well Visit';
+  Object.keys(typeKeys).forEach(function(k){if(a.type.toLowerCase().includes(k.toLowerCase()))examType=typeKeys[k];});
+  var es=JSON.stringify({horseId:horseId,horsePreselect:a.horse,date:a.month+' '+a.day+', 2026',time:a.time,examType:examType,systems:{},findings:'',diagnosis:'',treatment:'',followUp:'',includeVitals:false,includeVaccine:false,vaccineData:{vaccine:'',lot:'',expiry:'',site:'Neck',notes:''}});
+  return '<div onclick="window.examState='+es.replace(/"/g,"'")+';S.quickAction=\'document-exam\';rerender()" style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid '+(a.urgent?t.DNG:t.BRD)+';margin-bottom:8px;padding:11px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;">'
+    +'<div style="width:36px;height:36px;border-radius:10px;background:'+(a.urgent?t.DNGBG:t.TL)+';display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;">'
+    +'<div style="font-size:9px;font-weight:700;color:'+(a.urgent?t.DNG:t.T)+';line-height:1;">'+a.month+'</div>'
+    +'<div style="font-size:14px;font-weight:700;color:'+(a.urgent?t.DNG:t.T)+';line-height:1;">'+a.day+'</div></div>'
+    +'<div style="flex:1;min-width:0;">'
+    +'<div style="font-size:13px;font-weight:600;color:var(--md-on-surface);">'+a.horse+' <span style="font-size:11px;font-weight:400;color:var(--md-on-surface-dim);">· '+a.barn+'</span></div>'
+    +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+a.time+' · '+a.type+'</div>'
+    +(a.urgent?'<span style="font-size:10px;font-weight:700;background:var(--md-error-container);color:var(--md-error);padding:2px 8px;border-radius:10px;">Today</span>':'')
+    +'</div>'
+    +msiIcon('chevron_right',18,'var(--md-on-surface-dim)')
+    +'</div>';
+}).join('');return header+stats+pending+`<div style="font-size:12px;font-weight:700;color:var(--md-on-surface);margin-bottom:9px;">Upcoming appointments</div>`+apptCards+quickActionsBar('vet');}
 function rVetHorses(){const t=TH;const horses=[VET_HORSE,{id:'vh2',name:'Bella',age:'7 years',breed:'Quarter Horse',color:'Palomino',sex:'Mare',note:'Oakwood Farm. Annual vacc due Apr 3.',avatar:{bg:'#C8A840',mane:'#F5EDE0',sock:'#F5F5F0',marking:'star'}},{id:'vh3',name:'Thunder',age:'15 years',breed:'Thoroughbred',color:'Dark Grey',sex:'Gelding',note:'River Ranch. Lameness eval scheduled.',avatar:{bg:'#5A5A5A',mane:'#3A3A3A',sock:null,marking:null}}];function sc(sex){if(sex==='Mare'||sex==='Filly')return{bg:'var(--md-error-container)',color:'var(--md-error)'};if(sex==='Stallion'||sex==='Colt')return{bg:'var(--md-tertiary-container)',color:'var(--md-tertiary)'};return{bg:'var(--md-secondary-container)',color:'var(--md-secondary)'};}return `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><div><div style="font-size:16px;font-weight:700;color:var(--md-on-surface);">My horses</div><div style="font-size:11px;color:var(--md-on-surface-dim);">${horses.length} in care</div></div></div>`+horses.map(h=>{const s=sc(h.sex);return `<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);margin-bottom:9px;overflow:hidden;display:flex;align-items:stretch;"><div style="width:70px;background:${h.avatar.bg}22;display:flex;align-items:center;justify-content:center;padding:10px 6px;flex-shrink:0;border-right:1.5px solid var(--md-outline-variant);">${horseAvatar(h,52)}</div><div style="flex:1;padding:11px 13px;min-width:0;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;"><div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">${h.name}</div><span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;background:${s.bg};color:${s.color};">${h.sex}</span></div><div style="font-size:11px;color:var(--md-on-surface-variant);margin-bottom:3px;">${h.breed} · ${h.color} · ${h.age}</div><div style="font-size:11px;color:var(--md-on-surface-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-style:italic;">${h.note}</div></div></div>`;}).join('');}
 // Common equine vaccines picklist
 const EQUINE_VACCINES=[
@@ -2497,6 +3123,103 @@ function rVaxForm(){
 }
 
 // --- SHARED HORSE/MESSAGES/SETUP ------------------------------
+// ── Add Horse Form ────────────────────────────────────────────────────────────
+if(!window._addHorseState) window._addHorseState={
+  name:'',breed:'',color:'',age:'',sex:'Gelding',discipline:'',level:'',
+  barn:'sunrise',stall:'',photo:'',
+  ownerName:'',ownerEmail:'',ownerShare:'Full',
+  vetName:'',trainerName:'',
+  notes:'',step:1,submitted:false
+};
+
+function rAddHorse(){
+  var t=TH;
+  var st=window._addHorseState;
+  var BREEDS=['Warmblood','Thoroughbred','Quarter Horse','Arabian','Friesian','Hanoverian','Dutch Warmblood','Oldenburg','Trakehner','Paint','Appaloosa','Morgan','Tennessee Walker','Mustang','Standardbred','Irish Sport Horse','Cleveland Bay','Andalusian','Lipizzaner','Other'];
+  var COLORS=['Bay','Dark Bay','Black','Chestnut','Gray','Dapple Gray','Cremello','Palomino','Buckskin','Roan','Blue Roan','Dun','Pinto','Tobiano','Skewbald','Other'];
+  var SEXES=['Gelding','Stallion','Mare','Colt','Filly'];
+  var DISCIPLINES=['Hunter/Jumper','Dressage','Eventing','Western Pleasure','Trail','Reining','Endurance','Polo','Driving','Breeding','Trail/Western','Other'];
+  var LEVELS=['Green','Pre-green','Beginner Novice','Novice','Training Level','First Level','Second Level','Third Level','Amateur','Open','Children\'s','Short stirrup','Modified','PSG','Other'];
+  var SHARES=['Full','Half-lease','Training lease','Co-owner','Syndicate'];
+  var BARNS_LIST=Object.values(BARNS);
+
+  function sel(label,key,opts,val){
+    return '<div style="margin-bottom:10px;"><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">'+label+'</label>'
+      +'<select oninput="window._addHorseState.'+key+'=this.value" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;">'
+      +opts.map(function(o){return '<option'+(o===val?' selected':'')+'>'+o+'</option>';}).join('')
+      +'</select></div>';
+  }
+  function inp(label,key,val,ph,type){
+    return '<div style="margin-bottom:10px;"><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">'+label+'</label>'
+      +'<input type="'+(type||'text')+'" value="'+val+'" placeholder="'+(ph||'')+'" oninput="window._addHorseState.'+key+'=this.value" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>';
+  }
+  function row2(a,b){return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'+a+b+'</div>';}
+  function sectionHd(label){
+    return '<div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;margin:16px 0 10px;padding-bottom:6px;border-bottom:1.5px solid var(--md-primary)33;">'+label+'</div>';
+  }
+
+  if(st.submitted){
+    return '<div style="padding:14px;">'
+      +'<div style="text-align:center;padding:40px 20px;">'
+      +'<div style="width:56px;height:56px;border-radius:50%;background:var(--md-primary-container);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">'+msiIcon('check_circle',30,'var(--md-primary)')+'</div>'
+      +'<div style="font-size:18px;font-weight:700;color:var(--md-on-surface);margin-bottom:6px;">'+st.name+' added</div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:24px;">Horse profile created. You can now add health records, training logs, and connections.</div>'
+      +'<button onclick="window._addHorseState={name:\'\',breed:\'\',color:\'\',age:\'\',sex:\'Gelding\',discipline:\'\',level:\'\',barn:\'sunrise\',stall:\'\',photo:\'\',ownerName:\'\',ownerEmail:\'\',ownerShare:\'Full\',vetName:\'\',trainerName:\'\',notes:\'\',step:1,submitted:false};S.showAddHorse=false;rerender()" style="background:var(--md-primary);color:#fff;border:none;border-radius:var(--md-shape-md);padding:12px 28px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Back to horses</button>'
+      +'</div></div>';
+  }
+
+  var body='';
+  if(st.step===1){
+    body=sectionHd('Basic information')
+      +inp('Horse name','name',st.name,'e.g. Apollo')
+      +row2(sel('Breed','breed',BREEDS,st.breed||'Warmblood'), sel('Color','color',COLORS,st.color||'Bay'))
+      +row2(inp('Age','age',st.age,'e.g. 7 years'), sel('Sex','sex',SEXES,st.sex))
+      +sectionHd('Barn & stall')
+      +sel('Barn','barn',BARNS_LIST.map(function(b){return b.name;}),BARNS_LIST.find(function(b){return b.id===st.barn;})?BARNS_LIST.find(function(b){return b.id===st.barn;}).name:BARNS_LIST[0].name)
+      +inp('Stall number / name','stall',st.stall,'e.g. A3')
+      +sectionHd('Discipline')
+      +row2(sel('Discipline','discipline',DISCIPLINES,st.discipline||'Hunter/Jumper'), sel('Level','level',LEVELS,st.level||'Green'))
+      +inp('Photo URL (optional)','photo',st.photo,'https://…');
+  } else if(st.step===2){
+    body=sectionHd('Primary owner')
+      +inp('Owner name','ownerName',st.ownerName,'Full name')
+      +inp('Owner email','ownerEmail',st.ownerEmail,'email@example.com','email')
+      +sel('Ownership type','ownerShare',SHARES,st.ownerShare)
+      +sectionHd('Care team')
+      +inp('Veterinarian','vetName',st.vetName,'Dr. name or practice')
+      +inp('Trainer','trainerName',st.trainerName,'Trainer name')
+      +sectionHd('Staff notes')
+      +'<textarea oninput="window._addHorseState.notes=this.value" placeholder="Any notes about this horse for the barn team…" style="width:100%;min-height:80px;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;resize:vertical;">'+st.notes+'</textarea>';
+  }
+
+  var stepPills='<div style="display:flex;gap:6px;margin-bottom:16px;">'
+    +['Horse details','Owner & care'].map(function(label,i){
+      var active=st.step===i+1;
+      return '<div style="display:flex;align-items:center;gap:5px;">'
+        +'<div style="width:20px;height:20px;border-radius:50%;background:'+(active?'var(--md-primary)':'var(--md-surface-variant)')+';color:'+(active?'#fff':'var(--md-on-surface-dim)')+';font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">'+(i+1)+'</div>'
+        +'<div style="font-size:12px;font-weight:'+(active?'700':'400')+';color:'+(active?'var(--md-on-surface)':'var(--md-on-surface-dim)')+';">'+label+'</div>'
+        +(i===0?'<div style="width:20px;height:1.5px;background:var(--md-outline-variant);margin:0 2px;"></div>':'')
+        +'</div>';
+    }).join('')
+    +'</div>';
+
+  var footer='<div style="display:flex;gap:10px;margin-top:18px;">'
+    +(st.step>1?'<button onclick="window._addHorseState.step=1;rerender()" style="flex:1;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:var(--md-shape-md);padding:12px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface-dim);cursor:pointer;">Back</button>':'')
+    +(st.step===1
+      ?'<button onclick="if(!window._addHorseState.name.trim()){alert(\'Please enter a horse name\');return;}window._addHorseState.step=2;rerender()" style="flex:1;background:var(--md-primary);color:#fff;border:none;border-radius:var(--md-shape-md);padding:12px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Continue</button>'
+      :'<button onclick="if(!window._addHorseState.name.trim())return;window._addHorseState.submitted=true;rerender()" style="flex:1;background:var(--md-primary);color:#fff;border:none;border-radius:var(--md-shape-md);padding:12px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">'+msiIcon('check',16,'#fff')+'Add horse</button>')
+    +'</div>';
+
+  return '<div style="display:flex;align-items:center;gap:10px;padding:0 0 12px;border-bottom:1.5px solid var(--md-outline-variant);margin-bottom:16px;">'
+    +'<button onclick="S.showAddHorse=false;rerender()" style="background:none;border:none;cursor:pointer;padding:4px;display:flex;">'+msiIcon('arrow_back',22,'var(--md-on-surface)')+'</button>'
+    +'<div style="font-size:16px;font-weight:700;color:var(--md-on-surface);">Add a horse</div>'
+    +'</div>'
+    +'<div style="padding:0 0 20px;">'
+    +stepPills+body+footer
+    +'</div>';
+}
+
+
 function rHorseList(){
   var t=TH;
   var entries=getHorsesForUser();
@@ -2610,7 +3333,7 @@ function rHorseList(){
     +(urgentCount>0?' &middot; <span style="color:var(--md-error);font-weight:700;">'+urgentCount+' urgent</span>':'')
     +'</div>'
     +'</div>'
-    +(isMgr?'<button style="background:var(--md-primary);color:#fff;border:none;padding:6px 12px;border-radius:var(--md-shape-sm);font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">+ Add</button>':'')
+    +(isMgr?'<button onclick="S.showAddHorse=true;rerender()" style="background:var(--md-primary);color:#fff;border:none;padding:6px 12px;border-radius:var(--md-shape-sm);font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;gap:4px;">'+msiIcon('add',14,'#fff')+'Add horse</button>':'')
     +'</div>';
 
   if(entries.length===0){
@@ -2870,24 +3593,15 @@ function rTrainerHome(){
   const qa=quickActionsBar('trainer');
 
   // Today's session list -- compact
-  const sessionList=`<div style="margin-bottom:14px;">
-    <div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Today's schedule</div>
-    ${TRAINING_DEFS.map(d=>{
-      const ta=trainAssigns[d.id];const horse=HORSES.find(h=>h.id===d.horseId);const done=ta?.status==='complete';
-      const ta_media=ta?.mediaCount>0?mediaBadge(ta):'';
-      return `<div style="background:${done?t.SUB:t.CARD};border-radius:10px;border:1.5px solid var(--md-outline-variant);border-left:3px solid ${done?t.BRD:t.PUR};margin-bottom:6px;padding:9px 12px;display:flex;align-items:center;gap:9px;">
-        <div style="width:18px;height:18px;border-radius:50%;border:2px solid ${done?t.SUC:TH.mdTert+'66'};flex-shrink:0;display:flex;align-items:center;justify-content:center;background:${done?t.SUC:'transparent'};">${done?`<svg width="8" height="8" viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`:''}</div>
-        <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-            <span style="font-size:13px;font-weight:${done?400:600};color:${done?t.TX3:t.TX};">${horse?.name}</span>
-            ${typeChip(d.type,true)}
-            ${ta_media}
-          </div>
-          <div style="font-size:10px;color:var(--md-on-surface-dim);margin-top:2px;">${d.startTime} · ${d.duration} min ${intensityDots(d.intensity)}</div>
-        </div>
-      </div>`;
-    }).join('')}
-  </div>`;
+  const sessionList=(function(){
+    return '<div style="margin-bottom:14px;">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Today\'s schedule</div>'
+      +TRAINING_DEFS.map(function(d){
+        var ta=trainAssigns[d.id];
+        return rTrainingCard(d,ta);
+      }).join('')
+      +'</div>';
+  })();
 
   // Horse progress cards
   const progressCards=`<div style="margin-bottom:14px;">
@@ -4401,7 +5115,7 @@ function rHorseDetail(h){
     var coolComps=comps.filter(function(c){return c.weather.temp<65;});
     var warmComps=comps.filter(function(c){return c.weather.temp>=65;});
     var cca=avgScore(coolComps),wca=avgScore(warmComps);
-    if(cca&&wca&&Math.abs(cca-wca)>=1.5)ins.push(msiIcon('thermometer',13,'var(--md-primary)')+'&nbsp;'+Math.abs(cca-wca).toFixed(1)+'% better '+(cca>wca?'in cool conditions (<65\xb0F)':'in warm conditions'));
+    if(cca&&wca&&Math.abs(cca-wca)>=1.5)ins.push(msiIcon('device_thermostat',13,'var(--md-primary)')+'&nbsp;'+Math.abs(cca-wca).toFixed(1)+'% better '+(cca>wca?'in cool conditions (<65\xb0F)':'in warm conditions'));
     // Best TQS week
     var best=comps.reduce(function(a,b){return a.score>b.score?a:b;});
     if(best.trainingWeek)ins.push(msiIcon('emoji_events',13,'var(--md-warning)')+'&nbsp;Best result ('+best.score+'%) followed a week with '+best.trainingWeek.sessions+' sessions, avg TQS '+best.trainingWeek.avgTQS);
@@ -4542,7 +5256,7 @@ function rHorseDetail(h){
     function avg(arr){return arr.length?(arr.reduce(function(s,x){return s+x.tqs;},0)/arr.length).toFixed(1)*1:null;}
     var cool=ss.filter(function(s){return s.env.temp<65;}),warm=ss.filter(function(s){return s.env.temp>=65;});
     var ca=avg(cool),wa=avg(warm),ins=[];
-    if(ca&&wa&&Math.abs(ca-wa)>=0.3)ins.push(msiIcon('thermometer',13,'var(--md-secondary)')+'&nbsp;Scores '+Math.abs(ca-wa).toFixed(1)+' pts higher '+(ca>wa?'on cool days (&lt;65\xb0F)':'on warm days'));
+    if(ca&&wa&&Math.abs(ca-wa)>=0.3)ins.push(msiIcon('device_thermostat',13,'var(--md-secondary)')+'&nbsp;Scores '+Math.abs(ca-wa).toFixed(1)+' pts higher '+(ca>wa?'on cool days (&lt;65\xb0F)':'on warm days'));
     var gf=ss.filter(function(s){return s.env.footing==='Good';}),sf=ss.filter(function(s){return s.env.footing==='Soft';});
     var ga=avg(gf),sa=avg(sf);
     if(ga&&sa&&Math.abs(ga-sa)>=0.3)ins.push(msiIcon('grass',13,'var(--md-primary)')+'&nbsp;'+(ga>sa?'Better on firm footing':'Better on soft footing')+' ('+Math.abs(ga-sa).toFixed(1)+' pt diff)');
@@ -5098,6 +5812,20 @@ function toggleSchedTask(id){S.expandedSchedTask=S.expandedSchedTask===id?null:i
 function toggleTaskSeason(tid,sn){if(!S.taskSched[tid])S.taskSched[tid]={seasons:['Spring','Summer','Fall','Winter'],days:[0,1,2,3,4,5,6]};const idx=S.taskSched[tid].seasons.indexOf(sn);if(idx>=0)S.taskSched[tid].seasons.splice(idx,1);else S.taskSched[tid].seasons.push(sn);rerender();}
 function toggleTaskDay(tid,d){if(!S.taskSched[tid])S.taskSched[tid]={seasons:['Spring','Summer','Fall','Winter'],days:[0,1,2,3,4,5,6]};const idx=S.taskSched[tid].days.indexOf(d);if(idx>=0)S.taskSched[tid].days.splice(idx,1);else S.taskSched[tid].days.push(d);rerender();}
 function setTaskDayPreset(tid,p){if(!S.taskSched[tid])S.taskSched[tid]={seasons:['Spring','Summer','Fall','Winter'],days:[0,1,2,3,4,5,6]};if(p==='weekdays')S.taskSched[tid].days=[1,2,3,4,5];else if(p==='weekends')S.taskSched[tid].days=[0,6];else S.taskSched[tid].days=[0,1,2,3,4,5,6];rerender();}
+
+function completeExam(){
+  var es=window.examState;
+  var hid=es.horseId;
+  if(hid&&HORSE_HEALTH[hid]){
+    var ex={type:es.examType,date:es.date||'Mar 16, 2026',vet:'Dr. Goudz',findings:es.findings,treatment:'See recommendations'};
+    HORSE_HEALTH[hid].exams=HORSE_HEALTH[hid].exams||[];
+    HORSE_HEALTH[hid].exams.unshift(ex);
+  }
+  showToast('Exam documented','check_circle','success');
+  S.quickAction=null;
+  window.examState={horseId:'',horsePreselect:null,date:'',time:'',examType:'Well Visit',systems:{},findings:'',prognosis:'',diagnoses:[],includeVitals:false,includeVaccine:false,vitals:{hr:'',rr:'',temp:'',gut:'Normal',notes:''},vaccineData:{vaccine:'',lot:'',expiry:'',site:'Neck',notes:''},recs:{followups:[],directives:[],medications:[],referrals:[]},customDirectives:[],customMeds:[],diagSearch:'',dirSearch:'',medSearch:'',addCustomDir:'',addCustomMed:'',step:'exam'};
+  rerender();
+}
 
 render();
 
