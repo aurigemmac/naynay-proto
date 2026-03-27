@@ -778,6 +778,7 @@ let S={
   expandedVax:{},
   expandedSession:null,
   showAddHorse:false,
+  expandedCompSchedule:false,
 };
 
 function getAssign(date){if(!S.assignments[date])S.assignments[date]=makeDefaultAssignments();return S.assignments[date];}
@@ -1169,6 +1170,7 @@ function rTrainingCard(d,a){
       <div style="font-size:10px;font-weight:700;color:var(--md-on-surface-variant);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:5px;">Actual intensity</div>
       ${intensityPicker(a.actualIntensity,'setTrainingIntensity_'+d.id)}
     </div>
+    ${d.type==='Jump'?'<div style="margin-bottom:8px;"><div style="font-size:10px;font-weight:700;color:var(--md-on-surface-variant);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;">How High / What jumped</div><input type="text" id="tlog-height-'+d.id+'" placeholder="e.g. 2ft vertical, 3ft oxer, cavaletti…" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-tertiary)44;border-radius:8px;padding:7px 10px;font-size:12px;font-family:&apos;DM Sans&apos;,sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>':''}
     <div style="margin-bottom:8px;">
       <div style="font-size:10px;font-weight:700;color:var(--md-on-surface-variant);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;">Session notes</div>
       <textarea id="tlog-${d.id}" placeholder="How did it go?" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-tertiary)44;border-radius:8px;padding:7px 10px;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;resize:none;min-height:50px;box-sizing:border-box;">${a.completionNotes||''}</textarea>
@@ -1742,7 +1744,7 @@ const QUICK_ACTIONS={
   'create-regimen':       {id:'create-regimen',        roles:['trainer'],                        label:'Create Training Regimen', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',                                                               color:'var(--md-primary)', bg:'var(--md-primary-container)'},
   'request-appointment':  {id:'request-appointment',   roles:['owner'],                          label:'Request Appointment',     icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', color:'var(--md-primary)', bg:'var(--md-primary-container)'},
   'document-exam':  {id:'document-exam',  roles:['vet'], label:'Document Exam', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="9" y="3" width="6" height="4" rx="1" stroke="currentColor" stroke-width="1.8"/><path d="M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>', bg:'var(--md-primary-container)',color:'var(--md-primary)'},
-  'upload-imaging': {id:'upload-imaging', roles:['vet','owner'], label:'Upload Imaging', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.8"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>', bg:'var(--md-primary-container)',color:'var(--md-primary)'}
+  'upload-imaging': {id:'upload-imaging', roles:['vet','owner','trainer'], label:'Upload Imaging', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.8"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>', bg:'var(--md-primary-container)',color:'var(--md-primary)'}
 };
 
 function quickActionsBar(role){
@@ -2968,6 +2970,22 @@ window.obsNotifyDone=function(){
   showToast('Observation saved','check_circle','success');
 };
 
+// Build examState from an appointment object and open Document Exam
+function openExamFromAppt(apt){
+  var horseObj=HORSES_ALL.find(function(h){return h.name===apt.horse;})||null;
+  var horseId=horseObj?horseObj.id:'';
+  var typeKeys={'Follow-up':'Well Visit','Annual vac':'Well Visit','Lameness':'Lameness Exam','colic':'Sick Visit','Sick':'Sick Visit','Dental':'Dental Exam','Ophthal':'Ophthalmology Exam','Repro':'Reproductive Evaluation','Chiro':'Chiropractic Exam','Prepurchase':'Prepurchase Exam'};
+  var examType='Well Visit';
+  Object.keys(typeKeys).forEach(function(k){if(apt.type&&apt.type.toLowerCase().includes(k.toLowerCase()))examType=typeKeys[k];});
+  var dateParts=apt.date?apt.date.split(' '):[];
+  var month=dateParts[0]||'';var day=(dateParts[1]||'').replace(',','');
+  var dateStr=month&&day?(month+' '+day+', 2026'):(apt.date||'');
+  window.examState={horseId:horseId,horsePreselect:apt.horse||'',date:dateStr,time:apt.time||'',examType:examType,systems:{},findings:'',prognosis:'',diagnoses:[],includeVitals:false,includeVaccine:false,vitals:{hr:'',rr:'',temp:'',gut:'Normal',notes:''},vaccineData:{vaccine:'',lot:'',expiry:'',site:'Neck',notes:''},recs:{followups:[],directives:[],medications:[],referrals:[]},customDirectives:[],customMeds:[],diagSearch:'',dirSearch:'',medSearch:'',step:'exam'};
+  S.quickAction='document-exam';
+  rerender();
+}
+
+
 function rVetHome(){const t=TH;const appts=[{horse:'Rivendell',barn:'Sunrise Stables',month:'Mar',day:'22',time:'10:00 AM',type:'Follow-up — post colic',urgent:false},{horse:'Bella',barn:'Oakwood Farm',month:'Mar',day:'24',time:'2:00 PM',type:'Annual vaccinations',urgent:false},{horse:'Thunder',barn:'River Ranch',month:'Mar',day:'16',time:'11:30 AM',type:'Lameness eval',urgent:true}];const header=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><div><div style="font-size:17px;font-weight:700;color:var(--md-on-surface);">Good morning, Dr. Matthew</div><div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:2px;">Mon, Mar 16 · 3 upcoming appointments</div></div><div style="width:38px;height:38px;border-radius:50%;background:var(--md-secondary)22;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class=\"msi\" style=\"font-size:30px;color:var(--md-secondary);line-height:1;\">face_6</span></div></div>`;const stats=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;"><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-primary);">12</div><div style="font-size:11px;color:var(--md-on-surface-dim);">In care</div></div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-primary);">3</div><div style="font-size:11px;color:var(--md-on-surface-dim);">Appts</div></div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-warning);">2</div><div style="font-size:11px;color:var(--md-on-surface-dim);">Confirmations</div></div></div>`;const pending=`<div style="background:var(--md-warning-container);border:1.5px solid var(--md-warning)44;border-radius:12px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="S.vetSignedIn=false;S.vetView='confirmation';S.vetConfirmPage=false;rerender()"><div style="flex:1;"><div style="font-size:12px;font-weight:700;color:var(--md-warning);margin-bottom:2px;">Confirmation request pending</div><div style="font-size:12px;color:var(--md-on-surface-variant);">Rivendell · Potomavac + Imrab · Charlene Georgia</div></div><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="var(--md-warning)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;const apptCards=appts.map(function(a){
   var horseObj=HORSES_ALL.find(function(h){return h.name===a.horse;})||null;
   var horseId=horseObj?horseObj.id:'';
@@ -3657,7 +3675,91 @@ function rTrainerHome(){
     }).join('')}
   </div>`;
 
-  return dateBanner()+header+sessionBar+sessionList+progressCards+qa;
+
+  // ── Trainer competition schedule ─────────────────────────────────────────
+  var myHorseIds=TRAINING_DEFS.map(function(d){return d.horseId;}).filter(function(id,i,a){return a.indexOf(id)===i;});
+  getHorsesForUser().forEach(function(e){if(myHorseIds.indexOf(e.horse.id)<0)myHorseIds.push(e.horse.id);});
+  var upcoming_comps=[];
+  TRAINER_UPCOMING_COMPS.forEach(function(tc){
+    if(myHorseIds.indexOf(tc.horseId)>=0){
+      var hh=HORSES_ALL.find(function(h){return h.id===tc.horseId;})||{name:tc.horseName||'',photo:null,avatar:{bg:'#888',mane:'#444',sock:null,marking:null}};
+      upcoming_comps.push({horse:hh,event:{name:tc.event,date:tc.dateStr,classes:tc.classes},horseId:tc.horseId,dateISO:tc.dateISO,dateStr:tc.dateStr,hasBagging:tc.hasBagging});
+    }
+  });
+  upcoming_comps.sort(function(a,b){return a.dateISO>b.dateISO?1:-1;});
+  var recent_comps=[];
+  myHorseIds.forEach(function(hid){
+    var results=HORSE_COMPETITION_HISTORY[hid]||[];
+    var hh=HORSES_ALL.find(function(h){return h.id===hid;})||{name:hid,photo:null,avatar:{bg:'#888',mane:'#444',sock:null,marking:null}};
+    results.slice(0,3).forEach(function(r){recent_comps.push({horse:hh,result:r,horseId:hid});});
+  });
+  recent_comps.sort(function(a,b){return b.result.dateISO>a.result.dateISO?1:-1;});
+  var isCompExp=S.expandedCompSchedule;
+  var previewRows=upcoming_comps.slice(0,2).map(function(uc){
+    var cls=(uc.event.classes||[]).slice(0,2).join(', ');
+    var dp=uc.dateStr?uc.dateStr.split(' '):['',''];
+    return '<div style="display:flex;align-items:center;gap:9px;padding:6px 14px;border-top:1px solid var(--md-outline-variant);">'
+      +'<div style="width:36px;height:36px;border-radius:8px;background:var(--md-tertiary-container);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;">'
+      +'<div style="font-size:8px;font-weight:700;color:var(--md-tertiary);line-height:1;text-transform:uppercase;">'+dp[0]+'</div>'
+      +'<div style="font-size:14px;font-weight:700;color:var(--md-tertiary);line-height:1;">'+dp[1]+'</div></div>'
+      +horseAvatar(uc.horse,28)
+      +'<div style="flex:1;min-width:0;">'
+      +'<div style="font-size:12px;font-weight:700;color:var(--md-on-surface);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+uc.horse.name+' · '+uc.event.name+'</div>'
+      +(cls?'<div style="font-size:10px;color:var(--md-on-surface-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+cls+'</div>':'')
+      +'</div>'
+      +(uc.hasBagging?'<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;background:var(--md-tertiary-container);color:var(--md-tertiary);">PASS</span>':'')
+      +'</div>';
+  }).join('');
+  var compSchedule='<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);overflow:hidden;margin-bottom:14px;">'
+    +'<div onclick="S.expandedCompSchedule=!S.expandedCompSchedule;rerender()" style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;cursor:pointer;">'
+    +'<div style="display:flex;align-items:center;gap:8px;">'
+    +'<div style="width:28px;height:28px;border-radius:8px;background:var(--md-tertiary-container);display:flex;align-items:center;justify-content:center;">'+msiIcon('emoji_events',16,'var(--md-tertiary)')+'</div>'
+    +'<div><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Competition schedule</div>'
+    +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+upcoming_comps.length+' upcoming · '+recent_comps.length+' recent results</div>'
+    +'</div></div>'
+    +msiIcon('expand_more',20,'var(--md-on-surface-dim)')
+    +'</div>'
+    +(!isCompExp?previewRows:'');
+  if(isCompExp){
+    compSchedule+='<div style="border-top:1px solid var(--md-outline-variant);">';
+    if(upcoming_comps.length){
+      compSchedule+='<div style="padding:10px 14px 6px;font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;">Upcoming</div>';
+      upcoming_comps.forEach(function(uc){
+        var cls2=(uc.event.classes||[]).slice(0,2).join(', ');
+        var dp2=uc.dateStr?uc.dateStr.split(' '):['',''];
+        var onclk='S.selectedHorse=\''+uc.horseId+'\';S.horseTab=\'competitions\';rerender()';
+        compSchedule+='<div onclick="'+onclk+'" style="display:flex;align-items:center;gap:11px;padding:9px 14px;border-top:1px solid var(--md-outline-variant);cursor:pointer;">'
+          +'<div style="width:38px;height:38px;border-radius:9px;background:var(--md-tertiary-container);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;">'
+          +'<div style="font-size:8px;font-weight:700;color:var(--md-tertiary);line-height:1;text-transform:uppercase;">'+dp2[0]+'</div>'
+          +'<div style="font-size:14px;font-weight:700;color:var(--md-tertiary);line-height:1;">'+dp2[1]+'</div></div>'
+          +horseAvatar(uc.horse,28)
+          +'<div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:var(--md-on-surface);">'+uc.horse.name+'</div>'
+          +'<div style="font-size:11px;color:var(--md-on-surface-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+uc.event.name+'</div>'
+          +(cls2?'<div style="font-size:10px;color:var(--md-on-surface-dim);font-style:italic;">'+cls2+'</div>':'')+'</div>'
+          +(uc.hasBagging?'<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;background:var(--md-tertiary-container);color:var(--md-tertiary);">PASS</span>':'')+'</div>';
+      });
+    }
+    if(recent_comps.length){
+      compSchedule+='<div style="padding:10px 14px 6px;font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;border-top:1px solid var(--md-outline-variant);">Recent results</div>';
+      recent_comps.slice(0,6).forEach(function(rc){
+        var r=rc.result;
+        var sc=r.score>=70?'var(--md-secondary)':r.score>=65?'var(--md-primary)':'var(--md-warning)';
+        compSchedule+='<div onclick="S.selectedHorse=\''+rc.horseId+'\';S.horseTab=\'competitions\';rerender()" style="display:flex;align-items:center;gap:11px;padding:9px 14px;border-top:1px solid var(--md-outline-variant);cursor:pointer;">'
+          +horseAvatar(rc.horse,32)
+          +'<div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:var(--md-on-surface);">'+rc.horse.name+'</div>'
+          +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+r.event+' · '+r.date+'</div></div>'
+          +'<div style="text-align:right;flex-shrink:0;"><div style="font-size:14px;font-weight:700;color:'+sc+';">'+r.score+'%</div>'
+          +'<div style="font-size:10px;color:var(--md-on-surface-dim);">'+r.placement+'/'+r.placementOf+'</div></div></div>';
+      });
+    }
+    if(!upcoming_comps.length&&!recent_comps.length){
+      compSchedule+='<div style="padding:20px;text-align:center;color:var(--md-on-surface-dim);font-size:13px;">No competition data yet</div>';
+    }
+    compSchedule+='</div>';
+  }
+  compSchedule+='</div>';
+
+  return dateBanner()+header+sessionBar+sessionList+progressCards+compSchedule+qa;
 }
 
 // --- OWNER VIEWS ---------------------------------------------
@@ -3669,6 +3771,19 @@ const OWNER_HORSES=[
 ];
 
 // Event passes for owner's horses
+const TRAINER_UPCOMING_COMPS=[
+  {horseId:'h3',horseName:'Luna',     event:'Tri-State Spring Classic',         dateISO:'2026-03-28',dateStr:'Mar 28',classes:['Training Level Test 1','Training Level Test 2'],hasBagging:true},
+  {horseId:'rv',horseName:'Rivendell',event:'Tri-State Spring Classic',         dateISO:'2026-03-28',dateStr:'Mar 28',classes:['1st Level Test 2','2nd Level Test 1'],hasBagging:true},
+  {horseId:'h1',horseName:'Apollo',   event:'Hudson Valley Spring Show',        dateISO:'2026-04-12',dateStr:'Apr 12',classes:['Pre-Green Hunter 3ft','Pre-Green Hunter U/S'],hasBagging:false},
+  {horseId:'h3',horseName:'Luna',     event:'Capital Region Dressage Classic',  dateISO:'2026-04-19',dateStr:'Apr 19',classes:['Training Level Test 3','Intro Test B'],hasBagging:false},
+  {horseId:'h2',horseName:'Vader',    event:'Capital Region Dressage Classic',  dateISO:'2026-04-19',dateStr:'Apr 19',classes:['1st Level Test 1','1st Level Test 3'],hasBagging:false},
+  {horseId:'h1',horseName:'Apollo',   event:'Empire State Hunter Classic',      dateISO:'2026-05-03',dateStr:'May 3', classes:['Green Hunter 3ft6in','Green Hunter Stakes'],hasBagging:false},
+  {horseId:'rv',horseName:'Rivendell',event:'Empire State Dressage',            dateISO:'2026-05-03',dateStr:'May 3', classes:['2nd Level Test 3','Prix St Georges'],hasBagging:false},
+  {horseId:'h3',horseName:'Luna',     event:'Northeast Regional Championships', dateISO:'2026-05-17',dateStr:'May 17',classes:['Training Level Championship','1st Level Test 1'],hasBagging:false},
+  {horseId:'h2',horseName:'Vader',    event:'Summer Dressage Invitational',     dateISO:'2026-06-07',dateStr:'Jun 7', classes:['1st Level Test 2','2nd Level Test 1'],hasBagging:false},
+  {horseId:'h1',horseName:'Apollo',   event:'Summer Hunter Classic',            dateISO:'2026-06-21',dateStr:'Jun 21',classes:['Modified Hunter 3ft','Small Pony Hunter'],hasBagging:false},
+];
+
 const EVENT_PASSES=[
   {
     id:'ep1',horseId:'h3',horseName:'Luna',breed:'Arabian',age:'6 years',color:'Gray',sex:'Mare',
@@ -3932,29 +4047,13 @@ function rMultiRoleHome(){
     taskScheduleBlock=`<button onclick="S.mgrView='assignments';S.mgrAssignTab='tasks';S.assignDate='${TODAY}';rerender()" style="width:100%;background:var(--md-primary);color:#fff;border:none;padding:12px;border-radius:var(--md-shape-md);font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;margin-bottom:10px;">Manage Assignments</button>`;
   }
 
-  // -- 5b. Training session list (trainer) — exact from rTrainerHome --
+  // -- 5b. Training session list (trainer) — expandable rTrainingCard
   var trainingScheduleBlock='';
   if(isTrainer){
-    trainingScheduleBlock=`<div style="margin-bottom:14px;">
-    <div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Today's schedule</div>
-    ${TRAINING_DEFS.map(d=>{
-      const ta=trainAssigns[d.id];const horse=HORSES.find(h=>h.id===d.horseId);const done=ta?.status==='complete';
-      const ta_media=ta?.mediaCount>0?mediaBadge(ta):'';
-      return `<div style="background:${done?t.SUB:t.CARD};border-radius:10px;border:1.5px solid var(--md-outline-variant);border-left:3px solid ${done?t.SUC:TH.mdTert};padding:10px 12px;margin-bottom:7px;display:flex;align-items:center;gap:10px;">
-        <div style="width:18px;height:18px;border-radius:50%;border:2px solid ${done?t.SUC:TH.mdTert+'66'};flex-shrink:0;display:flex;align-items:center;justify-content:center;">
-          ${done?'<svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="'+t.SUC+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>':''}
-        </div>
-        <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-            <span style="font-size:13px;font-weight:${done?400:600};color:${done?t.TX3:t.TX};">${horse?.name}</span>
-            ${typeChip(d.type,true)}
-            ${ta_media}
-          </div>
-          <div style="font-size:10px;color:var(--md-on-surface-dim);margin-top:2px;">${d.startTime} · ${d.duration} min ${intensityDots(d.intensity)}</div>
-        </div>
-      </div>`;
-    }).join('')}
-  </div>`;
+    trainingScheduleBlock='<div style="margin-bottom:14px;">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Today\'s schedule</div>'
+      +TRAINING_DEFS.map(function(d){var ta=trainAssigns[d.id];return rTrainingCard(d,ta);}).join('')
+      +'</div>';
   }
 
   // -- 6. Horse progress (trainer) — exact from rTrainerHome ----
@@ -4014,13 +4113,72 @@ function rMultiRoleHome(){
   </div>`;
   }
 
+  // -- 7b. Competition schedule (trainer) ─────────────────────────────────
+  var compScheduleBlock='';
+  if(isTrainer){
+    var myHorseIds2=TRAINING_DEFS.map(function(d){return d.horseId;}).filter(function(id,i,a){return a.indexOf(id)===i;});
+    getHorsesForUser().forEach(function(e){if(myHorseIds2.indexOf(e.horse.id)<0)myHorseIds2.push(e.horse.id);});
+    var upcoming_c2=[];
+    EVENT_PASSES.forEach(function(ep){
+      if(myHorseIds2.indexOf(ep.horseId)>=0){
+        var hh2=HORSES_ALL.find(function(h){return h.id===ep.horseId;})||{name:ep.horseName||'',photo:null,avatar:{bg:'#888',mane:'#444',sock:null,marking:null}};
+        upcoming_c2.push({horse:hh2,event:ep.event,horseId:ep.horseId});
+      }
+    });
+    var recent_c2=[];
+    myHorseIds2.forEach(function(hid){
+      var results=HORSE_COMPETITION_HISTORY[hid]||[];
+      var hh2=HORSES_ALL.find(function(h){return h.id===hid;})||{name:hid,photo:null,avatar:{bg:'#888',mane:'#444',sock:null,marking:null}};
+      results.slice(0,2).forEach(function(r){recent_c2.push({horse:hh2,result:r,horseId:hid});});
+    });
+    recent_c2.sort(function(a,b){return b.result.dateISO>a.result.dateISO?1:-1;});
+    var isCompExp2=S.expandedCompSchedule;
+    compScheduleBlock='<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);overflow:hidden;margin-bottom:14px;">'
+      +'<div onclick="S.expandedCompSchedule=!S.expandedCompSchedule;rerender()" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;cursor:pointer;">'
+      +'<div style="display:flex;align-items:center;gap:8px;">'
+      +'<div style="width:28px;height:28px;border-radius:8px;background:var(--md-tertiary-container);display:flex;align-items:center;justify-content:center;">'+msiIcon('emoji_events',16,'var(--md-tertiary)')+'</div>'
+      +'<div><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Competition schedule</div>'
+      +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+upcoming_c2.length+' upcoming · '+recent_c2.length+' recent results</div></div></div>'
+      +msiIcon('expand_more',20,'var(--md-on-surface-dim)')
+      +'</div>';
+    if(isCompExp2){
+      compScheduleBlock+='<div style="border-top:1px solid var(--md-outline-variant);">';
+      if(upcoming_c2.length){
+        compScheduleBlock+='<div style="padding:10px 14px 6px;font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;">Upcoming</div>';
+        upcoming_c2.forEach(function(uc){
+          var datePart=(uc.event.date||'').split('–')[0].trim();
+          compScheduleBlock+='<div onclick="S.selectedHorse=\''+uc.horseId+'\';S.horseTab=\'competitions\';rerender()" style="display:flex;align-items:center;gap:11px;padding:9px 14px;border-top:1px solid var(--md-outline-variant);cursor:pointer;">'
+            +horseAvatar(uc.horse,32)
+            +'<div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:var(--md-on-surface);">'+uc.horse.name+'</div>'
+            +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+uc.event.name+'</div></div>'
+            +'<div style="text-align:right;flex-shrink:0;"><div style="font-size:11px;font-weight:600;color:var(--md-tertiary);">'+datePart+'</div>'
+            +'<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;background:var(--md-tertiary-container);color:var(--md-tertiary);">PASS</span></div></div>';
+        });
+      }
+      if(recent_c2.length){
+        compScheduleBlock+='<div style="padding:10px 14px 6px;font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;border-top:1px solid var(--md-outline-variant);">Recent results</div>';
+        recent_c2.slice(0,4).forEach(function(rc){
+          var r=rc.result;var sc2=r.score>=70?'var(--md-secondary)':r.score>=65?'var(--md-primary)':'var(--md-warning)';
+          compScheduleBlock+='<div onclick="S.selectedHorse=\''+rc.horseId+'\';S.horseTab=\'competitions\';rerender()" style="display:flex;align-items:center;gap:11px;padding:9px 14px;border-top:1px solid var(--md-outline-variant);cursor:pointer;">'
+            +horseAvatar(rc.horse,32)
+            +'<div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:var(--md-on-surface);">'+rc.horse.name+'</div>'
+            +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+r.event+' · '+r.date+'</div></div>'
+            +'<div style="text-align:right;flex-shrink:0;"><div style="font-size:14px;font-weight:700;color:'+sc2+';">'+r.score+'%</div>'
+            +'<div style="font-size:10px;color:var(--md-on-surface-dim);">'+r.placement+'/'+r.placementOf+'</div></div></div>';
+        });
+      }
+      compScheduleBlock+='</div>';
+    }
+    compScheduleBlock+='</div>';
+  }
+
   // -- 8. Upcoming appointments (owner) — exact from rOwnerHome --
   var apptBlock='';
   if(isOwner){
     apptBlock=`<div style="margin-bottom:14px;">
     <div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Upcoming appointments</div>
-    ${OWNER_APPOINTMENTS.map(apt=>`<div style="background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:11px;padding:11px 13px;margin-bottom:7px;display:flex;align-items:center;gap:10px;">
-      <div style="width:42px;height:42px;border-radius:10px;background:var(--md-surface-variant);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;">
+    ${OWNER_APPOINTMENTS.map(apt=>`<div onclick="openExamFromAppt(${JSON.stringify(apt).replace(/"/g,"'")})" style="background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:11px;padding:11px 13px;margin-bottom:7px;display:flex;align-items:center;gap:10px;cursor:pointer;">
+      <div style="width:42px;height:42px;border-radius:10px;background:var(--md-primary-container);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;">
         <div style="font-size:9px;font-weight:700;color:var(--md-primary);line-height:1;">${apt.date.split(' ')[0]}</div>
         <div style="font-size:15px;font-weight:700;color:var(--md-primary);line-height:1;">${apt.date.split(' ')[1]}</div>
       </div>
@@ -4028,6 +4186,7 @@ function rMultiRoleHome(){
         <div style="font-size:13px;font-weight:600;color:var(--md-on-surface);">${apt.horse} <span style="font-weight:400;color:var(--md-on-surface-dim);">· ${apt.type}</span></div>
         <div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:2px;">${apt.time} · ${apt.vet}</div>
       </div>
+      <span class="msi" style="font-size:18px;color:var(--md-on-surface-dim);line-height:1;display:inline-block;user-select:none;vertical-align:middle;">chevron_right</span>
     </div>`).join('')}
   </div>`;
   }
@@ -4065,7 +4224,7 @@ function rMultiRoleHome(){
     </div>
   </div>`):'';
 
-  return dateBanner()+welcomeBlock+overviewBlock+alertsBlock+eventPassesBlock+taskScheduleBlock+trainingScheduleBlock+progressCardsBlock+apptBlock+visitsBlock+qaBlock;
+  return dateBanner()+welcomeBlock+overviewBlock+alertsBlock+eventPassesBlock+taskScheduleBlock+trainingScheduleBlock+progressCardsBlock+compScheduleBlock+apptBlock+visitsBlock+qaBlock;
 }
 
 
@@ -4146,8 +4305,8 @@ function rOwnerHome(){
   // Upcoming appointments
   const apptSection=`<div style="margin-bottom:14px;">
     <div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Upcoming appointments</div>
-    ${OWNER_APPOINTMENTS.map(apt=>`<div style="background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:11px;padding:11px 13px;margin-bottom:7px;display:flex;align-items:center;gap:10px;">
-      <div style="width:42px;height:42px;border-radius:10px;background:var(--md-surface-variant);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;">
+    ${OWNER_APPOINTMENTS.map(apt=>`<div onclick="openExamFromAppt(${JSON.stringify(apt).replace(/"/g,"'")})" style="background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:11px;padding:11px 13px;margin-bottom:7px;display:flex;align-items:center;gap:10px;cursor:pointer;">
+      <div style="width:42px;height:42px;border-radius:10px;background:var(--md-primary-container);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;">
         <div style="font-size:9px;font-weight:700;color:var(--md-primary);line-height:1;">${apt.date.split(' ')[0]}</div>
         <div style="font-size:15px;font-weight:700;color:var(--md-primary);line-height:1;">${apt.date.split(' ')[1]}</div>
       </div>
@@ -4155,6 +4314,7 @@ function rOwnerHome(){
         <div style="font-size:13px;font-weight:600;color:var(--md-on-surface);">${apt.horse} <span style="font-weight:400;color:var(--md-on-surface-dim);">· ${apt.type}</span></div>
         <div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:2px;">${apt.time} · ${apt.vet}</div>
       </div>
+      <span class="msi" style="font-size:18px;color:var(--md-on-surface-dim);line-height:1;display:inline-block;user-select:none;vertical-align:middle;">chevron_right</span>
     </div>`).join('')}
   </div>`;
 
@@ -4729,6 +4889,138 @@ Object.assign(HORSE_REGIMENS,{
   'b2':{feed:[{id:'b2f1',label:'Morning hay',amount:'Full flake',changed:false},{id:'b2f2',label:'Performance grain',amount:'4 lbs',changed:false}],supplements:[{id:'b2s1',label:'Magnesium',amount:'2 scoops',changed:false}],medications:[],vetNotes:'Growing mare. High energy — ensure consistent turnout.'},
 });
 
+const HORSE_MEDIA={
+  'h1':[
+    {id:'m_h1_1',horseId:'h1',type:'photo',url:'https://images.pexels.com/photos/635499/pexels-photo-635499.jpeg?w=800&h=450&fit=crop',title:'Pre-show school jump',description:'March 10 — flying over the oxer. Great form today.',date:'Mar 10, 2026',uploadedBy:'Jordan M.',uploadedByRole:'trainer',sharedWith:[]},
+    {id:'m_h1_2',horseId:'h1',type:'video',url:'https://images.pexels.com/photos/1996333/pexels-photo-1996333.jpeg?w=800&h=450&fit=crop',title:'Right lead canter improvement',description:'March 13 — right lead finally clean. 2 min video.',date:'Mar 13, 2026',uploadedBy:'Jordan M.',uploadedByRole:'trainer',sharedWith:[]},
+    {id:'m_h1_3',horseId:'h1',type:'photo',url:'https://images.pexels.com/photos/1289659/pexels-photo-1289659.jpeg?w=800&h=450&fit=crop',title:'Winter Classic 1st place',description:'Feb 14 — Pre-Green 3ft. 84% and a blue ribbon!',date:'Feb 14, 2026',uploadedBy:'Sarah K.',uploadedByRole:'owner',sharedWith:[]},
+  ],
+  'h3':[
+    {id:'m_h3_1',horseId:'h3',type:'photo',url:'https://images.pexels.com/photos/1289659/pexels-photo-1289659.jpeg?w=800&h=450&fit=crop',title:'Morning hack back field',description:'March 13 — easy morning. Luna was so happy out there.',date:'Mar 13, 2026',uploadedBy:'Jordan M.',uploadedByRole:'trainer',sharedWith:[]},
+    {id:'m_h3_2',horseId:'h3',type:'video',url:'https://images.pexels.com/photos/52500/horse-herd-fog-nature-52500.jpeg?w=800&h=450&fit=crop',title:'Farrier day standing well',description:'March 16 — great with Mike today.',date:'Mar 16, 2026',uploadedBy:'Charlene G.',uploadedByRole:'manager',sharedWith:[]},
+    {id:'m_h3_3',horseId:'h3',type:'photo',url:'https://images.pexels.com/photos/1759454/pexels-photo-1759454.jpeg?w=800&h=450&fit=crop',title:'Tri-State warm-up ring',description:'March 28 — calm and focused before her class.',date:'Mar 28, 2026',uploadedBy:'Sarah K.',uploadedByRole:'owner',sharedWith:[]},
+  ],
+  'rv':[
+    {id:'m_rv_1',horseId:'rv',type:'photo',url:'https://images.pexels.com/photos/52500/horse-herd-fog-nature-52500.jpeg?w=800&h=450&fit=crop',title:'Post-colic check looking better',description:'March 15 — bright eyes, eating normally. Good progress.',date:'Mar 15, 2026',uploadedBy:'Charlene G.',uploadedByRole:'manager',sharedWith:[]},
+    {id:'m_rv_2',horseId:'rv',type:'video',url:'https://images.pexels.com/photos/635499/pexels-photo-635499.jpeg?w=800&h=450&fit=crop',title:'Turnout — colic morning',description:'March 14 — the morning before colic was diagnosed. For Dr. Goudz.',date:'Mar 14, 2026',uploadedBy:'Sarah K.',uploadedByRole:'owner',sharedWith:[]},
+  ],
+  'h2':[
+    {id:'m_h2_1',horseId:'h2',type:'photo',url:'https://images.pexels.com/photos/1996333/pexels-photo-1996333.jpeg?w=800&h=450&fit=crop',title:'Extended trot best yet',description:'March 10 — massive stride. Getting so much better.',date:'Mar 10, 2026',uploadedBy:'Jordan M.',uploadedByRole:'trainer',sharedWith:[]},
+  ],
+};
+
+const HORSE_PEDIGREE={
+  'h1':{
+    sire:{name:'Don Schufro',breed:'Hanoverian',color:'Bay',country:'Germany',born:1993,died:2018,
+      achievements:'2008 Olympic team silver. Leading dressage sire. WBFSH Sire Rankings top 10 for 8 consecutive years.',
+      progenyNote:'Exceptional passage and piaffe transmission. Offspring average 68.4% at Grand Prix.',
+      sport:'Dressage',avatar:{bg:'#5C3A1E',mane:'#2A1A08',sock:null,marking:'blaze'},
+      offspring:[{name:'Damon Hill',note:'Bundeschampion, World Young Horse Champion'},
+                 {name:'Davido',note:'Grand Prix competitor, multiple CDI wins'},
+                 {name:'Delatio',note:'Small Tour specialist, 72.1% GP average'}]},
+    dam:{name:'Saphira',breed:'Hanoverian',color:'Chestnut',country:'Germany',born:2001,
+      achievements:'Reserve champion Hanoverian Licensing. Mare performance test score 8.2.',
+      progenyNote:'Produces horses with exceptional work ethic and rideability.',
+      sport:'Dressage',avatar:{bg:'#C25A1A',mane:'#8A3A0A',sock:'#F5EDE0',marking:null},
+      offspring:[{name:'Apollo',note:'This horse \u2014 Pre-Green Hunter, 84% win',isSelf:true},
+                 {name:'Saphira Legacy',note:'Licensed Hanoverian stallion, jumping career'},
+                 {name:'Solar Flare',note:'Eventing mare, CCI3* competitor'}]},
+    siblings:[
+      {name:'Saphira Legacy',relation:'Full sibling (2008)',sport:'Show Jumping',achievement:'Licensed stallion, 1.35m level',avatar:{bg:'#C25A1A',mane:'#8A3A0A',sock:null,marking:'blaze'}},
+      {name:'Solar Flare',relation:'Full sibling (2010)',sport:'Eventing',achievement:'CCI3* Bromont 2023, 5th place',avatar:{bg:'#D4781E',mane:'#8A3A0A',sock:'#F5EDE0',marking:null}},
+      {name:'Apollonia',relation:'Half sibling (Don Schufro)',sport:'Dressage',achievement:'GP debut 2024, 67.8%',avatar:{bg:'#6B4A2A',mane:'#2A1A08',sock:'#F5EDE0',marking:null}},
+    ],
+    sirePerformance:{avgScore:71.2,totalOffspring:122,winRate:0.68,disciplines:['Dressage','Hunter/Jumper','Eventing']},
+    damPerformance:{avgScore:68.4,offspring:4,disciplines:['Hunter/Jumper','Dressage','Eventing'],winRate:0.62},
+  },
+  'h2':{
+    sire:{name:'Tsjalle 454',breed:'Friesian',color:'Black',country:'Netherlands',born:1998,
+      achievements:'KFPS Preferent stallion. First Premium at Stallion Show. Exceptional feathering and baroque movement.',
+      progenyNote:'Offspring show 8+ for walk. Reliable training-level dressage producers.',
+      sport:'Dressage',avatar:{bg:'#1A1A1A',mane:'#0A0A0A',sock:null,marking:null},
+      offspring:[{name:'Vader',note:'This horse \u2014 Training Level, 68.2%',isSelf:true},
+                 {name:'Nightfall',note:'KFPS approved mare'},
+                 {name:'Baron',note:'Trail horse champion'}]},
+    dam:{name:'Aelke',breed:'Friesian',color:'Black',country:'Netherlands',born:2003,
+      achievements:'KFPS Star mare. Movement score 8.5. Dam of two show horses.',
+      progenyNote:'Produces horses with exceptional presence and cadence in trot.',
+      sport:'Dressage',avatar:{bg:'#1A1A1A',mane:'#0A0A0A',sock:null,marking:null},
+      offspring:[{name:'Vader',note:'This horse',isSelf:true},{name:'Aelke Pride',note:'KFPS mare, 2nd premium'}]},
+    siblings:[
+      {name:'Nightfall',relation:'Half sibling (Tsjalle 454)',sport:'Dressage',achievement:'KFPS approved, second premium mare inspection',avatar:{bg:'#1A1A1A',mane:'#0A0A0A',sock:null,marking:null}},
+      {name:'Aelke Pride',relation:'Full sibling (2007)',sport:'Breed / Dressage',achievement:'Second premium KFPS mare inspection 2011',avatar:{bg:'#1A1A1A',mane:'#0A0A0A',sock:null,marking:null}},
+    ],
+    sirePerformance:{avgScore:65.8,totalOffspring:67,winRate:0.51,disciplines:['Dressage']},
+    damPerformance:{avgScore:66.2,offspring:2,disciplines:['Dressage'],winRate:0.50},
+  },
+  'h3':{
+    sire:{name:'Marwan Al Shaqab',breed:'Arabian',color:'Gray',country:'Qatar',born:2000,
+      achievements:'2014 World Arabian Horse Champion. Son of Gazal Al Shaqab. One of the greatest Arabian stallions of the modern era.',
+      progenyNote:'Exceptional type and refinement. Multiple World Champions. 85%+ success rate at championships.',
+      sport:'Arabian',avatar:{bg:'#CCCCCC',mane:'#888888',sock:'#FFFFFF',marking:'blaze'},
+      offspring:[{name:'Marwan Monogram',note:'2019 World Arabian Champion'},
+                 {name:'Luna',note:'This horse \u2014 Training Level, multiple wins',isSelf:true},
+                 {name:'Al Shaqab Marwa',note:'National halter champion'}]},
+    dam:{name:'Bint Rayya',breed:'Arabian',color:'Gray',country:'United States',born:2005,
+      achievements:'Regional champion halter mare. Dam performance: 3 foals, 2 show horses.',
+      progenyNote:'Refined type with excellent bone quality and expressive movement.',
+      sport:'Arabian',avatar:{bg:'#BBBBBB',mane:'#777777',sock:null,marking:null},
+      offspring:[{name:'Luna',note:'This horse',isSelf:true},{name:'Rayya Starlight',note:'National pleasure horse'}]},
+    siblings:[
+      {name:'Marwan Monogram',relation:'Half sibling (Marwan Al Shaqab)',sport:'Arabian Halter',achievement:'2019 World Arabian Champion \u2014 Gold',avatar:{bg:'#CCCCCC',mane:'#888888',sock:'#FFFFFF',marking:null}},
+      {name:'Al Shaqab Marwa',relation:'Half sibling (Marwan Al Shaqab)',sport:'Arabian Halter',achievement:'National champion, multiple regional titles',avatar:{bg:'#AAAAAA',mane:'#666666',sock:null,marking:null}},
+      {name:'Rayya Starlight',relation:'Full sibling (2012)',sport:'Arabian Pleasure',achievement:'National champion western pleasure',avatar:{bg:'#BBBBBB',mane:'#777777',sock:'#FFFFFF',marking:null}},
+    ],
+    sirePerformance:{avgScore:72.1,totalOffspring:148,winRate:0.79,disciplines:['Dressage','Arabian Performance','Halter']},
+    damPerformance:{avgScore:69.5,offspring:3,disciplines:['Arabian','Pleasure'],winRate:0.67},
+  },
+  'rv':{
+    sire:{name:'Rotspon',breed:'Hanoverian',color:'Dark Bay',country:'Germany',born:1995,died:2021,
+      achievements:'2000 Hanoverian Licensing champion. WBFSH top sire 2008-2012. 14 licensed sons.',
+      progenyNote:'Known for transmitting exceptional rideability. Average GP score among offspring: 68.9%.',
+      sport:'Dressage',avatar:{bg:'#2A1A08',mane:'#1A0A00',sock:null,marking:'star'},
+      offspring:[{name:'Rivendell',note:'This horse \u2014 Third Level, 70.2% win',isSelf:true},
+                 {name:'Rotspon Gold',note:'Bundeschampion 5yo, Small Tour'},
+                 {name:'Rosario',note:'Grand Prix, CDI 4* competitor'}]},
+    dam:{name:'Waikiki',breed:'Hanoverian',color:'Chestnut',country:'Germany',born:1999,
+      achievements:'Elite mare Hanoverian studbook. Mare performance test 8.4. Dam of 3 licensed stallions.',
+      progenyNote:'4 of 6 offspring placed at championships.',
+      sport:'Dressage',avatar:{bg:'#C25A1A',mane:'#8A3A0A',sock:null,marking:'blaze'},
+      offspring:[{name:'Rivendell',note:'This horse \u2014 multiple Third Level wins',isSelf:true},
+                 {name:'Waikiki Dream',note:'Grand Prix, CDI 5* Pan American team'},
+                 {name:'Waterloo',note:'Licensed Hanoverian stallion, 2x Bundeschampion'}]},
+    siblings:[
+      {name:'Waikiki Dream',relation:'Full sibling (2008)',sport:'Dressage',achievement:'Pan American Games team, CDI 5* Grand Prix',avatar:{bg:'#C25A1A',mane:'#8A3A0A',sock:null,marking:null}},
+      {name:'Waterloo',relation:'Full sibling (2006)',sport:'Dressage Breeding',achievement:'Licensed Hanoverian stallion, 2x Bundeschampion',avatar:{bg:'#2A1A08',mane:'#1A0A00',sock:'#F5EDE0',marking:'blaze'}},
+      {name:'Rotspon Gold',relation:'Half sibling (Rotspon)',sport:'Dressage',achievement:'Bundeschampion 5yo, Small Tour specialist',avatar:{bg:'#3A2A10',mane:'#1A0A00',sock:null,marking:'star'}},
+    ],
+    sirePerformance:{avgScore:70.8,totalOffspring:201,winRate:0.71,disciplines:['Dressage','Show Jumping']},
+    damPerformance:{avgScore:72.3,offspring:6,disciplines:['Dressage'],winRate:0.75},
+  },
+  'h4':{
+    sire:{name:'Smart Chic Olena',breed:'Quarter Horse',color:'Sorrel',country:'United States',born:1990,died:2009,
+      achievements:'NCHA Hall of Fame. Cutting Horse Futurity Champion. Sire earnings over $11 million.',
+      progenyNote:'Exceptional athleticism and cow sense. Leading sire for reining and cutting.',
+      sport:'Cutting / Reining',avatar:{bg:'#C25A1A',mane:'#8A3A0A',sock:'#F5EDE0',marking:'blaze'},
+      offspring:[{name:'Maple',note:'This horse \u2014 trail and light work',isSelf:true},
+                 {name:'Olena Hollywood',note:'NCHA Open Futurity finalist'},
+                 {name:'Smart Like Juice',note:'NRHA Reserve World Champion'}]},
+    dam:{name:'Golden Fern',breed:'Quarter Horse',color:'Palomino',country:'United States',born:2004,
+      achievements:'AQHA point earner. Western pleasure and trail horse. Dam of 4 foals.',
+      progenyNote:'Consistent palomino producer. Excellent temperament transmission.',
+      sport:'Western',avatar:{bg:'#D4A840',mane:'#F5EDE0',sock:'#FFFFFF',marking:null},
+      offspring:[{name:'Maple',note:'This horse',isSelf:true},{name:'Fern Gold',note:'AQHA halter points'}]},
+    siblings:[
+      {name:'Olena Hollywood',relation:'Half sibling (Smart Chic Olena)',sport:'Cutting',achievement:'NCHA Open Futurity finalist, $84k earnings',avatar:{bg:'#C25A1A',mane:'#8A3A0A',sock:'#F5EDE0',marking:null}},
+      {name:'Smart Like Juice',relation:'Half sibling (Smart Chic Olena)',sport:'Reining',achievement:'NRHA Reserve World Champion Open',avatar:{bg:'#8A4A2A',mane:'#4A2A0A',sock:null,marking:'star'}},
+      {name:'Fern Gold',relation:'Full sibling (2013)',sport:'Western',achievement:'AQHA halter & trail points',avatar:{bg:'#D4A840',mane:'#F5EDE0',sock:'#FFFFFF',marking:null}},
+    ],
+    sirePerformance:{avgScore:null,totalOffspring:312,winRate:0.64,disciplines:['Cutting','Reining','Western']},
+    damPerformance:{avgScore:null,offspring:4,disciplines:['Western'],winRate:0.50},
+  },
+};
+
+
 function generateHealthRecord(horseId){
   var h=HORSES_ALL.find(function(h){return h.id===horseId;})||{name:'Unknown Horse',breed:'',color:'',age:'',photo:null,owners:[]};
   var hh=HORSE_HEALTH[horseId]||{vaccinations:{core:[],riskBased:[]},labs:[],exams:[]};
@@ -4780,6 +5072,35 @@ function generateHealthRecord(horseId){
   var blob=new Blob([html],{type:'text/html'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},500);
 }
 
+function rMediaUploadButtons(ms){
+  var bs='flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:14px 8px;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:9px;cursor:pointer;';
+  var sel='';
+  if(ms.url){
+    sel='<div style="display:flex;align-items:center;gap:8px;background:var(--md-secondary-container);border-radius:8px;padding:8px 11px;margin-top:6px;">'
+      +msiIcon('check_circle',16,'var(--md-secondary)')
+      +'<span style="font-size:12px;color:var(--md-secondary);font-weight:600;">'+(ms._fileName||'File selected')+'</span>'
+      +'<button onclick="window._mediaState.url=\'\';window._mediaState._fileName=\'\';rerender()" style="background:none;border:none;cursor:pointer;margin-left:auto;">'+msiIcon('close',14,'var(--md-secondary)')+'</button>'
+      +'</div>';
+  }
+  return '<div style="margin-bottom:8px;">'
+    +'<div style="display:flex;gap:8px;">'
+    +'<label style="'+bs+'"><input type="file" accept="image/*" capture="environment" style="display:none" onchange="addMediaFile(this,\'photo\')">'+msiIcon('photo_camera',24,'var(--md-primary)')+'<span style="font-size:11px;font-weight:700;color:var(--md-primary);">Take Photo</span></label>'
+    +'<label style="'+bs+'"><input type="file" accept="video/*" capture="environment" style="display:none" onchange="addMediaFile(this,\'video\')">'+msiIcon('videocam',24,'var(--md-primary)')+'<span style="font-size:11px;font-weight:700;color:var(--md-primary);">Record Video</span></label>'
+    +'<label style="'+bs+'"><input type="file" accept="image/*,video/*" style="display:none" onchange="addMediaFile(this,null)">'+msiIcon('photo_library',24,'var(--md-primary)')+'<span style="font-size:11px;font-weight:700;color:var(--md-primary);">Library</span></label>'
+    +'</div>'+sel+'</div>';
+}
+function addMediaFile(input,forceType){
+  if(!input.files||!input.files[0])return;
+  var f=input.files[0];
+  var url=URL.createObjectURL(f);
+  var isVid=forceType?forceType==='video':f.type.startsWith('video');
+  window._mediaState.url=url;
+  window._mediaState.type=isVid?'video':'photo';
+  window._mediaState._fileName=f.name;
+  rerender();
+}
+
+
 function rHorseDetail(h){
   const t=TH;
   const tab=S.horseTab||'overview';
@@ -4787,7 +5108,7 @@ function rHorseDetail(h){
   function sc(sex){return sex==='Mare'||sex==='Filly'?{bg:'var(--md-error-container)',color:'var(--md-error)'}:sex==='Stallion'||sex==='Colt'?{bg:'var(--md-tertiary-container)',color:'var(--md-tertiary)'}:{bg:'var(--md-secondary-container)',color:'var(--md-secondary)'};}
   const s=sc(h.sex);
   const hero='<div style="background:linear-gradient(160deg,'+h.avatar.bg+'55 0%,'+h.avatar.bg+'22 100%);padding:18px 16px 14px;display:flex;align-items:center;gap:14px;border-bottom:1.5px solid var(--md-outline-variant);">'+horseAvatar(h,68)+'<div style="flex:1;"><div style="font-size:21px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">'+h.name+'</div><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;"><span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:'+s.bg+';color:'+s.color+';">'+h.sex+'</span><span style="font-size:12px;color:var(--md-on-surface-variant);">'+h.breed+'</span><span style="font-size:12px;color:var(--md-on-surface-dim);">· '+h.color+'</span><span style="font-size:12px;color:var(--md-on-surface-dim);">· '+h.age+'</span></div></div></div>';
-  const tabBar='<div style="display:flex;border-bottom:2px solid var(--md-outline-variant);background:var(--md-surface);overflow-x:auto;">'+'overview,health,training,competitions,connections,feed'.split(',').map(function(k){const l={overview:'Overview',health:'Health',training:'Training',competitions:'Competitions',connections:'Connections',feed:'Feed & Meds'}[k];return '<button onclick="S.horseTab=\''+k+'\';rerender()" style="flex:1;font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:10px 6px;background:transparent;color:'+(tab===k?t.T:t.TX3)+';border:none;border-bottom:'+(tab===k?'2.5px solid '+TH.mdPrim:'2.5px solid transparent')+';margin-bottom:-2px;white-space:nowrap;">'+l+'</button>';}).join('')+'</div>';
+  const tabBar='<div style="display:flex;border-bottom:2px solid var(--md-outline-variant);background:var(--md-surface);overflow-x:auto;">'+'overview,pedigree,health,training,competitions,connections,media,feed'.split(',').map(function(k){const l={overview:'Overview',pedigree:'Pedigree',health:'Health',training:'Training',competitions:'Competitions',connections:'Connections',media:'Media',feed:'Feed & Meds'}[k];return '<button onclick="S.horseTab=\''+k+'\';rerender()" style="flex:1;font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:10px 6px;background:transparent;color:'+(tab===k?t.T:t.TX3)+';border:none;border-bottom:'+(tab===k?'2.5px solid '+TH.mdPrim:'2.5px solid transparent')+';margin-bottom:-2px;white-space:nowrap;">'+l+'</button>';}).join('')+'</div>';
 
   // Overview
   // ── Overview Tab — redesigned ────────────────────────────────────────────
@@ -4834,16 +5155,219 @@ function rHorseDetail(h){
 
   var prosCard_ov=(h.pros&&h.pros.length)?'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);overflow:hidden;margin-bottom:12px;"><div style="padding:10px 13px;border-bottom:1px solid var(--md-outline-variant);font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;">Upcoming appointments</div>'+h.pros.map(function(p,i){return '<div style="display:flex;align-items:center;gap:9px;padding:9px 13px;'+(i<h.pros.length-1?'border-bottom:1px solid var(--md-outline-variant)':'')+';"><div style="width:32px;height:32px;border-radius:8px;background:var(--md-surface-variant);display:flex;align-items:center;justify-content:center;">'+msiIcon(p.role==='Farrier'?'build':p.role==='Dentist'?'medical_services':'groups',15,'var(--md-on-surface-dim)')+'</div><div style="flex:1;"><div style="font-size:12px;font-weight:600;color:var(--md-on-surface);">'+p.name+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+p.role+'</div></div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+p.next+'</div></div>';}).join('')+'</div>':'';
 
-  const overviewTab='<div style="padding:14px;">'+alertBanner_ov+statGrid_ov+noteCard_ov+medCard_ov+glanceRow_ov+passCard_ov+prosCard_ov+'</div>'
+
+  // ── Pregnancy indicator (Mares/Fillies only) ─────────────────────────────
+  var isMare=h.sex==='Mare'||h.sex==='Filly';
+  var pregCard_ov='';
+  if(isMare){
+    if(!window._pregnancyState) window._pregnancyState={};
+    var ps=window._pregnancyState[h.id]||(window._pregnancyState[h.id]={pregnant:false,breedDate:''});
+    var pregDaysCalc='';
+    var pregWeeks=0;
+    var pregTrimester='';
+    var pregProgress=0;
+    if(ps.pregnant&&ps.breedDate){
+      var bd=new Date(ps.breedDate);
+      var now=new Date('2026-03-27');
+      var diffMs=now-bd;
+      var diffDays=Math.max(0,Math.floor(diffMs/(1000*60*60*24)));
+      pregWeeks=Math.floor(diffDays/7);
+      // Equine gestation ~340 days (11.2 months)
+      var totalDays=340;
+      pregProgress=Math.min(100,Math.round(diffDays/totalDays*100));
+      if(diffDays<=113) pregTrimester='1st trimester (days 1–113)';
+      else if(diffDays<=226) pregTrimester='2nd trimester (days 114–226)';
+      else pregTrimester='3rd trimester (days 227–340)';
+      var daysLeft=Math.max(0,totalDays-diffDays);
+      pregDaysCalc='<div style="margin-top:10px;">'
+        +'<div style="display:flex;justify-content:space-between;margin-bottom:5px;">'
+        +'<span style="font-size:12px;font-weight:700;color:var(--md-on-surface);">'+pregWeeks+' weeks along</span>'
+        +'<span style="font-size:11px;color:var(--md-on-surface-dim);">'+daysLeft+' days to go</span>'
+        +'</div>'
+        +'<div style="height:6px;background:var(--md-outline-variant);border-radius:10px;overflow:hidden;margin-bottom:6px;">'
+        +'<div style="height:100%;width:'+pregProgress+'%;background:var(--md-error);border-radius:10px;transition:width 0.3s;"></div>'
+        +'</div>'
+        +'<div style="font-size:11px;color:var(--md-error);font-weight:600;">'+pregTrimester+'</div>'
+        +(diffDays>0?'<div style="font-size:10px;color:var(--md-on-surface-dim);margin-top:2px;">Day '+diffDays+' of 340 · Est. foal date: '+(function(){var d=new Date(bd);d.setDate(d.getDate()+totalDays);return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]+' '+d.getDate()+', '+d.getFullYear();}())+'</div>':'')
+        +'</div>';
+    }
+    pregCard_ov='<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);overflow:hidden;margin-bottom:12px;">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 13px;">'
+      +'<div style="display:flex;align-items:center;gap:8px;">'+msiIcon('favorite',15,'var(--md-error)')
+      +'<span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Pregnancy</span>'
+      +'<span style="font-size:10px;color:var(--md-on-surface-dim);">Mare</span>'
+      +'</div>'
+      +mdToggle(ps.pregnant,'if(!window._pregnancyState)window._pregnancyState={};if(!window._pregnancyState[\''+h.id+'\'])window._pregnancyState[\''+h.id+'\']={pregnant:false,breedDate:\'\'};window._pregnancyState[\''+h.id+'\'].pregnant=!window._pregnancyState[\''+h.id+'\'].pregnant;rerender()')
+      +'</div>'
+      +(ps.pregnant
+        ?'<div style="padding:0 13px 12px;border-top:1px solid var(--md-outline-variant);padding-top:10px;">'
+          +'<div style="margin-bottom:8px;"><label style="font-size:9px;font-weight:700;color:var(--md-error);text-transform:uppercase;letter-spacing:0.6px;display:block;margin-bottom:4px;">Breeding / cover date</label>'
+          +'<input type="date" value="'+(ps.breedDate||'')+'" oninput="window._pregnancyState[\''+h.id+'\']&&(window._pregnancyState[\''+h.id+'\'].breedDate=this.value)" onblur="rerender()" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-error)44;border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/>'
+          +'</div>'
+          +pregDaysCalc
+          +'</div>'
+        :'')
+      +'</div>';
+  }
+
+  const overviewTab='<div style="padding:14px;">'+alertBanner_ov+statGrid_ov+pregCard_ov+noteCard_ov+medCard_ov+glanceRow_ov+passCard_ov+prosCard_ov+'</div>'
 
   // Training stub -- reuse trainer progress if available
 
+
+  // ── Pedigree Tab ──────────────────────────────────────────────────────────
+  var pd=HORSE_PEDIGREE[h.id]||null;
+
+  function rHorseAvatarMini(av,size,name){
+    size=size||40;
+    if(!av)return '<div style="width:'+size+'px;height:'+size+'px;border-radius:50%;background:#888;display:flex;align-items:center;justify-content:center;font-size:'+(size*0.35)+'px;font-weight:700;color:#fff;flex-shrink:0;">'+(name?name[0]:'?')+'</div>';
+    var s=size,hs=s/2;
+    var body='<svg width="'+s+'" height="'+s+'" viewBox="0 0 '+s+' '+s+'" xmlns="http://www.w3.org/2000/svg" style="border-radius:50%;flex-shrink:0;">'
+      +'<ellipse cx="'+hs+'" cy="'+(s*0.6)+'" rx="'+(s*0.38)+'" ry="'+(s*0.32)+'" fill="'+av.bg+'"/>'
+      +'<ellipse cx="'+hs+'" cy="'+(s*0.32)+'" rx="'+(s*0.22)+'" ry="'+(s*0.22)+'" fill="'+av.bg+'"/>'
+      +(av.sock?'<ellipse cx="'+(hs-s*0.15)+'" cy="'+(s*0.88)+'" rx="'+(s*0.07)+'" ry="'+(s*0.09)+'" fill="'+av.sock+'"/>':'')
+      +(av.sock?'<ellipse cx="'+(hs+s*0.15)+'" cy="'+(s*0.88)+'" rx="'+(s*0.07)+'" ry="'+(s*0.09)+'" fill="'+av.sock+'"/>':'')
+      +(av.marking==='blaze'?'<ellipse cx="'+hs+'" cy="'+(s*0.30)+'" rx="'+(s*0.06)+'" ry="'+(s*0.10)+'" fill="#F5EDE0"/>':'')
+      +(av.marking==='star'?'<circle cx="'+hs+'" cy="'+(s*0.26)+'" r="'+(s*0.07)+'" fill="#F5EDE0"/>':'')
+      +'</svg>';
+    return body;
+  }
+
+  function pedigreeCard(person,roleLabel,isSelf){
+    var av=person.avatar||null;
+    var dead=person.died?'\u2020'+person.died:'';
+    var bornStr=person.born?(person.born+(dead?' \u2013 '+dead:'')):'';
+    var scoreStr=person.sirePerformance?('Avg '+person.sirePerformance.avgScore+'% \u00b7 '+person.sirePerformance.totalOffspring+' offspring'):'';
+    return '<div style="background:var(--md-surface);border-radius:14px;border:1.5px solid '+(isSelf?'var(--md-primary)':'var(--md-outline-variant)')+';padding:0;overflow:hidden;min-width:0;">'
+      +'<div style="background:'+(isSelf?'var(--md-primary-container)':'var(--md-surface-variant)')+';padding:9px 12px;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--md-outline-variant)22;">'
+      +rHorseAvatarMini(av,38,person.name)
+      +'<div style="flex:1;min-width:0;">'
+      +'<div style="font-size:11px;font-weight:700;color:'+(isSelf?'var(--md-primary)':'var(--md-on-surface-dim)')+';text-transform:uppercase;letter-spacing:0.5px;">'+roleLabel+'</div>'
+      +'<div style="font-size:14px;font-weight:700;color:var(--md-on-surface);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+person.name+'</div>'
+      +'<div style="font-size:10px;color:var(--md-on-surface-dim);">'+person.breed+' \u00b7 '+person.color+(person.country?' \u00b7 '+person.country:'')+(bornStr?' \u00b7 b.'+bornStr:'')+'</div>'
+      +'</div></div>'
+      +'<div style="padding:10px 12px;">'
+      +(person.achievements?'<div style="font-size:11px;color:var(--md-on-surface-variant);line-height:1.5;margin-bottom:7px;">'+person.achievements+'</div>':'')
+      +(person.progenyNote?'<div style="font-size:10px;font-weight:600;color:var(--md-primary);margin-bottom:6px;line-height:1.4;font-style:italic;">'+msiIcon('insights',12,'var(--md-primary)')+' '+person.progenyNote+'</div>':'')
+      +(person.offspring&&person.offspring.length?'<div style="margin-top:4px;">'
+        +'<div style="font-size:9px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Known offspring</div>'
+        +person.offspring.map(function(o){
+          return '<div style="font-size:11px;color:'+(o.isSelf?'var(--md-primary)':'var(--md-on-surface-variant)')+';padding:3px 0;border-bottom:1px solid var(--md-outline-variant)22;display:flex;align-items:center;gap:5px;">'
+            +(o.isSelf?msiIcon('star',10,'var(--md-primary)'):'<span style="font-size:8px;color:var(--md-on-surface-dim);">\u25cf</span>')
+            +'<span style="font-weight:'+(o.isSelf?'700':'400')+';">'+o.name+'</span>'
+            +(o.note?'<span style="color:var(--md-on-surface-dim);"> \u2014 '+o.note+'</span>':'')
+            +'</div>';
+        }).join('')
+        +'</div>'
+      :'')
+      +'</div></div>';
+  }
+
+  var pedigreeTab='';
+  if(!pd){
+    pedigreeTab='<div style="padding:14px;text-align:center;padding-top:40px;">'
+      +'<div style="font-size:40px;margin-bottom:12px;opacity:0.3;">'+msiIcon('account_tree',48,'var(--md-on-surface-dim)')+'</div>'
+      +'<div style="font-size:15px;font-weight:700;color:var(--md-on-surface);margin-bottom:6px;">No pedigree on file</div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);">Pedigree information for '+h.name+' hasn\'t been added yet.</div>'
+      +'</div>';
+  } else {
+
+    // ── Family tree visual ──────────────────────────────────────────────
+    var familyTree='<div style="padding:0 14px;margin-bottom:16px;">'
+      +'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;display:flex;align-items:center;gap:6px;">'+msiIcon('account_tree',13,'var(--md-on-surface-dim)')+' Family tree</div>'
+      // Tree layout: Sire + Dam flank the subject horse
+      +'<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:stretch;margin-bottom:4px;">'
+      // Sire card
+      +'<div>'+pedigreeCard(pd.sire,'Sire \u2642',false)+'</div>'
+      // Center — this horse
+      +'<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;min-width:0;">'
+      +'<div style="width:2px;flex:1;background:var(--md-outline-variant);"></div>'
+      +'<div style="position:relative;">'
+      +'<div style="width:40px;height:2px;background:var(--md-outline-variant);position:absolute;top:50%;left:50%;transform:translate(-100%,-50%);"></div>'
+      +'<div style="width:40px;height:2px;background:var(--md-outline-variant);position:absolute;top:50%;left:50%;transform:translate(0,-50%);"></div>'
+      +horseAvatar(h,52)
+      +'</div>'
+      +'<div style="font-size:10px;font-weight:700;color:var(--md-primary);text-align:center;margin-top:5px;white-space:nowrap;">'+h.name+'</div>'
+      +'<div style="width:2px;flex:1;background:var(--md-outline-variant);"></div>'
+      +'</div>'
+      // Dam card
+      +'<div>'+pedigreeCard(pd.dam,'Dam \u2640',false)+'</div>'
+      +'</div></div>';
+
+    // ── Siblings ────────────────────────────────────────────────────────
+    var siblingsSection='';
+    if(pd.siblings&&pd.siblings.length){
+      siblingsSection='<div style="padding:0 14px;margin-bottom:16px;">'
+        +'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px;">'+msiIcon('group',13,'var(--md-on-surface-dim)')+' Siblings & related</div>'
+        +pd.siblings.map(function(sib){
+          return '<div style="background:var(--md-surface);border-radius:11px;border:1px solid var(--md-outline-variant);padding:10px 12px;margin-bottom:7px;display:flex;align-items:center;gap:10px;">'
+            +rHorseAvatarMini(sib.avatar,36,sib.name)
+            +'<div style="flex:1;min-width:0;">'
+            +'<div style="font-size:12px;font-weight:700;color:var(--md-on-surface);">'+sib.name+'</div>'
+            +'<div style="font-size:10px;color:var(--md-on-surface-dim);">'+sib.relation+'</div>'
+            +'<div style="font-size:11px;color:var(--md-primary);font-weight:600;margin-top:2px;">'+sib.achievement+'</div>'
+            +'</div>'
+            +'<div style="flex-shrink:0;text-align:right;">'
+            +'<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:8px;background:var(--md-tertiary-container);color:var(--md-tertiary);">'+sib.sport+'</span>'
+            +'</div></div>';
+        }).join('')
+        +'</div>';
+    }
+
+    // ── Sire performance analytics ──────────────────────────────────────
+    var sp=pd.sirePerformance;
+    var dp2=pd.damPerformance;
+    var analyticsSection='<div style="padding:0 14px;margin-bottom:14px;">'
+      +'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px;">'+msiIcon('bar_chart',13,'var(--md-on-surface-dim)')+' Bloodline performance</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">'
+      // Sire stats card
+      +'<div style="background:var(--md-surface);border-radius:12px;border:1.5px solid var(--md-outline-variant);padding:11px 12px;">'
+      +'<div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">\u2642 Sire line</div>'
+      +'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface);margin-bottom:2px;">'+pd.sire.name+'</div>'
+      +(sp.avgScore?'<div style="font-size:20px;font-weight:700;color:var(--md-primary);line-height:1.1;">'+sp.avgScore+'<span style="font-size:12px;">%</span></div><div style="font-size:10px;color:var(--md-on-surface-dim);">Avg score (GP)</div>':'')
+      +'<div style="margin-top:7px;">'
+      +'<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--md-on-surface-dim);margin-bottom:3px;"><span>Win rate</span><span style="font-weight:700;color:var(--md-secondary);">'+(Math.round(sp.winRate*100))+'%</span></div>'
+      +'<div style="height:5px;background:var(--md-outline-variant);border-radius:10px;overflow:hidden;">'
+      +'<div style="height:100%;width:'+Math.round(sp.winRate*100)+'%;background:var(--md-secondary);border-radius:10px;"></div></div>'
+      +'</div>'
+      +'<div style="font-size:10px;color:var(--md-on-surface-dim);margin-top:6px;">'+sp.totalOffspring+' registered offspring</div>'
+      +'<div style="font-size:10px;color:var(--md-on-surface-dim);">'+sp.disciplines.join(' \u00b7 ')+'</div>'
+      +'</div>'
+      // Dam stats card
+      +'<div style="background:var(--md-surface);border-radius:12px;border:1.5px solid var(--md-outline-variant);padding:11px 12px;">'
+      +'<div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">\u2640 Dam line</div>'
+      +'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface);margin-bottom:2px;">'+pd.dam.name+'</div>'
+      +(dp2.avgScore?'<div style="font-size:20px;font-weight:700;color:var(--md-error);line-height:1.1;">'+dp2.avgScore+'<span style="font-size:12px;">%</span></div><div style="font-size:10px;color:var(--md-on-surface-dim);">Avg score (GP)</div>':'')
+      +'<div style="margin-top:7px;">'
+      +'<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--md-on-surface-dim);margin-bottom:3px;"><span>Win rate</span><span style="font-weight:700;color:var(--md-secondary);">'+(Math.round(dp2.winRate*100))+'%</span></div>'
+      +'<div style="height:5px;background:var(--md-outline-variant);border-radius:10px;overflow:hidden;">'
+      +'<div style="height:100%;width:'+Math.round(dp2.winRate*100)+'%;background:var(--md-secondary);border-radius:10px;"></div></div>'
+      +'</div>'
+      +'<div style="font-size:10px;color:var(--md-on-surface-dim);margin-top:6px;">'+dp2.offspring+' offspring on record</div>'
+      +'<div style="font-size:10px;color:var(--md-on-surface-dim);">'+dp2.disciplines.join(' \u00b7 ')+'</div>'
+      +'</div></div>'
+      // Cross-analysis insight
+      +'<div style="background:var(--md-primary-container);border-radius:11px;padding:11px 13px;">'
+      +msiIcon('lightbulb',14,'var(--md-primary)')
+      +'<span style="font-size:12px;font-weight:700;color:var(--md-primary);margin-left:6px;">Bloodline insight</span>'
+      +'<div style="font-size:11px;color:var(--md-on-surface-variant);margin-top:5px;line-height:1.5;">'
+      +pd.sire.name+' \u00d7 '+pd.dam.name+' cross: '
+      +'Win rate '+(Math.round((sp.winRate+dp2.winRate)/2*100))+'% combined across '
+      +(sp.totalOffspring+dp2.offspring)+' offspring. '
+      +pd.sire.progenyNote
+      +'</div></div>'
+      +'</div>';
+
+    pedigreeTab='<div style="padding-top:14px;">'+familyTree+siblingsSection+analyticsSection+'</div>';
+  }
+
   // Health tab — role-aware with full immunizations, exams, imaging, vitals
+
   var canVaccine=anyRole('vet','manager','owner');
   var canExam=anyRole('vet');
   var canVitals=anyRole('vet','manager','staff','trainer');
   var canObs=anyRole('vet','manager','staff','trainer');
-  var canImaging=anyRole('vet','owner');
+  var canImaging=anyRole('vet','owner','trainer');
   var canGenDoc=anyRole('vet','owner');
 
   // Action bar
@@ -5305,6 +5829,122 @@ function rHorseDetail(h){
   }
 
 
+  // ── Media Tab ─────────────────────────────────────────────────────────────
+  var mediaItems=HORSE_MEDIA[h.id]||[];
+  var mediaState=window._mediaState||(window._mediaState={open:false,type:'photo',url:'',title:'',description:'',shareOpen:false,shareMediaId:null,shareSelections:{}});
+
+  function shareMedia(mediaId){
+    window._mediaState.shareOpen=true;
+    window._mediaState.shareMediaId=mediaId;
+    window._mediaState.shareSelections={};
+    rerender();
+  }
+
+  // Connections list for share sheet
+  var shareConns=[];
+  (h.owners||[]).forEach(function(o){shareConns.push({id:'owner_'+o.userId,name:o.name,role:'Owner',face:'face_2',nayNay:true});});
+  var vetPro2=BARN_PROFESSIONALS.find(function(p){return p.type==='Vet';});
+  if(vetPro2) shareConns.push({id:'vet_'+vetPro2.id,name:vetPro2.name,role:'Veterinarian',face:vetPro2.face,nayNay:vetPro2.nayNay});
+  var trainerPro2=BARN_PROFESSIONALS.find(function(p){return p.type==='Trainer';});
+  if(trainerPro2) shareConns.push({id:'trainer_'+trainerPro2.id,name:trainerPro2.name,role:'Trainer',face:trainerPro2.face,nayNay:trainerPro2.nayNay});
+
+  // Share bottom sheet
+  var shareSheet='';
+  if(mediaState.shareOpen){
+    var shareMed=mediaItems.find(function(mi){return mi.id===mediaState.shareMediaId;});
+    var connRows=shareConns.filter(function(co){return co.nayNay;}).map(function(co){
+      var sel=!!mediaState.shareSelections[co.id];
+      return '<div onclick="window._mediaState.shareSelections[\''+co.id+'\']=!window._mediaState.shareSelections[\''+co.id+'\'];rerender()" style="display:flex;align-items:center;gap:11px;padding:11px 14px;cursor:pointer;border-bottom:1px solid var(--md-outline-variant);">'
+        +'<div style="width:36px;height:36px;border-radius:50%;background:var(--md-primary-container);display:flex;align-items:center;justify-content:center;"><span class="msi" style="font-size:22px;color:var(--md-primary);line-height:1;display:inline-block;user-select:none;vertical-align:middle;">'+co.face+'</span></div>'
+        +'<div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--md-on-surface);">'+co.name+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+co.role+'</div></div>'
+        +'<div style="width:22px;height:22px;border-radius:50%;border:2px solid '+(sel?'var(--md-primary)':'var(--md-outline)')+';background:'+(sel?'var(--md-primary)':'transparent')+';display:flex;align-items:center;justify-content:center;">'
+        +(sel?'<span class="msi" style="font-size:14px;color:#fff;line-height:1;display:inline-block;user-select:none;vertical-align:middle;">check</span>':'')
+        +'</div></div>';
+    }).join('');
+    shareSheet='<div style="position:fixed;bottom:0;left:0;right:0;z-index:2000;background:rgba(0,0,0,0.5);" onclick="window._mediaState.shareOpen=false;rerender()">'
+      +'<div style="background:var(--md-surface);border-radius:20px 20px 0 0;padding:0;max-height:70vh;overflow-y:auto;" onclick="event.stopPropagation()">'
+      +'<div style="padding:14px 16px 10px;border-bottom:1px solid var(--md-outline-variant);">'
+      +'<div style="font-size:15px;font-weight:700;color:var(--md-on-surface);margin-bottom:2px;">Share media</div>'
+      +(shareMed?'<div style="font-size:12px;color:var(--md-on-surface-dim);">"'+shareMed.title+'"</div>':'')
+      +'</div>'
+      +connRows
+      +'<div style="padding:12px 14px;display:flex;gap:10px;">'
+      +'<button onclick="window._mediaState.shareOpen=false;rerender()" style="flex:1;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:var(--md-shape-md);padding:11px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface-dim);cursor:pointer;">Cancel</button>'
+      +'<button onclick="(function(){'
+        +'var sel=Object.keys(window._mediaState.shareSelections).filter(function(k){return window._mediaState.shareSelections[k];});'
+        +'if(!sel.length)return;'
+        +'var med=HORSE_MEDIA[\''+h.id+'\']&&HORSE_MEDIA[\''+h.id+'\'].find(function(mi){return mi.id===window._mediaState.shareMediaId;});'
+        +'if(med) med.sharedWith=(med.sharedWith||[]).concat(sel);'
+        // Create new thread
+        +'var newId=\'tmedia\'+Date.now();'
+        +'var names=sel.map(function(k){var c=shareConns.find(function(co){return co.id===k;});return c?c.name:k;});'
+        +'var title=\''+h.name+' · \'+(med?med.title:\'Media share\');'
+        +'MESSAGE_THREADS.unshift({id:newId,title:title,participants:names,roles:names,lastMsg:\'Shared: \'+(med?med.title:\'\'),time:\'Now\',iconBg:\'var(--md-primary-container)\',icon:\'pets\',unread:0});'
+        +'THREAD_MESSAGES[newId]=[{sender:\'barn\',name:\'Charlene G.\',role:\'Barn\',time:\'Just now\',text:\'Sharing this media with you: \'+(med?med.title:\'\'),media:{type:med?med.type:\'photo\',label:med?med.title:\'\',thumb:\'📷\',url:med?med.url:\'\',desc:med?med.description:\'\'}}];'
+        // open messages  
+        +'var vis=[\'t1\',\'t2\',\'t3\',\'t4\',\'t5\',\'t6\',\'t7\',\'t8\',newId];'
+        +'window._mediaState.shareOpen=false;'
+        +'S.selectedHorse=null;S.activeTab=\'messages\';S.selectedThread=newId;'
+        +'showToast(\'Thread started with \'+names.join(\', \'),\'check_circle\',\'success\');'
+        +'rerender();'
+      +'})()" style="flex:1;background:var(--md-primary);color:#fff;border:none;border-radius:var(--md-shape-md);padding:11px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;"><span class="msi" style="font-size:14px;color:#fff;line-height:1;display:inline-block;user-select:none;vertical-align:middle;">send</span>Start thread</button>'
+      +'</div></div></div>';
+  }
+
+  // Upload form
+  var uploadForm=mediaState.open
+    ?'<div style="background:var(--md-primary-container);border:1.5px solid var(--md-primary)44;border-radius:var(--md-shape-lg);padding:14px;margin-bottom:14px;">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:12px;display:flex;align-items:center;gap:7px;"><span class="msi" style="font-size:16px;color:var(--md-primary);line-height:1;display:inline-block;user-select:none;vertical-align:middle;">add_photo_alternate</span>Add media</div>'
+
+      +'<div style="margin-bottom:8px;"><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">Title *</label><input type="text" value="'+mediaState.title+'" oninput="window._mediaState.title=this.value" placeholder="e.g. Post-workout trot" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>'
+      +rMediaUploadButtons(mediaState)
+      +'<div style="margin-bottom:10px;"><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">Description</label><textarea oninput="window._mediaState.description=this.value" placeholder="Optional notes…" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;resize:none;box-sizing:border-box;min-height:60px;">'+mediaState.description+'</textarea></div>'
+      +'<div style="display:flex;gap:8px;">'
+      +'<button onclick="window._mediaState.open=false;rerender()" style="flex:1;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:9px;padding:10px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface-dim);cursor:pointer;">Cancel</button>'
+      +'<button onclick="(function(){if(!window._mediaState.title.trim())return;if(!HORSE_MEDIA[\''+h.id+'\'])HORSE_MEDIA[\''+h.id+'\']=[];HORSE_MEDIA[\''+h.id+'\'].unshift({id:\'med\'+Date.now(),horseId:\''+h.id+'\',type:window._mediaState.type,url:window._mediaState.url,title:window._mediaState.title,description:window._mediaState.description,date:\'Mar 16, 2026\',uploadedBy:\'You\',uploadedByRole:S.role,sharedWith:[]});window._mediaState={open:false,type:\'photo\',url:\'\',title:\'\',description:\'\',shareOpen:false,shareMediaId:null,shareSelections:{}};rerender();})()" style="flex:1;background:var(--md-primary);color:#fff;border:none;border-radius:9px;padding:10px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><span class="msi" style="font-size:14px;color:#fff;line-height:1;display:inline-block;user-select:none;vertical-align:middle;">check</span>Add</button>'
+      +'</div></div>'
+    :'';
+
+  // Media cards
+  var mediaCards=mediaItems.length
+    ?mediaItems.map(function(mi){
+      var isVideo=mi.type==='video';
+      var sharedNames=(mi.sharedWith||[]).map(function(sid){var co=shareConns.find(function(c){return c.id===sid;});return co?co.name:sid;});
+      return '<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);overflow:hidden;margin-bottom:12px;">'
+        // Image/video
+        +(mi.url?'<div style="position:relative;width:100%;padding-top:56.25%;background:var(--md-surface-variant);overflow:hidden;">'
+          +'<img src="'+mi.url+'" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;" onerror="this.style.display=\'none\'">'
+          +(isVideo?'<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:48px;height:48px;border-radius:50%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;"><span class="msi" style="font-size:28px;color:#fff;line-height:1;display:inline-block;user-select:none;vertical-align:middle;">play_arrow</span></div>':'')
+          +'</div>'
+          :'<div style="width:100%;height:140px;background:var(--md-surface-variant);display:flex;align-items:center;justify-content:center;"><span class="msi" style="font-size:40px;color:var(--md-on-surface-dim);line-height:1;display:inline-block;user-select:none;vertical-align:middle;">'+(isVideo?'videocam':'photo')+'</span></div>')
+        // Info
+        +'<div style="padding:11px 13px;">'
+        +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px;">'
+        +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+mi.title+'</div>'
+        +'<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;background:'+(isVideo?'var(--md-tertiary-container)':'var(--md-primary-container)')+';color:'+(isVideo?'var(--md-tertiary)':'var(--md-primary)')+';">'+(isVideo?'VIDEO':'PHOTO')+'</span>'
+        +'</div>'
+        +(mi.description?'<div style="font-size:12px;color:var(--md-on-surface-dim);margin-bottom:6px;line-height:1.5;">'+mi.description+'</div>':'')
+        +'<div style="display:flex;align-items:center;justify-content:space-between;">'
+        +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+mi.uploadedBy+' · '+mi.date+'</div>'
+        +(sharedNames.length?'<div style="font-size:10px;color:var(--md-primary);">Shared with '+sharedNames.join(', ')+'</div>':'')
+        +'</div>'
+        +'<div style="display:flex;gap:8px;margin-top:10px;border-top:1px solid var(--md-outline-variant);padding-top:10px;">'
+        +'<button onclick="shareMedia(\''+mi.id+'\')" style="flex:1;background:var(--md-primary-container);color:var(--md-primary);border:none;border-radius:8px;padding:8px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><span class="msi" style="font-size:13px;color:var(--md-primary);line-height:1;display:inline-block;user-select:none;vertical-align:middle;">send</span>Share</button>'
+        +'</div>'
+        +'</div></div>';
+    }).join('')
+    :'<div style="text-align:center;padding:40px 20px;color:var(--md-on-surface-dim);">'
+      +'<span class="msi" style="font-size:48px;color:var(--md-on-surface-dim);opacity:0.4;line-height:1;display:inline-block;user-select:none;vertical-align:middle;margin-bottom:12px;display:block;">photo_library</span>'
+      +'<div style="font-size:14px;font-weight:600;margin-bottom:4px;">No media yet</div>'
+      +'<div style="font-size:12px;">Add photos or videos of '+h.name+'</div>'
+      +'</div>';
+
+  var addMediaBtn='<button onclick="window._mediaState={open:true,type:\'photo\',url:\'\',title:\'\',description:\'\',shareOpen:false,shareMediaId:null,shareSelections:{}};rerender()" style="width:100%;background:var(--md-surface);border:2px dashed var(--md-outline);border-radius:var(--md-shape-md);padding:11px;font-size:13px;font-weight:600;font-family:\'DM Sans\',sans-serif;color:var(--md-primary);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:14px;"><span class="msi" style="font-size:16px;color:var(--md-primary);line-height:1;display:inline-block;user-select:none;vertical-align:middle;">add_photo_alternate</span>Add photo or video</button>';
+
+  var mediaTab='<div style="padding:14px;">'+shareSheet+uploadForm+addMediaBtn+mediaCards+'</div>';
+
+
+
   // Feed & Meds
   const reg=HORSE_REGIMENS[h.id]||{feed:[],supplements:[],medications:[],vetNotes:''};
   function regRow(item,cc,cb){return '<div style="padding:9px 0;border-bottom:1px solid var(--md-outline-variant);display:flex;gap:9px;align-items:flex-start;">'+(item.changed?'<span style="font-size:9px;font-weight:700;background:'+cb+';color:'+cc+';padding:2px 6px;border-radius:6px;flex-shrink:0;margin-top:2px;">Changed</span>':'<div style="width:8px;flex-shrink:0;"></div>')+'<div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--md-on-surface);">'+item.label+'</div><div style="font-size:12px;color:var(--md-on-surface-dim);">'+item.amount+(item.schedule?' · '+item.schedule:'')+'</div>'+(item.changeNote?'<div style="font-size:11px;color:'+cc+';margin-top:2px;line-height:1.4;">'+item.changeNote+'</div>':'')+'</div></div>';}
@@ -5373,7 +6013,7 @@ function rHorseDetail(h){
   var feedTab='<div style="padding:14px;">'+feedTabSections+'</div>';
 
 
-  const content={overview:overviewTab,health:healthTab,training:trainingTab,competitions:competitionsTab,connections:connectionsTab,feed:feedTab}[tab]||overviewTab;
+  const content={overview:overviewTab,pedigree:pedigreeTab,health:healthTab,training:trainingTab,competitions:competitionsTab,connections:connectionsTab,media:mediaTab,feed:feedTab}[tab]||overviewTab;
   return '<div style="display:flex;flex-direction:column;height:100%;">'+hero+tabBar+'<div id="horse-tab-body" style="flex:1;overflow-y:auto;">'+content+'</div></div>';
 }
 
