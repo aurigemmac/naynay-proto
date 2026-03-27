@@ -774,6 +774,9 @@ let S={
   showNotifPanel:false,selectedDate:TODAY,horseTab:'overview',
   selectedThread:null,bookingVisitId:null,
   notifyCtx:null,
+  showScanOverlay:false,
+  expandedVax:{},
+  expandedSession:null,
 };
 
 function getAssign(date){if(!S.assignments[date])S.assignments[date]=makeDefaultAssignments();return S.assignments[date];}
@@ -974,7 +977,9 @@ function rerender(){
   const ca=app.querySelector('#content-area');
   ca.style.background=t.BG;ca.style.maxHeight='';ca.style.flex='1';
   ca.style.padding=getPad(isVet,showHorse);
-  const saved=ca.scrollTop;ca.innerHTML=getContent(isVet,isMgr,showHorse);ca.scrollTop=saved;
+  const saved=ca.scrollTop;const htb=ca.querySelector('#horse-tab-body');const htbSaved=htb?htb.scrollTop:0;
+  ca.innerHTML=getContent(isVet,isMgr,showHorse);ca.scrollTop=saved;
+  const htb2=ca.querySelector('#horse-tab-body');if(htb2)htb2.scrollTop=htbSaved;
 }
 function getPad(isVet,showHorse){
   if(isVet&&S.vetSignedIn&&S.vetView==='messages')return '0';
@@ -1653,9 +1658,8 @@ function rServiceForm(id){
     </div>
 
     <div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:0 14px;margin-bottom:12px;">
-      ${tog('Can be add-on','Can be bundled with another service','canBeAddon',sc.canBeAddon)}
-      ${tog('Is default','Included by default in appointments','isDefault',sc.isDefault)}
       ${tog('Owner can request','Clients can request this service directly','canBeRequestedByOwner',sc.canBeRequestedByOwner)}
+      ${tog('Can be add-on','Can be bundled with another service','canBeAddon',sc.canBeAddon)}
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
@@ -1731,16 +1735,19 @@ function vetSignIn(){S.vetSignedIn=true;S.vetView='home';rerender();}
 const QUICK_ACTIONS={
   'document-vitals':      {id:'document-vitals',       roles:['staff','manager','vet','trainer'],label:'Document Vitals',         icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',              color:'var(--md-primary)', bg:'var(--md-primary-container)'},
   'document-observation': {id:'document-observation',  roles:['staff','manager','trainer'],     label:'Document Observation',    icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg>',   color:'var(--md-error)', bg:'var(--md-error-container)'},
-  'document-vaccine':     {id:'document-vaccine',      roles:['manager','vet'],                 label:'Document Vaccine',        icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M7 10l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="6" width="11" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M16 10h2M16 14h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',                  color:'var(--md-secondary)', bg:'var(--md-secondary-container)'},
+  'document-vaccine':     {id:'document-vaccine',      roles:['manager','vet','owner'],                 label:'Document Vaccine',        icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M7 10l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="6" width="11" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M16 10h2M16 14h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',                  color:'var(--md-secondary)', bg:'var(--md-secondary-container)'},
   'upload-lab':           {id:'upload-lab',            roles:['vet','owner'],                   label:'Upload Lab Test',         icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 3v8l-3 5a2 2 0 001.7 3h10.6A2 2 0 0017 16l-3-5V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 3h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7 13h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',   color:'var(--md-tertiary)', bg:'var(--md-tertiary-container)'},
-  'request-barn-visit':   {id:'request-barn-visit',    roles:['manager','vet','trainer'],        label:'Request Barn Visit',      icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 22V12h6v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',                                                            color:'var(--md-tertiary)', bg:'var(--md-tertiary-container)'},
+  'request-barn-visit':   {id:'request-barn-visit',    roles:['manager','vet','trainer'],        label:'Request Visit',      icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 22V12h6v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',                                                            color:'var(--md-tertiary)', bg:'var(--md-tertiary-container)'},
   'create-regimen':       {id:'create-regimen',        roles:['trainer'],                        label:'Create Training Regimen', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',                                                               color:'var(--md-tertiary)', bg:'var(--md-tertiary-container)'},
   'request-appointment':  {id:'request-appointment',   roles:['owner'],                          label:'Request Appointment',     icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', color:'var(--md-warning)', bg:'var(--md-warning-container)'},
+  'document-exam':  {id:'document-exam',  roles:['vet'], label:'Document Exam', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="9" y="3" width="6" height="4" rx="1" stroke="currentColor" stroke-width="1.8"/><path d="M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>', bg:'var(--md-secondary-container)',color:'var(--md-secondary)'},
+  'upload-imaging': {id:'upload-imaging', roles:['vet','owner'], label:'Upload Imaging', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.8"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>', bg:'var(--md-tertiary-container)',color:'var(--md-tertiary)'}
 };
 
 function quickActionsBar(role){
   const t=TH;
-  const allowed=Object.values(QUICK_ACTIONS).filter(a=>a.roles.includes(role));
+  var activeRoles=S.roles||[role];
+  const allowed=Object.values(QUICK_ACTIONS).filter(a=>a.roles.some(function(r){return activeRoles.includes(r);}));
   if(!allowed.length)return '';
   const cols=allowed.length<=2?allowed.length:2;
   return `<div style="margin-bottom:14px;">
@@ -1898,7 +1905,37 @@ function rQuickActionForm(actionId){
       <div style="margin-bottom:12px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Result</label><select style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"><option>Negative</option><option>Positive</option><option>Pending</option><option>Inconclusive</option></select></div>
       <div style="margin-bottom:12px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Attach report</label><div style="background:var(--md-surface-variant);border:2px dashed var(--md-outline);border-radius:10px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="var(--md-primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><polyline points="17 8 12 3 7 8" stroke="var(--md-primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="3" x2="12" y2="15" stroke="var(--md-primary)" stroke-width="1.5" stroke-linecap="round"/></svg><span style="font-size:12px;font-weight:600;color:var(--md-primary);">Tap to upload PDF or image</span></div></div>
       ${notesField}`;
-  }
+  } else if(actionId==='document-exam'){
+    formBody=horseSelect+dateField+`
+      <div style="margin-bottom:12px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Exam type</label>
+      <select style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;">
+        <option>Well Visit</option><option>Sick Visit</option><option>Lameness Exam</option><option>Dental Exam</option><option>Ophthalmology Exam</option><option>Reproductive Evaluation</option><option>Chiropractic Exam</option><option>Prepurchase Exam</option>
+      </select></div>
+      <div style="margin-bottom:12px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Findings</label>
+      <textarea rows="3" placeholder="Clinical findings..." style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;resize:none;box-sizing:border-box;"></textarea></div>
+      <div style="margin-bottom:12px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Diagnosis</label>
+      <input type="text" placeholder="Diagnosis or assessment..." style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>
+      <div style="margin-bottom:12px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Treatment & Recommendations</label>
+      <textarea rows="2" placeholder="Treatment plan, medications, restrictions..." style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;resize:none;box-sizing:border-box;"></textarea></div>
+      <div style="margin-bottom:12px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Follow-up date</label>
+      <input type="date" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>`;
+  } else if(actionId==='upload-imaging'){
+    formBody=horseSelect+dateField+`
+      <div style="margin-bottom:12px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Imaging type</label>
+      <select style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;">
+        <option>X-Ray (Radiograph)</option><option>Ultrasound</option><option>MRI</option><option>CT Scan</option><option>Endoscopy</option><option>Nuclear Scintigraphy</option>
+      </select></div>
+      <div style="margin-bottom:12px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Body region</label>
+      <select style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;">
+        <option>Left Front</option><option>Right Front</option><option>Left Hind</option><option>Right Hind</option><option>Spine / Back</option><option>Abdomen</option><option>Head / Neck</option><option>Chest</option><option>Full Body</option>
+      </select></div>
+      <div style="margin-bottom:12px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Findings</label>
+      <textarea rows="3" placeholder="Imaging findings and interpretation..." style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;resize:none;box-sizing:border-box;"></textarea></div>
+      <div style="margin-bottom:14px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Attach file</label>
+      <div style="border:2px dashed var(--md-outline);border-radius:10px;padding:20px;text-align:center;background:var(--md-surface-variant);">
+        ${msiIcon('upload_file',28,'var(--md-primary)')}<div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:6px;">Tap to attach DICOM, JPEG, or PDF</div>
+      </div></div>`;
+    }
 
   return backBtn+`<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);padding:14px;">${formBody}${saveBtn}</div>`;
 }
@@ -3601,6 +3638,16 @@ function showScanOverlay(){
   S.showScanOverlay=true;
   rerender();
 }
+function toggleSession(key){
+  S.expandedSession=S.expandedSession===key?null:key;
+  rerender();
+}
+function toggleSessionEl(el){
+  var node=el;
+  while(node&&!node.dataset.key)node=node.parentElement;
+  if(node)toggleSession(node.dataset.key);
+}
+
 function simulateScan(passId){
   if(!S.ownerPassScanState)S.ownerPassScanState={};
   const cur=S.ownerPassScanState[passId]||0;
@@ -3650,18 +3697,374 @@ function shiftDate(d){const dt=new Date(S.selectedDate+'T00:00:00');dt.setDate(d
 const HORSE_HEALTH={
   'h1':{
     vitals:[{date:'Mar 16',HR:40,RR:14,temp:99.8,gut:'Normal',notes:'Routine pre-training check.'},{date:'Feb 28',HR:44,RR:16,temp:100.2,gut:'Normal',notes:'Mild elevation post-work.'}],
-    vaccinations:[{name:'EEE/WEE',date:'Feb 12, 2026',next:'Feb 2027',vet:'Dr. Goudz'},{name:'Tetanus',date:'Feb 12, 2026',next:'Feb 2027',vet:'Dr. Goudz'},{name:'Influenza/Rhino',date:'Jan 5, 2026',next:'Jul 2026',vet:'Dr. Goudz'},{name:'West Nile',date:'Feb 12, 2026',next:'Feb 2027',vet:'Dr. Goudz'},{name:'Rabies',date:'Mar 4, 2026',next:'Mar 2027',vet:'Dr. Goudz'}],
-    labs:[{name:'Coggins (EIA)',date:'Jan 18, 2026',result:'Negative',lab:'EquiPath',acc:'EQ-2026-003812'}],
+    vaccinations:{
+      core:[
+        {name:'EEE/WEE',         date:'Feb 12, 2026',next:'Feb 2027', vet:'Dr. Goudz',brand:'Prestige V',         lot:'A2241-EW',  confirmed:true},
+        {name:'Tetanus',          date:'Feb 12, 2026',next:'Feb 2027', vet:'Dr. Goudz',brand:'Tetanus Toxoid',    lot:'A2241-TT',  confirmed:true},
+        {name:'Influenza / Rhino',date:'Jan 5, 2026',next:'Jul 2026',  vet:'Dr. Goudz',brand:'Fluvac Innovator', lot:'B0912-IR',  confirmed:true, alert:true},
+        {name:'West Nile Virus',  date:'Feb 12, 2026',next:'Feb 2027', vet:'Dr. Goudz',brand:'West Nile Innovator',lot:'A2241-WN', confirmed:true},
+        {name:'Rabies',           date:'Mar 4, 2026', next:'Mar 2027', vet:'Dr. Goudz',brand:'IMRAB Equine',      lot:'0623-afd-161',confirmed:true},
+      ],
+      riskBased:[
+        {name:'Coggins / EIA',    date:'Jan 18, 2026',next:'Jan 2027', vet:'Dr. Goudz',brand:'IDEXX',             lot:'EQ-2026-003812',confirmed:true,isLabTest:true},
+        {name:'Strangles',        date:'Oct 10, 2025',next:'Oct 2026', vet:'Dr. Goudz',brand:'Pinnacle I.N.',     lot:'C0910-ST',  confirmed:true},
+      ],
+    },
+    labs:[{name:'Coggins (EIA)',date:'Jan 18, 2026',result:'Negative',lab:'EquiPath',acc:'EQ-2026-003812',confirmed:true}],
+    exams:[{type:'Lameness Exam',date:'Mar 16, 2026',vet:'Dr. Goudz',findings:'Mild inflammation RF fetlock. Grade 1 lameness.',diagnosis:'Grade 1 lameness RF',treatment:'Bute 1g daily x7 days. Reduce workload.',followUp:'Mar 23, 2026'}],
+    imaging:[],
     meds:[{name:'Bute 1g paste',schedule:'Once daily AM',start:'Mar 16',end:'Mar 22',active:true}],
     visits:[{type:'Lameness check',date:'Mar 16, 2026',vet:'Dr. Goudz',outcome:'Mild inflammation. Bute prescribed.'}],
   },
+  'rv':{
+    vitals:[{date:'Mar 15',HR:40,RR:14,temp:99.4,gut:'Normal',notes:'Post-colic check. Gut sounds restored.'},{date:'Mar 14',HR:42,RR:14,temp:100.1,gut:'Reduced right',notes:'Colic follow-up. Monitoring closely.'}],
+    vaccinations:{core:[{name:'EEE/WEE',date:'Nov 3, 2025',next:'Nov 2026',vet:'Dr. Goudz',brand:'Prestige V',lot:'C1109-EW',confirmed:true},{name:'Tetanus',date:'Nov 3, 2025',next:'Nov 2026',vet:'Dr. Goudz',brand:'Tetanus Toxoid',lot:'C1109-TT',confirmed:true},{name:'Influenza/Rhino',date:'Dec 15, 2025',next:'Jun 2026',vet:'Dr. Goudz',brand:'Fluvac Innovator',lot:'D1512-IR',confirmed:true,alert:true},{name:'West Nile Virus',date:'Nov 3, 2025',next:'Nov 2026',vet:'Dr. Goudz',brand:'West Nile Innovator',lot:'C1109-WN',confirmed:true},{name:'Rabies',date:'Nov 3, 2025',next:'Nov 2026',vet:'Dr. Goudz',brand:'IMRAB Equine',lot:'0521-bcd-099',confirmed:true}],riskBased:[]},
+    labs:[{name:'Coggins (EIA)',date:'Feb 2, 2026',result:'Negative',lab:'EquiPath',acc:'EQ-2026-007441',confirmed:true}],
+    exams:[{type:'Colic Exam',date:'Mar 14, 2026',vet:'Dr. Goudz',findings:'Mild impaction colic. Gut sounds reduced right side.',treatment:'IV fluids and Banamine. Soaked hay 48h.',followUp:'Mar 22, 2026'}],
+    imaging:[],meds:[],visits:[{type:'Emergency colic call',date:'Mar 14, 2026',vet:'Dr. Goudz',outcome:'IV fluids and Banamine. Resolved. Follow-up Mar 22.'}],
+  },
   'h3':{
     vitals:[{date:'Mar 16',HR:38,RR:12,temp:99.6,gut:'Normal',notes:'Pre-farrier check.'}],
-    vaccinations:[{name:'EEE/WEE',date:'Nov 3, 2025',next:'Nov 2026',vet:'Dr. Goudz'},{name:'Influenza/Rhino',date:'Dec 15, 2025',next:'Jun 2026',vet:'Dr. Goudz'},{name:'Rabies',date:'Nov 3, 2025',next:'Nov 2026',vet:'Dr. Goudz'}],
-    labs:[{name:'Coggins (EIA)',date:'Feb 2, 2026',result:'Negative',lab:'EquiPath',acc:'EQ-2026-007441'}],
-    meds:[],visits:[],
+    vaccinations:{
+      core:[
+        {name:'EEE/WEE',         date:'Nov 3, 2025', next:'Nov 2026', vet:'Dr. Goudz',brand:'Prestige V',         lot:'C1109-EW',  confirmed:true},
+        {name:'Tetanus',          date:'Nov 3, 2025', next:'Nov 2026', vet:'Dr. Goudz',brand:'Tetanus Toxoid',    lot:'C1109-TT',  confirmed:true},
+        {name:'Influenza / Rhino',date:'Dec 15, 2025',next:'Jun 2026', vet:'Dr. Goudz',brand:'Fluvac Innovator', lot:'D1512-IR',  confirmed:true, alert:true},
+        {name:'West Nile Virus',  date:'Nov 3, 2025', next:'Nov 2026', vet:'Dr. Goudz',brand:'West Nile Innovator',lot:'C1109-WN', confirmed:true},
+        {name:'Rabies',           date:'Nov 3, 2025', next:'Nov 2026', vet:'Dr. Goudz',brand:'IMRAB Equine',      lot:'0521-bcd-099',confirmed:true},
+      ],
+      riskBased:[
+        {name:'Coggins / EIA',    date:'Feb 2, 2026', next:'Feb 2027', vet:'Dr. Goudz',brand:'IDEXX',             lot:'EQ-2026-007441',confirmed:true,isLabTest:true},
+      ],
+    },
+    labs:[{name:'Coggins (EIA)',date:'Feb 2, 2026',result:'Negative',lab:'EquiPath',acc:'EQ-2026-007441',confirmed:true}],
+    exams:[],
+    imaging:[],
+    meds:[],
+    visits:[],
   },
 };
+
+const HORSE_TRAINING_HISTORY={
+  'rv':[
+    {date:'Mar 16',dateISO:'2026-03-16',type:'Dressage',duration:55,intensity:4,trainer:'Alyse',skills:{rhythm:7.5,suppleness:7,contact:7,impulsion:7.5,straightness:6.5,collection:7},tqs:7.1,focus:['Half-pass','Shoulder-in'],notes:'Good engagement. Half-pass left still drifting.',env:{temp:52,humidity:58,footing:'Good',weather:'Cloudy'},feedChange:false},
+    {date:'Mar 14',dateISO:'2026-03-14',type:'Dressage',duration:50,intensity:3,trainer:'Alyse',skills:{rhythm:7,suppleness:7,contact:6.5,impulsion:7,straightness:7,collection:6.5},tqs:6.8,focus:['Canter transitions','Lengthening'],notes:'Relaxed session. Lengthenings improving.',env:{temp:48,humidity:62,footing:'Good',weather:'Sunny'},feedChange:false},
+    {date:'Mar 11',dateISO:'2026-03-11',type:'Hack',duration:40,intensity:2,trainer:'Alyse',skills:{rhythm:7.5,suppleness:7.5,contact:7,impulsion:6,straightness:7,collection:null},tqs:7.0,focus:['Relaxation','Forward'],notes:'Good recovery hack. Very willing.',env:{temp:55,humidity:50,footing:'Soft',weather:'Sunny'},feedChange:false},
+    {date:'Mar 9',dateISO:'2026-03-09',type:'Dressage',duration:55,intensity:4,trainer:'Alyse',skills:{rhythm:7,suppleness:6.5,contact:6.5,impulsion:7,straightness:6.5,collection:6.5},tqs:6.7,focus:['Piaffe prep','Collection'],notes:'Tense in warm-up. Settled mid-session.',env:{temp:67,humidity:72,footing:'Good',weather:'Humid'},feedChange:false},
+    {date:'Mar 7',dateISO:'2026-03-07',type:'Dressage',duration:60,intensity:4,trainer:'Alyse',skills:{rhythm:7.5,suppleness:7.5,contact:7,impulsion:7.5,straightness:7,collection:7},tqs:7.3,focus:['Half-pass','Travers'],notes:'Best session this week. Very through.',env:{temp:54,humidity:55,footing:'Good',weather:'Sunny'},feedChange:false},
+    {date:'Mar 5',dateISO:'2026-03-05',type:'Flat',duration:45,intensity:3,trainer:'Alyse',skills:{rhythm:7,suppleness:7,contact:7,impulsion:6.5,straightness:7,collection:6.5},tqs:6.8,focus:['Connection','Rhythm'],notes:'Maintenance session ahead of show prep.',env:{temp:58,humidity:60,footing:'Good',weather:'Cloudy'},feedChange:false},
+    {date:'Mar 2',dateISO:'2026-03-02',type:'Dressage',duration:55,intensity:4,trainer:'Alyse',skills:{rhythm:7.5,suppleness:7,contact:7,impulsion:7.5,straightness:7,collection:7},tqs:7.2,focus:['Test run','Medium trot'],notes:'Full test walkthrough. Solid.',env:{temp:50,humidity:52,footing:'Good',weather:'Sunny'},feedChange:false},
+    {date:'Feb 27',dateISO:'2026-02-27',type:'Dressage',duration:50,intensity:4,trainer:'Alyse',skills:{rhythm:7,suppleness:6.5,contact:6.5,impulsion:7,straightness:6.5,collection:6.5},tqs:6.7,focus:['Canter work','Renvers'],notes:'Slightly stiff on right rein.',env:{temp:45,humidity:65,footing:'Soft',weather:'Rainy'},feedChange:false},
+    {date:'Feb 24',dateISO:'2026-02-24',type:'Hack',duration:35,intensity:2,trainer:'Alyse',skills:{rhythm:7.5,suppleness:7.5,contact:7,impulsion:6,straightness:7,collection:null},tqs:7.0,focus:['Recovery'],notes:'Easy trail hack. Good mental reset.',env:{temp:56,humidity:48,footing:'Good',weather:'Sunny'},feedChange:false},
+    {date:'Feb 21',dateISO:'2026-02-21',type:'Dressage',duration:60,intensity:5,trainer:'Alyse',skills:{rhythm:8,suppleness:7.5,contact:7.5,impulsion:8,straightness:7.5,collection:7.5},tqs:7.7,focus:['Competition prep','Full test'],notes:'Excellent session. Best scores yet on collection.',env:{temp:53,humidity:50,footing:'Good',weather:'Sunny'},feedChange:true,feedNote:'Switched to competition feed mix'},
+    {date:'Feb 18',dateISO:'2026-02-18',type:'Dressage',duration:55,intensity:4,trainer:'Alyse',skills:{rhythm:7.5,suppleness:7,contact:7,impulsion:7.5,straightness:7,collection:7},tqs:7.2,focus:['Extended trot','Half-pass'],notes:'Very consistent. Half-pass right improving.',env:{temp:58,humidity:55,footing:'Good',weather:'Cloudy'},feedChange:false},
+    {date:'Feb 15',dateISO:'2026-02-15',type:'Flat',duration:45,intensity:3,trainer:'Alyse',skills:{rhythm:7,suppleness:7,contact:6.5,impulsion:7,straightness:7,collection:6.5},tqs:6.8,focus:['Warm-up quality','Transitions'],notes:'Maintenance. Good work ethic.',env:{temp:47,humidity:70,footing:'Soft',weather:'Rainy'},feedChange:false},
+  ],
+  'h3':[
+    {date:'Mar 16',dateISO:'2026-03-16',type:'Dressage',duration:40,intensity:3,trainer:'Alyse',skills:{rhythm:7,suppleness:6.5,contact:6.5,impulsion:7,straightness:6.5,collection:null},tqs:6.7,focus:['Training Level','Forward trot'],notes:'Good energy. Still building connection.',env:{temp:52,humidity:58,footing:'Good',weather:'Cloudy'},feedChange:false},
+    {date:'Mar 14',dateISO:'2026-03-14',type:'Flat',duration:35,intensity:3,trainer:'Alyse',skills:{rhythm:7,suppleness:7,contact:6.5,impulsion:6.5,straightness:6.5,collection:null},tqs:6.5,focus:['20m circles','Trot-canter'],notes:'Trot-canter transitions getting cleaner.',env:{temp:48,humidity:62,footing:'Good',weather:'Sunny'},feedChange:false},
+    {date:'Mar 11',dateISO:'2026-03-11',type:'Hack',duration:30,intensity:2,trainer:'Alyse',skills:{rhythm:7,suppleness:7,contact:6.5,impulsion:6,straightness:7,collection:null},tqs:6.7,focus:['Relaxation'],notes:'Very relaxed. Good for confidence.',env:{temp:55,humidity:50,footing:'Soft',weather:'Sunny'},feedChange:false},
+    {date:'Mar 9',dateISO:'2026-03-09',type:'Dressage',duration:40,intensity:3,trainer:'Alyse',skills:{rhythm:6.5,suppleness:6,contact:6,impulsion:6.5,straightness:6,collection:null},tqs:6.2,focus:['Free walk','Stretchy circle'],notes:'Tense. Hot humid day affected focus.',env:{temp:71,humidity:78,footing:'Good',weather:'Humid'},feedChange:false},
+    {date:'Mar 7',dateISO:'2026-03-07',type:'Dressage',duration:45,intensity:3,trainer:'Alyse',skills:{rhythm:7,suppleness:7,contact:6.5,impulsion:7,straightness:6.5,collection:null},tqs:6.8,focus:['Lengthening','Rhythm'],notes:'Nice improvement from Monday.',env:{temp:54,humidity:55,footing:'Good',weather:'Sunny'},feedChange:false},
+    {date:'Mar 4',dateISO:'2026-03-04',type:'Flat',duration:35,intensity:2,trainer:'Alyse',skills:{rhythm:7,suppleness:6.5,contact:6.5,impulsion:6.5,straightness:6.5,collection:null},tqs:6.5,focus:['Walk work','Halt-trot'],notes:'Quiet session. Focused on correctness.',env:{temp:60,humidity:52,footing:'Good',weather:'Sunny'},feedChange:false},
+    {date:'Feb 28',dateISO:'2026-02-28',type:'Dressage',duration:40,intensity:3,trainer:'Alyse',skills:{rhythm:7,suppleness:6.5,contact:6.5,impulsion:7,straightness:6.5,collection:null},tqs:6.7,focus:['Test prep','First Level intro'],notes:'Tried some First Level movements. Promising.',env:{temp:52,humidity:58,footing:'Good',weather:'Cloudy'},feedChange:false},
+    {date:'Feb 25',dateISO:'2026-02-25',type:'Hack',duration:30,intensity:2,trainer:'Alyse',skills:{rhythm:7,suppleness:7,contact:6.5,impulsion:6,straightness:7,collection:null},tqs:6.7,focus:['Mental break'],notes:'Easy trail. Very relaxed and happy.',env:{temp:58,humidity:48,footing:'Good',weather:'Sunny'},feedChange:false},
+    {date:'Feb 22',dateISO:'2026-02-22',type:'Dressage',duration:40,intensity:3,trainer:'Alyse',skills:{rhythm:7,suppleness:7,contact:7,impulsion:7,straightness:7,collection:null},tqs:7.0,focus:['Connection','Rhythm'],notes:'Best session in weeks.',env:{temp:54,humidity:50,footing:'Good',weather:'Sunny'},feedChange:true,feedNote:'Added electrolytes'},
+    {date:'Feb 19',dateISO:'2026-02-19',type:'Flat',duration:35,intensity:3,trainer:'Alyse',skills:{rhythm:6.5,suppleness:6.5,contact:6.5,impulsion:6.5,straightness:6.5,collection:null},tqs:6.5,focus:['Basics'],notes:'Average session. Tired from show weekend.',env:{temp:50,humidity:60,footing:'Soft',weather:'Overcast'},feedChange:false},
+  ],
+};
+
+// ── HORSE COMPETITION HISTORY ──────────────────────────────────────────────
+// score = percentage (dressage), placement = 'Nth of N'
+// trainingWeek = sessions + avgTQS in 7 days before comp
+// feedChange = any feed change in preceding 14 days
+const HORSE_COMPETITION_HISTORY={
+  'rv':[
+    {
+      id:'rc1',date:'Mar 28, 2026',dateISO:'2026-03-28',
+      event:'Tri-State Spring Classic',venue:'Stonegate Equestrian Park',location:'Millbrook, NY',
+      test:'Third Level Test 1',level:'Third Level',
+      score:67.4,placement:'3rd',placementOf:11,
+      judge:'Janet Williams',
+      remarks:'Good rhythm and suppleness. Half-pass needs more sideways. Collection developing nicely.',
+      coefficients:{gaits:7.0,submission:6.5,perspective:6.5},
+      weather:{temp:54,humidity:58,conditions:'Partly Cloudy'},
+      trainingWeek:{sessions:5,avgTQS:7.2},
+      feedChange:false,
+      passId:'ep2',
+    },
+    {
+      id:'rc2',date:'Feb 22, 2026',dateISO:'2026-02-22',
+      event:'Capital Region Winter Classic',venue:'Waterford Equestrian',location:'Waterford, NY',
+      test:'Third Level Test 1',level:'Third Level',
+      score:69.1,placement:'1st',placementOf:9,
+      judge:'Robert Ames',
+      remarks:'Excellent engagement throughout. Extended trot was the highlight. Half-pass right improved significantly.',
+      coefficients:{gaits:7.5,submission:7.0,perspective:7.0},
+      weather:{temp:48,humidity:52,conditions:'Sunny'},
+      trainingWeek:{sessions:5,avgTQS:7.4},
+      feedChange:true,feedNote:'Competition feed mix introduced Feb 21',
+    },
+    {
+      id:'rc3',date:'Jan 18, 2026',dateISO:'2026-01-18',
+      event:'Empire State Winter Series I',venue:'Albany Equestrian Center',location:'Albany, NY',
+      test:'Third Level Test 1',level:'Third Level',
+      score:65.8,placement:'2nd',placementOf:8,
+      judge:'Susan Pauley',
+      remarks:'Steady and reliable. Canter work strong. Travers needs more angle. Overall solid test.',
+      coefficients:{gaits:6.5,submission:6.5,perspective:6.5},
+      weather:{temp:38,humidity:70,conditions:'Overcast'},
+      trainingWeek:{sessions:4,avgTQS:6.9},
+      feedChange:false,
+    },
+    {
+      id:'rc4',date:'Nov 9, 2025',dateISO:'2025-11-09',
+      event:'Fall Classic at Stonegate',venue:'Stonegate Equestrian Park',location:'Millbrook, NY',
+      test:'Second Level Test 3',level:'Second Level',
+      score:70.2,placement:'1st',placementOf:7,
+      judge:'Carol Sherwood',
+      remarks:'Lovely connection and throughness. Flying changes clean. Ready to move up.',
+      coefficients:{gaits:7.0,submission:7.5,perspective:7.0},
+      weather:{temp:52,humidity:55,conditions:'Sunny'},
+      trainingWeek:{sessions:5,avgTQS:7.5},
+      feedChange:false,
+    },
+    {
+      id:'rc5',date:'Sep 27, 2025',dateISO:'2025-09-27',
+      event:'Hudson Valley Dressage Festival',venue:'Rip Van Winkle Farm',location:'Catskill, NY',
+      test:'Second Level Test 3',level:'Second Level',
+      score:68.5,placement:'2nd',placementOf:12,
+      judge:'Lisa Chen',
+      remarks:'Good overall. Rider position affects collection. Shoulder-in both directions clean.',
+      coefficients:{gaits:7.0,submission:6.5,perspective:7.0},
+      weather:{temp:71,humidity:65,conditions:'Warm/Humid'},
+      trainingWeek:{sessions:4,avgTQS:7.0},
+      feedChange:false,
+    },
+    {
+      id:'rc6',date:'Aug 16, 2025',dateISO:'2025-08-16',
+      event:'Late Summer Dressage Classic',venue:'Green Acres EC',location:'Rhinebeck, NY',
+      test:'Second Level Test 1',level:'Second Level',
+      score:64.3,placement:'4th',placementOf:10,
+      judge:'William Moore',
+      remarks:'Horse appeared tense early. Settled by canter work. Hot conditions affected focus.',
+      coefficients:{gaits:6.5,submission:6.0,perspective:6.5},
+      weather:{temp:88,humidity:80,conditions:'Hot/Sunny'},
+      trainingWeek:{sessions:3,avgTQS:6.5},
+      feedChange:false,
+    },
+    {
+      id:'rc7',date:'Jun 7, 2025',dateISO:'2025-06-07',
+      event:'Spring Valley Classic',venue:'Millbrook Equestrian',location:'Millbrook, NY',
+      test:'Second Level Test 1',level:'Second Level',
+      score:66.8,placement:'2nd',placementOf:8,
+      judge:'Janet Williams',
+      remarks:'Improving consistency. Lateral work becoming more established. Good effort.',
+      coefficients:{gaits:7.0,submission:6.5,perspective:6.5},
+      weather:{temp:65,humidity:55,conditions:'Sunny'},
+      trainingWeek:{sessions:4,avgTQS:7.1},
+      feedChange:false,
+    },
+  ],
+  'h3':[
+    {
+      id:'lc1',date:'Mar 28, 2026',dateISO:'2026-03-28',
+      event:'Tri-State Spring Classic',venue:'Stonegate Equestrian Park',location:'Millbrook, NY',
+      test:'Training Level Test 3',level:'Training Level',
+      score:66.9,placement:'4th',placementOf:14,
+      judge:'Robert Ames',
+      remarks:'Nice rhythm in trot. Free walk needs more overtrack. Transitions improving. Good effort for young horse.',
+      coefficients:{gaits:6.5,submission:6.5,perspective:7.0},
+      weather:{temp:54,humidity:58,conditions:'Partly Cloudy'},
+      trainingWeek:{sessions:4,avgTQS:6.9},
+      feedChange:false,
+      passId:'ep1',
+    },
+    {
+      id:'lc2',date:'Feb 22, 2026',dateISO:'2026-02-22',
+      event:'Capital Region Winter Classic',venue:'Waterford Equestrian',location:'Waterford, NY',
+      test:'Training Level Test 2',level:'Training Level',
+      score:68.4,placement:'2nd',placementOf:11,
+      judge:'Susan Pauley',
+      remarks:'Lovely forward trot. Canter quality improving. Free walk showing more relaxation.',
+      coefficients:{gaits:7.0,submission:6.5,perspective:7.0},
+      weather:{temp:48,humidity:52,conditions:'Sunny'},
+      trainingWeek:{sessions:4,avgTQS:7.0},
+      feedChange:true,feedNote:'Electrolytes added Feb 22',
+    },
+    {
+      id:'lc3',date:'Jan 11, 2026',dateISO:'2026-01-11',
+      event:'Empire State Winter Series I',venue:'Albany Equestrian Center',location:'Albany, NY',
+      test:'Training Level Test 1',level:'Training Level',
+      score:64.2,placement:'5th',placementOf:13,
+      judge:'Carol Sherwood',
+      remarks:'Young horse showing promise. Some tension affected scores. Good basics present.',
+      coefficients:{gaits:6.5,submission:6.0,perspective:6.5},
+      weather:{temp:35,humidity:72,conditions:'Cold/Overcast'},
+      trainingWeek:{sessions:3,avgTQS:6.4},
+      feedChange:false,
+    },
+    {
+      id:'lc4',date:'Oct 18, 2025',dateISO:'2025-10-18',
+      event:'Fall Classic at Stonegate',venue:'Stonegate Equestrian Park',location:'Millbrook, NY',
+      test:'Training Level Test 1',level:'Training Level',
+      score:62.8,placement:'6th',placementOf:15,
+      judge:'Lisa Chen',
+      remarks:'First recognized show. Nervous but game. Good gaits — needs more relaxation. Promising mare.',
+      coefficients:{gaits:7.0,submission:5.5,perspective:6.5},
+      weather:{temp:60,humidity:50,conditions:'Sunny'},
+      trainingWeek:{sessions:3,avgTQS:6.3},
+      feedChange:false,
+    },
+  ],
+};
+
+// ── EXTENDED HORSE DATA ──────────────────────────────────────────────────────
+
+Object.assign(HORSE_HEALTH,{
+  'h2':{
+    vitals:[{date:'Mar 10',HR:42,RR:14,temp:99.9,gut:'Normal',notes:'Bold as ever. Good condition.'},{date:'Feb 20',HR:40,RR:13,temp:99.6,gut:'Normal',notes:'Pre-farrier check.'}],
+    vaccinations:{core:[{name:'EEE/WEE',date:'Feb 12, 2026',next:'Feb 2027',vet:'Dr. Goudz',brand:'Prestige V',lot:'EW-H2',confirmed:true},{name:'Tetanus',date:'Feb 12, 2026',next:'Feb 2027',vet:'Dr. Goudz',brand:'Tetanus Toxoid',lot:'TT-H2',confirmed:true},{name:'Influenza/Rhino',date:'Jan 5, 2026',next:'Jul 2026',vet:'Dr. Goudz',brand:'Fluvac Innovator',lot:'IR-H2',confirmed:true,alert:true},{name:'West Nile Virus',date:'Feb 12, 2026',next:'Feb 2027',vet:'Dr. Goudz',brand:'West Nile Innovator',lot:'WN-H2',confirmed:true},{name:'Rabies',date:'Mar 4, 2026',next:'Mar 2027',vet:'Dr. Goudz',brand:'IMRAB Equine',lot:'R-H2',confirmed:true}],riskBased:[{name:'Coggins / EIA',date:'Jan 18, 2026',next:'Jan 2027',vet:'Dr. Goudz',brand:'IDEXX',lot:'--',confirmed:true,isLabTest:true}]},
+    labs:[{name:'Coggins (EIA)',date:'Jan 18, 2026',result:'Negative',lab:'EquiPath',acc:'EQ-2026-003820',confirmed:true}],
+    exams:[{type:'Well Visit',date:'Feb 28, 2026',vet:'Dr. Goudz',findings:'Good weight and coat. Feet excellent.',treatment:'No action needed.',followUp:null}],
+    imaging:[],meds:[],visits:[{type:'Annual wellness',date:'Feb 28, 2026',vet:'Dr. Goudz',outcome:'All clear. Vaccines updated.'}],
+  },
+  'h4':{
+    vitals:[{date:'Mar 8',HR:36,RR:12,temp:99.2,gut:'Normal',notes:'Metabolic issue stable.'},{date:'Feb 15',HR:38,RR:13,temp:99.5,gut:'Normal',notes:'Routine check.'}],
+    vaccinations:{core:[{name:'EEE/WEE',date:'Sep 10, 2025',next:'Sep 2026',vet:'Dr. Goudz',brand:'Prestige V',lot:'EW-H4',confirmed:true},{name:'Tetanus',date:'Sep 10, 2025',next:'Sep 2026',vet:'Dr. Goudz',brand:'Tetanus Toxoid',lot:'TT-H4',confirmed:true},{name:'Influenza/Rhino',date:'Oct 5, 2025',next:'Apr 2026',vet:'Dr. Goudz',brand:'Fluvac Innovator',lot:'IR-H4',confirmed:true,alert:true},{name:'West Nile Virus',date:'Sep 10, 2025',next:'Sep 2026',vet:'Dr. Goudz',brand:'West Nile Innovator',lot:'WN-H4',confirmed:true},{name:'Rabies',date:'Sep 10, 2025',next:'Sep 2026',vet:'Dr. Goudz',brand:'IMRAB Equine',lot:'R-H4',confirmed:true}],riskBased:[{name:'Coggins / EIA',date:'Dec 3, 2025',next:'Dec 2026',vet:'Dr. Goudz',brand:'IDEXX',lot:'--',confirmed:true,isLabTest:true}]},
+    labs:[{name:'Coggins (EIA)',date:'Dec 3, 2025',result:'Negative',lab:'EquiPath',acc:'EQ-2025-098812',confirmed:true},{name:'Metabolic panel',date:'Feb 20, 2026',result:'Stable',lab:'EquiPath',acc:'EQ-2026-002201',confirmed:true}],
+    exams:[{type:'Lameness Exam',date:'Feb 20, 2026',vet:'Dr. Goudz',findings:'Mild stiffness RF. Consistent with early arthritis.',treatment:'Joint supplement ongoing. Reduce hard ground work.',followUp:'May 2026'}],
+    imaging:[],meds:[{name:'Joint supplement',schedule:'Daily AM',start:'Jan 15',end:'Ongoing',active:true}],visits:[],
+  },
+  'h5':{
+    vitals:[{date:'Mar 5',HR:44,RR:16,temp:100.1,gut:'Normal',notes:'Energetic. Watch weight.'}],
+    vaccinations:{core:[{name:'EEE/WEE',date:'Oct 20, 2025',next:'Oct 2026',vet:'Dr. Goudz',brand:'Prestige V',lot:'EW-H5',confirmed:true},{name:'Tetanus',date:'Oct 20, 2025',next:'Oct 2026',vet:'Dr. Goudz',brand:'Tetanus Toxoid',lot:'TT-H5',confirmed:true},{name:'Influenza/Rhino',date:'Dec 1, 2025',next:'Jun 2026',vet:'Dr. Goudz',brand:'Fluvac Innovator',lot:'IR-H5',confirmed:true,alert:true},{name:'West Nile Virus',date:'Oct 20, 2025',next:'Oct 2026',vet:'Dr. Goudz',brand:'West Nile Innovator',lot:'WN-H5',confirmed:true},{name:'Rabies',date:'Oct 20, 2025',next:'Oct 2026',vet:'Dr. Goudz',brand:'IMRAB Equine',lot:'R-H5',confirmed:true}],riskBased:[{name:'Coggins / EIA',date:'Jan 10, 2026',next:'Jan 2027',vet:'Dr. Goudz',brand:'IDEXX',lot:'--',confirmed:true,isLabTest:true}]},
+    labs:[{name:'Coggins (EIA)',date:'Jan 10, 2026',result:'Negative',lab:'EquiPath',acc:'EQ-2026-001144',confirmed:true}],
+    exams:[],imaging:[],meds:[],visits:[],
+  },
+  'h6':{
+    vitals:[{date:'Mar 1',HR:38,RR:13,temp:99.7,gut:'Normal',notes:'Dental float overdue.'}],
+    vaccinations:{core:[{name:'EEE/WEE',date:'Aug 5, 2025',next:'Aug 2026',vet:'Dr. Goudz',brand:'Prestige V',lot:'EW-H6',confirmed:true},{name:'Tetanus',date:'Aug 5, 2025',next:'Aug 2026',vet:'Dr. Goudz',brand:'Tetanus Toxoid',lot:'TT-H6',confirmed:true},{name:'Influenza/Rhino',date:'Sep 15, 2025',next:'Mar 2026',vet:'Dr. Goudz',brand:'Fluvac Innovator',lot:'IR-H6',confirmed:true,alert:true},{name:'West Nile Virus',date:'Aug 5, 2025',next:'Aug 2026',vet:'Dr. Goudz',brand:'West Nile Innovator',lot:'WN-H6',confirmed:true},{name:'Rabies',date:'Aug 5, 2025',next:'Aug 2026',vet:'Dr. Goudz',brand:'IMRAB Equine',lot:'R-H6',confirmed:true}],riskBased:[{name:'Coggins / EIA',date:'Nov 20, 2025',next:'Nov 2026',vet:'Dr. Goudz',brand:'IDEXX',lot:'--',confirmed:true,isLabTest:true}]},
+    labs:[{name:'Coggins (EIA)',date:'Nov 20, 2025',result:'Negative',lab:'EquiPath',acc:'EQ-2025-091100',confirmed:true}],
+    exams:[{type:'Dental Exam',date:'Aug 5, 2025',vet:'Dr. Nair',findings:'Wave mouth developing. Float recommended.',treatment:'Schedule float within 6 months.',followUp:'Feb 2026 (overdue)'}],
+    imaging:[],meds:[],visits:[],
+  },
+  'h7':{
+    vitals:[{date:'Mar 12',HR:44,RR:15,temp:100.0,gut:'Normal',notes:'OTTB energy, settled.'},{date:'Feb 28',HR:46,RR:16,temp:100.2,gut:'Normal',notes:'Post-workout check.'}],
+    vaccinations:{core:[{name:'EEE/WEE',date:'Jan 15, 2026',next:'Jan 2027',vet:'Dr. Goudz',brand:'Prestige V',lot:'EW-H7',confirmed:true},{name:'Tetanus',date:'Jan 15, 2026',next:'Jan 2027',vet:'Dr. Goudz',brand:'Tetanus Toxoid',lot:'TT-H7',confirmed:true},{name:'Influenza/Rhino',date:'Jan 15, 2026',next:'Jul 2026',vet:'Dr. Goudz',brand:'Fluvac Innovator',lot:'IR-H7',confirmed:true},{name:'West Nile Virus',date:'Jan 15, 2026',next:'Jan 2027',vet:'Dr. Goudz',brand:'West Nile Innovator',lot:'WN-H7',confirmed:true},{name:'Rabies',date:'Jan 15, 2026',next:'Jan 2027',vet:'Dr. Goudz',brand:'IMRAB Equine',lot:'R-H7',confirmed:true}],riskBased:[{name:'Coggins / EIA',date:'Jan 20, 2026',next:'Jan 2027',vet:'Dr. Goudz',brand:'IDEXX',lot:'--',confirmed:true,isLabTest:true}]},
+    labs:[{name:'Coggins (EIA)',date:'Jan 20, 2026',result:'Negative',lab:'EquiPath',acc:'EQ-2026-004488',confirmed:true}],
+    exams:[{type:'Well Visit',date:'Jan 15, 2026',vet:'Dr. Goudz',findings:'Good OTTB rehab progress. Weight up. Feet improving.',treatment:'Continue current program.',followUp:'Jul 2026'}],
+    imaging:[],meds:[],visits:[],
+  },
+});
+
+Object.assign(HORSE_TRAINING_HISTORY,{
+  'h1':[
+    {date:'Mar 15',dateISO:'2026-03-15',type:'Jump',duration:45,intensity:4,trainer:'Jordan M.',skills:{rhythm:7,suppleness:6.5,contact:7,impulsion:7.5,straightness:7,collection:null},tqs:7.0,focus:['Grid work','Right lead'],notes:'Right lead clean today. Grids going well.',env:{temp:54,humidity:55,footing:'Good',weather:'Sunny'},feedChange:false},
+    {date:'Mar 13',dateISO:'2026-03-13',type:'Flat',duration:40,intensity:3,trainer:'Jordan M.',skills:{rhythm:7,suppleness:7,contact:6.5,impulsion:7,straightness:6.5,collection:null},tqs:6.7,focus:['Bend','Shoulder-in'],notes:'Good warm-up. Shoulder-in improving.',env:{temp:50,humidity:60,footing:'Good',weather:'Cloudy'},feedChange:false},
+    {date:'Mar 10',dateISO:'2026-03-10',type:'Jump',duration:50,intensity:4,trainer:'Jordan M.',skills:{rhythm:7.5,suppleness:7,contact:7,impulsion:8,straightness:7,collection:null},tqs:7.3,focus:['Course work','Distances'],notes:'Best course yet. Very scopey.',env:{temp:58,humidity:52,footing:'Good',weather:'Sunny'},feedChange:false},
+    {date:'Mar 7',dateISO:'2026-03-07',type:'Flat',duration:35,intensity:3,trainer:'Jordan M.',skills:{rhythm:7,suppleness:6.5,contact:7,impulsion:7,straightness:7,collection:null},tqs:6.9,focus:['Connection','Rhythm'],notes:'Maintenance day.',env:{temp:46,humidity:68,footing:'Soft',weather:'Rainy'},feedChange:false},
+    {date:'Mar 4',dateISO:'2026-03-04',type:'Jump',duration:45,intensity:4,trainer:'Jordan M.',skills:{rhythm:7,suppleness:7,contact:7,impulsion:7.5,straightness:6.5,collection:null},tqs:7.0,focus:['Bounce lines','Striding'],notes:'Bounce work excellent. Striding consistent.',env:{temp:55,humidity:50,footing:'Good',weather:'Sunny'},feedChange:false},
+    {date:'Feb 28',dateISO:'2026-02-28',type:'Hack',duration:35,intensity:2,trainer:'Jordan M.',skills:{rhythm:7.5,suppleness:7.5,contact:6.5,impulsion:6,straightness:7,collection:null},tqs:6.9,focus:['Recovery'],notes:'Easy trail. Fresh and happy.',env:{temp:52,humidity:48,footing:'Good',weather:'Sunny'},feedChange:false},
+    {date:'Feb 25',dateISO:'2026-02-25',type:'Jump',duration:50,intensity:4,trainer:'Jordan M.',skills:{rhythm:7,suppleness:6.5,contact:7,impulsion:7.5,straightness:7,collection:null},tqs:7.0,focus:['Show prep','Full course'],notes:'Pre-show school. Very confident.',env:{temp:56,humidity:55,footing:'Good',weather:'Cloudy'},feedChange:false},
+    {date:'Feb 22',dateISO:'2026-02-22',type:'Flat',duration:40,intensity:3,trainer:'Jordan M.',skills:{rhythm:7,suppleness:7,contact:6.5,impulsion:7,straightness:7,collection:null},tqs:6.8,focus:['Transitions','Responsiveness'],notes:'Good transitions. Very rideable.',env:{temp:48,humidity:62,footing:'Good',weather:'Sunny'},feedChange:false},
+  ],
+  'h2':[
+    {date:'Mar 14',dateISO:'2026-03-14',type:'Dressage',duration:50,intensity:4,trainer:'Jordan M.',skills:{rhythm:7,suppleness:6.5,contact:6.5,impulsion:7.5,straightness:6.5,collection:6},tqs:6.7,focus:['Half-pass','Collected canter'],notes:'Powerful mover. Needs more throughness.',env:{temp:48,humidity:62,footing:'Good',weather:'Sunny'},feedChange:false},
+    {date:'Mar 10',dateISO:'2026-03-10',type:'Dressage',duration:55,intensity:4,trainer:'Jordan M.',skills:{rhythm:7.5,suppleness:7,contact:7,impulsion:7.5,straightness:7,collection:6.5},tqs:7.1,focus:['Extended trot','Shoulder-in'],notes:'Excellent extended trot. Best yet.',env:{temp:58,humidity:52,footing:'Good',weather:'Sunny'},feedChange:false},
+    {date:'Mar 7',dateISO:'2026-03-07',type:'Flat',duration:40,intensity:3,trainer:'Jordan M.',skills:{rhythm:7,suppleness:6.5,contact:6.5,impulsion:7,straightness:7,collection:null},tqs:6.7,focus:['Warm-up quality'],notes:'Maintenance, long and low.',env:{temp:54,humidity:55,footing:'Good',weather:'Cloudy'},feedChange:false},
+    {date:'Mar 4',dateISO:'2026-03-04',type:'Hack',duration:35,intensity:2,trainer:'Jordan M.',skills:{rhythm:7.5,suppleness:7.5,contact:7,impulsion:6,straightness:7,collection:null},tqs:7.0,focus:['Relaxation'],notes:'Trail hack. Very settled.',env:{temp:60,humidity:48,footing:'Good',weather:'Sunny'},feedChange:false},
+    {date:'Feb 28',dateISO:'2026-02-28',type:'Dressage',duration:55,intensity:4,trainer:'Jordan M.',skills:{rhythm:7,suppleness:7,contact:7,impulsion:7.5,straightness:6.5,collection:6.5},tqs:7.0,focus:['Travers','Renvers'],notes:'Lateral work developing well.',env:{temp:47,humidity:65,footing:'Soft',weather:'Rainy'},feedChange:false},
+    {date:'Feb 25',dateISO:'2026-02-25',type:'Dressage',duration:50,intensity:4,trainer:'Jordan M.',skills:{rhythm:7.5,suppleness:7,contact:7,impulsion:7.5,straightness:7,collection:6.5},tqs:7.1,focus:['Medium trot','Pirouette intro'],notes:'Pirouette circles promising.',env:{temp:52,humidity:55,footing:'Good',weather:'Sunny'},feedChange:false},
+  ],
+  'h4':[
+    {date:'Mar 8',dateISO:'2026-03-08',type:'Flat',duration:30,intensity:2,trainer:'Jordan M.',skills:{rhythm:7,suppleness:6.5,contact:6.5,impulsion:6,straightness:7,collection:null},tqs:6.5,focus:['Easy walk/trot'],notes:'Light session per vet. Moving well.',env:{temp:52,humidity:58,footing:'Soft',weather:'Cloudy'},feedChange:false},
+    {date:'Mar 4',dateISO:'2026-03-04',type:'Flat',duration:25,intensity:2,trainer:'Jordan M.',skills:{rhythm:7,suppleness:6.5,contact:6.5,impulsion:5.5,straightness:7,collection:null},tqs:6.4,focus:['Relaxation'],notes:'Joint supplement helping. Less stiff.',env:{temp:58,humidity:50,footing:'Good',weather:'Sunny'},feedChange:false},
+    {date:'Feb 28',dateISO:'2026-02-28',type:'Hack',duration:25,intensity:1,trainer:'Jordan M.',skills:{rhythm:7,suppleness:7,contact:6.5,impulsion:5,straightness:7,collection:null},tqs:6.5,focus:['Mental wellness'],notes:'Short hack. Happy to be out.',env:{temp:50,humidity:52,footing:'Good',weather:'Sunny'},feedChange:true,feedNote:'Joint supplement added to AM feed'},
+  ],
+});
+
+Object.assign(HORSE_COMPETITION_HISTORY,{
+  'h1':[
+    {id:'ac1',date:'Feb 14, 2026',dateISO:'2026-02-14',event:'Winter Classic Hunter Show',venue:'Meadowbrook Equestrian',location:'Millbrook, NY',test:'Pre-Green Hunter 3ft',level:'Pre-Green',score:84,placement:1,placementOf:8,judge:'Karen Phillips',remarks:'Consistent pace throughout. Lovely hunter trips. Tight in the corners.',coefficients:{pace:8,manners:8.5,way_of_going:8,jumping:8.5},weather:{temp:38,humidity:65,conditions:'Cold/Cloudy'},trainingWeek:{sessions:4,avgTQS:7.1},feedChange:false},
+    {id:'ac2',date:'Jan 18, 2026',dateISO:'2026-01-18',event:'Empire State Winter I',venue:'Albany Equestrian Center',location:'Albany, NY',test:'Pre-Green Hunter 3ft',level:'Pre-Green',score:79,placement:3,placementOf:11,judge:'Robert Hall',remarks:'Good shape throughout. One chip on the oxer. Otherwise smooth.',coefficients:{pace:7.5,manners:8,way_of_going:7.5,jumping:8},weather:{temp:30,humidity:70,conditions:'Cold'},trainingWeek:{sessions:3,avgTQS:6.9},feedChange:false},
+    {id:'ac3',date:'Nov 22, 2025',dateISO:'2025-11-22',event:'Fall Classic',venue:'Stonegate Equestrian Park',location:'Millbrook, NY',test:'Pre-Green Hunter 3ft',level:'Pre-Green',score:82,placement:2,placementOf:9,judge:'Janet Williams',remarks:'Reliable and brave. Getting more consistent. Watch right lead.',coefficients:{pace:8,manners:8,way_of_going:8,jumping:8.5},weather:{temp:50,humidity:52,conditions:'Sunny'},trainingWeek:{sessions:5,avgTQS:7.2},feedChange:false},
+  ],
+  'h2':[
+    {id:'vc1',date:'Mar 1, 2026',dateISO:'2026-03-01',event:'Winter Dressage at Waterford',venue:'Waterford Equestrian',location:'Waterford, NY',test:'Training Level Test 3',level:'Training Level',score:68.2,placement:2,placementOf:7,judge:'Susan Pauley',remarks:'Powerful gaits. Needs more relaxation in neck. Free walk very expressive.',coefficients:{gaits:7.5,submission:6.5,perspective:7.0},weather:{temp:42,humidity:60,conditions:'Overcast'},trainingWeek:{sessions:4,avgTQS:6.9},feedChange:false},
+    {id:'vc2',date:'Jan 25, 2026',dateISO:'2026-01-25',event:'Empire State Winter Series',venue:'Albany Equestrian',location:'Albany, NY',test:'Training Level Test 2',level:'Training Level',score:65.8,placement:4,placementOf:10,judge:'Robert Ames',remarks:'Good movement but tense. First show nerves showed. Promising horse.',coefficients:{gaits:7.0,submission:6.0,perspective:6.5},weather:{temp:28,humidity:72,conditions:'Cold/Sunny'},trainingWeek:{sessions:3,avgTQS:6.7},feedChange:false},
+  ],
+});
+
+Object.assign(HORSE_REGIMENS,{
+  'rv':{
+    feed:[{id:'rvf1',label:'Soaked hay (protocol)',amount:'Full flake soaked',changed:true,changeNote:'Post-colic per Dr. Goudz through Mar 18.'},{id:'rvf2',label:'Competition feed mix',amount:'4 lbs',changed:true,changeNote:'Introduced Feb 21.'}],
+    supplements:[{id:'rvs1',label:'Electrolytes',amount:'1 scoop',changed:false},{id:'rvs2',label:'Digestive Support',amount:'1 pump',changed:true,changeNote:'Added post-colic.'}],
+    medications:[{id:'rvm1',label:'Banamine (Flunixin)',amount:'500mg paste',schedule:'Emergency use — colic signs',start:'Mar 14',end:'Ongoing (PRN)',active:false}],
+    vetNotes:'Post-colic: soaked hay through Mar 18. Watch manure output daily. Follow-up Mar 22.',
+  },
+  'h7':{
+    feed:[{id:'h7f1',label:'Morning hay',amount:'Full flake',changed:false},{id:'h7f2',label:'OTTB Recovery grain',amount:'4 lbs',changed:false}],
+    supplements:[{id:'h7s1',label:'Omega-3',amount:'2 scoops',changed:false},{id:'h7s2',label:'Vitamin E',amount:'1 scoop',changed:false}],
+    medications:[],
+    vetNotes:'OTTB refeeding program. Gradual increases. Weight 8/9. Good progress.',
+  },
+  'r1':{feed:[{id:'r1f1',label:'Morning hay',amount:'Full flake',changed:false},{id:'r1f2',label:'Senior grain',amount:'3 lbs',changed:false}],supplements:[],medications:[],vetNotes:'Vaccines due Apr 3 — schedule with Dr. Goudz.'},
+  'r2':{feed:[{id:'r2f1',label:'Morning hay',amount:'3/4 flake',changed:true,changeNote:'Reduced during rehab.'},{id:'r2f2',label:'Low-starch grain',amount:'2 lbs',changed:false}],supplements:[{id:'r2s1',label:'Flexigen joint support',amount:'1 scoop',changed:false}],medications:[{id:'r2m1',label:'Previcox',amount:'57mg',schedule:'Once daily with AM feed',start:'Mar 2',end:'Apr 2',active:true}],vetNotes:'Suspensory rehab. Light work only through April. Recheck Apr 15.'},
+  'b1':{feed:[{id:'b1f1',label:'Morning hay',amount:'Full flake',changed:false},{id:'b1f2',label:'Safe Choice grain',amount:'3 lbs',changed:false}],supplements:[],medications:[],vetNotes:'Easy keeper. Watch weight on spring grass.'},
+  'b2':{feed:[{id:'b2f1',label:'Morning hay',amount:'Full flake',changed:false},{id:'b2f2',label:'Performance grain',amount:'4 lbs',changed:false}],supplements:[{id:'b2s1',label:'Magnesium',amount:'2 scoops',changed:false}],medications:[],vetNotes:'Growing mare. High energy — ensure consistent turnout.'},
+});
+
+function generateHealthRecord(horseId){
+  var h=HORSES_ALL.find(function(h){return h.id===horseId;})||{name:'Unknown Horse',breed:'',color:'',age:'',photo:null,owners:[]};
+  var hh=HORSE_HEALTH[horseId]||{vaccinations:{core:[],riskBased:[]},labs:[],exams:[]};
+  var vaxData=hh.vaccinations&&typeof hh.vaccinations==='object'&&!Array.isArray(hh.vaccinations)?hh.vaccinations:{core:Array.isArray(hh.vaccinations)?hh.vaccinations:[],riskBased:[]};
+  var owners=h.owners?h.owners.map(function(o){return o.name;}).join(', '):'—';
+  var today=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  var userName=ROLE_COMBOS[S.roleComboIdx]?ROLE_COMBOS[S.roleComboIdx].name:'Unknown';
+
+  function vaxTableRows(arr){
+    return arr.map(function(v){
+      return '<tr><td style="padding:8px 10px;vertical-align:top;border-bottom:1px solid #ddd;">'
+        +'<div style="font-weight:600;">'+v.name+'</div>'
+        +'<div style="font-size:11px;color:#555;">'+v.brand+'</div>'
+        +'<div style="font-size:11px;color:#555;">Serial: '+(v.lot||'—')+'</div>'
+        +'<div style="font-size:11px;color:#555;">Administered on: '+v.date+'</div>'
+        +'</td>'
+        +'<td style="padding:8px 10px;text-align:center;vertical-align:middle;border-bottom:1px solid #ddd;border-left:1px solid #ddd;font-size:11px;color:#777;width:120px;">'
+        +(v.confirmed?'<div style="color:#0A6040;font-weight:600;">✓ Confirmed</div><div style="font-size:10px;">'+v.vet+'</div>':'[Signature]')
+        +'</td></tr>';
+    }).join('');
+  }
+
+  function labRows(){
+    return (hh.labs||[]).map(function(l){
+      return '<tr><td style="padding:8px 10px;vertical-align:top;border-bottom:1px solid #ddd;">'
+        +'<div style="font-weight:600;">'+l.name+'</div>'
+        +'<div style="font-size:11px;color:#555;">Confirmed '+l.result+' on '+l.date+' by '+( l.lab||'—')+'</div>'
+        +'<div style="font-size:11px;color:#555;">Accession: '+l.acc+'</div>'
+        +'</td>'
+        +'<td style="padding:8px 10px;text-align:center;vertical-align:middle;border-bottom:1px solid #ddd;border-left:1px solid #ddd;font-size:11px;color:#0A6040;width:120px;font-weight:600;">✓ Negative</td></tr>';
+    }).join('');
+  }
+
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Health Record — '+h.name+'</title>'
+    +'<style>body{font-family:Georgia,serif;max-width:780px;margin:0 auto;padding:30px;color:#111;}h2{font-size:15px;margin:20px 0 8px;}table{width:100%;border-collapse:collapse;border:1px solid #ccc;margin-bottom:20px;}th{background:#f0f0f0;padding:8px 10px;text-align:left;font-size:12px;border-bottom:1px solid #ccc;}</style>'
+    +'</head><body>'
+    +'<div style="display:flex;align-items:flex-start;gap:20px;margin-bottom:20px;">'
+    +(h.photo?'<img src="'+h.photo+'" style="width:80px;height:80px;border-radius:6px;object-fit:cover;flex-shrink:0;" onerror="this.style.display=\'none\'">':'')
+    +'<div><div style="font-size:15px;font-weight:bold;text-align:center;">Immunization Record &amp; Test Results for <strong>'+h.name+'</strong></div>'
+    +'<div style="font-size:12px;text-align:center;color:#555;">'+h.breed+(h.color?', '+h.color:'')+(h.age?', '+h.age+' old':'')+'</div>'
+    +(owners!=='—'?'<div style="font-size:12px;text-align:center;color:#555;">Owners: '+owners+'</div>':'')
+    +'</div></div>'
+    +(hh.labs&&hh.labs.length?'<h2>Test Results <span style="font-weight:normal;font-size:12px;">(files attached)</span></h2><table><thead><tr><th>Test</th><th style="width:120px;border-left:1px solid #ccc;">Verification</th></tr></thead><tbody>'+labRows()+'</tbody></table>':'')
+    +(vaxData.core.length?'<h2>Core Diseases</h2><table><thead><tr><th>Vaccine</th><th style="width:120px;border-left:1px solid #ccc;">Signature</th></tr></thead><tbody>'+vaxTableRows(vaxData.core)+'</tbody></table>':'')
+    +(vaxData.riskBased.length?'<h2>Risk-Based Diseases</h2><table><thead><tr><th>Vaccine</th><th style="width:120px;border-left:1px solid #ccc;">Signature</th></tr></thead><tbody>'+vaxTableRows(vaxData.riskBased)+'</tbody></table>':'')
+    +'<div style="text-align:center;margin-top:40px;font-size:12px;color:#777;">Generated on '+today+'<br>by '+userName+' via NayNay</div>'
+    +'</body></html>';
+
+  var blob=new Blob([html],{type:'text/html'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},500);
+}
 
 function rHorseDetail(h){
   const t=TH;
@@ -3670,25 +4073,594 @@ function rHorseDetail(h){
   function sc(sex){return sex==='Mare'||sex==='Filly'?{bg:'var(--md-error-container)',color:'var(--md-error)'}:sex==='Stallion'||sex==='Colt'?{bg:'var(--md-tertiary-container)',color:'var(--md-tertiary)'}:{bg:'var(--md-secondary-container)',color:'var(--md-secondary)'};}
   const s=sc(h.sex);
   const hero='<div style="background:linear-gradient(160deg,'+h.avatar.bg+'55 0%,'+h.avatar.bg+'22 100%);padding:18px 16px 14px;display:flex;align-items:center;gap:14px;border-bottom:1.5px solid var(--md-outline-variant);">'+horseAvatar(h,68)+'<div style="flex:1;"><div style="font-size:21px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">'+h.name+'</div><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;"><span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:'+s.bg+';color:'+s.color+';">'+h.sex+'</span><span style="font-size:12px;color:var(--md-on-surface-variant);">'+h.breed+'</span><span style="font-size:12px;color:var(--md-on-surface-dim);">· '+h.color+'</span><span style="font-size:12px;color:var(--md-on-surface-dim);">· '+h.age+'</span></div></div></div>';
-  const tabBar='<div style="display:flex;border-bottom:2px solid var(--md-outline-variant);background:var(--md-surface);overflow-x:auto;">'+'overview,health,training,feed'.split(',').map(function(k){const l={overview:'Overview',health:'Health',training:'Training',feed:'Feed & Meds'}[k];return '<button onclick="S.horseTab=\''+k+'\';rerender()" style="flex:1;font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:10px 6px;background:transparent;color:'+(tab===k?t.T:t.TX3)+';border:none;border-bottom:'+(tab===k?'2.5px solid '+TH.mdPrim:'2.5px solid transparent')+';margin-bottom:-2px;white-space:nowrap;">'+l+'</button>';}).join('')+'</div>';
+  const tabBar='<div style="display:flex;border-bottom:2px solid var(--md-outline-variant);background:var(--md-surface);overflow-x:auto;">'+'overview,health,training,competitions,connections,feed'.split(',').map(function(k){const l={overview:'Overview',health:'Health',training:'Training',competitions:'Competitions',connections:'Connections',feed:'Feed & Meds'}[k];return '<button onclick="S.horseTab=\''+k+'\';rerender()" style="flex:1;font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:10px 6px;background:transparent;color:'+(tab===k?t.T:t.TX3)+';border:none;border-bottom:'+(tab===k?'2.5px solid '+TH.mdPrim:'2.5px solid transparent')+';margin-bottom:-2px;white-space:nowrap;">'+l+'</button>';}).join('')+'</div>';
 
   // Overview
-  const overviewTab='<div style="padding:14px;">'+'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">'+[{l:'Breed',v:h.breed},{l:'Color',v:h.color},{l:'Age',v:h.age},{l:'Sex',v:h.sex}].map(function(a){return '<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:9px 12px;"><div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">'+a.l+'</div><div style="font-size:14px;font-weight:600;color:var(--md-on-surface);">'+a.v+'</div></div>';}).join('')+'</div>'+(h.note?'<div style="background:var(--md-warning-container);border:1.5px solid var(--md-warning)44;border-radius:11px;padding:11px 13px;margin-bottom:12px;"><div style="font-size:10px;font-weight:700;color:var(--md-warning);text-transform:uppercase;margin-bottom:4px;">Staff notes</div><div style="font-size:13px;color:var(--md-on-surface-variant);line-height:1.55;">'+h.note+'</div></div>':'')+(hh.meds.filter(function(m){return m.active;}).length?'<div style="background:var(--md-error-container);border:1.5px solid var(--md-error)44;border-radius:11px;padding:11px 13px;margin-bottom:12px;"><div style="font-size:10px;font-weight:700;color:var(--md-error);text-transform:uppercase;margin-bottom:5px;">Active medication</div>'+hh.meds.filter(function(m){return m.active;}).map(function(m){return '<div style="font-size:13px;font-weight:600;color:var(--md-on-surface);">'+m.name+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+m.schedule+' · Ends '+m.end+'</div>';}).join('')+'</div>':'')+'<div style="display:flex;gap:8px;"><button onclick="S.horseTab=\'health\';rerender()" style="flex:1;background:var(--md-primary);color:#fff;border:none;padding:11px;border-radius:11px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Health Records</button><button onclick="S.horseTab=\'training\';rerender()" style="flex:1;background:var(--md-surface);color:var(--md-tertiary);border:1.5px solid var(--md-tertiary)55;padding:11px;border-radius:11px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Training Log</button></div></div>';
+  // ── Overview Tab — redesigned ────────────────────────────────────────────
+  var sessions_ov=(HORSE_TRAINING_HISTORY[h.id]||[]);
+  var compHistory_ov=(HORSE_COMPETITION_HISTORY[h.id]||[]);
+  var lastSession=sessions_ov[0]||null;
+  var lastComp_ov=compHistory_ov[0]||null;
+  var activeMeds=(hh.meds||[]).filter(function(m){return m.active;});
+  var alertList=(h.alerts||[]);
+  var upPass_ov=EVENT_PASSES.find(function(p){return p.horseId===h.id;});
 
-  // Health
-  const healthTab='<div style="padding:14px;">'+(hh.vitals.length?'<div style="margin-bottom:14px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Latest vitals</div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:12px 14px;"><div style="font-size:11px;color:var(--md-on-surface-dim);margin-bottom:8px;">'+hh.vitals[0].date+'</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px;">'+[{l:'Heart rate',v:hh.vitals[0].HR+' bpm'},{l:'Resp. rate',v:hh.vitals[0].RR+' brpm'},{l:'Temp',v:hh.vitals[0].temp+'°F'},{l:'Gut sounds',v:hh.vitals[0].gut}].map(function(a){return '<div><div style="font-size:10px;color:var(--md-on-surface-dim);text-transform:uppercase;margin-bottom:1px;">'+a.l+'</div><div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">'+a.v+'</div></div>';}).join('')+'</div>'+(hh.vitals[0].notes?'<div style="font-size:12px;color:var(--md-on-surface-dim);font-style:italic;">'+hh.vitals[0].notes+'</div>':'')+'</div></div>':'')+'<div style="margin-bottom:14px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Vaccinations</div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);overflow:hidden;">'+hh.vaccinations.map(function(v,i){return '<div style="padding:10px 14px;'+(i<hh.vaccinations.length-1?'border-bottom:1px solid '+TH.mdOutlineVar:'')+';display:flex;align-items:center;gap:9px;"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="var(--md-secondary)22" stroke="var(--md-secondary)" stroke-width="1.2"/><path d="M3.5 7l2.5 2.5 4.5-4.5" stroke="var(--md-secondary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--md-on-surface);">'+v.name+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+v.date+' · '+v.vet+'</div></div><div style="font-size:10px;color:var(--md-on-surface-dim);text-align:right;">Next '+v.next+'</div></div>';}).join('')+'</div></div>'+(hh.labs.length?'<div style="margin-bottom:14px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Lab tests</div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 14px;">'+hh.labs.map(function(l){return '<div style="font-size:13px;font-weight:600;color:var(--md-on-surface);">'+l.name+' — <span style="color:var(--md-secondary);">'+l.result+'</span></div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+l.date+' · '+l.lab+' · '+l.acc+'</div>';}).join('')+'</div></div>':'')+(hh.visits.length?'<div><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Visit history</div>'+hh.visits.map(function(v){return '<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:11px 14px;margin-bottom:7px;"><div style="font-size:13px;font-weight:600;color:var(--md-on-surface);margin-bottom:2px;">'+v.type+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);margin-bottom:4px;">'+v.date+' · '+v.vet+'</div><div style="font-size:12px;color:var(--md-on-surface-variant);font-style:italic;">'+v.outcome+'</div></div>';}).join('')+'</div>':'')+'</div>';
+  function miniSparkline_ov(ss){
+    if(!ss||ss.length<2)return '';
+    var pts=ss.slice().reverse().slice(0,8);
+    var W=80,H=28,pad=3,iW=W-pad*2,iH=H-pad*2;
+    var coords=pts.map(function(s,i){return [(pad+i/(pts.length-1)*iW).toFixed(1),(pad+iH-(((s.tqs-5)/5)*iH)).toFixed(1)];});
+    var poly=coords.map(function(p){return p[0]+','+p[1];}).join(' ');
+    var last=coords[coords.length-1];
+    return '<svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'"><polyline points="'+poly+'" fill="none" stroke="var(--md-primary)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" opacity="0.7"/><circle cx="'+last[0]+'" cy="'+last[1]+'" r="2.5" fill="var(--md-primary)"/></svg>';
+  }
+
+  var urgentAlerts=alertList.filter(function(a){return a.urgent;});
+  var alertBanner_ov=urgentAlerts.length
+    ?'<div style="background:var(--md-error-container);border:1.5px solid var(--md-error)44;border-radius:11px;padding:11px 13px;margin-bottom:12px;"><div style="font-size:10px;font-weight:700;color:var(--md-error);text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:5px;">'+msiIcon('warning',13,'var(--md-error)')+'Attention needed</div>'+urgentAlerts.map(function(a){return '<div style="font-size:12px;color:var(--md-on-surface-variant);margin-bottom:2px;">\u2022 '+a.msg+'</div>';}).join('')+'</div>'
+    :'';
+
+  var statGrid_ov='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">'
+    +[{l:'Breed',v:h.breed},{l:'Color',v:h.color},{l:'Age',v:h.age},{l:'Sex',v:h.sex}].map(function(a){return '<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:9px 12px;"><div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">'+a.l+'</div><div style="font-size:14px;font-weight:600;color:var(--md-on-surface);">'+a.v+'</div></div>';}).join('')+'</div>';
+
+  var noteCard_ov=h.note?'<div style="background:var(--md-warning-container);border:1.5px solid var(--md-warning)44;border-radius:11px;padding:11px 13px;margin-bottom:12px;"><div style="font-size:10px;font-weight:700;color:var(--md-warning);text-transform:uppercase;margin-bottom:4px;">Staff notes</div><div style="font-size:13px;color:var(--md-on-surface-variant);line-height:1.55;">'+h.note+'</div></div>':'';
+
+  var medCard_ov=activeMeds.length?'<div style="background:var(--md-error-container);border:1.5px solid var(--md-error)44;border-radius:11px;padding:11px 13px;margin-bottom:12px;"><div style="font-size:10px;font-weight:700;color:var(--md-error);text-transform:uppercase;margin-bottom:5px;">Active medication</div>'+activeMeds.map(function(m){return '<div style="font-size:13px;font-weight:600;color:var(--md-on-surface);">'+m.name+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+m.schedule+' \xb7 Ends '+m.end+'</div>';}).join('')+'</div>':'';
+
+  var glanceItems=[];
+  if(hh.vitals&&hh.vitals.length){var v_ov=hh.vitals[0];glanceItems.push('<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;flex:1;min-width:0;"><div style="font-size:9px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:5px;">Vitals</div><div style="font-size:11px;color:var(--md-on-surface-dim);margin-bottom:4px;">'+v_ov.date+'</div><div style="display:flex;flex-wrap:wrap;gap:4px;">'+[{l:'HR',v:v_ov.HR+' bpm'},{l:'RR',v:v_ov.RR},{l:'Temp',v:v_ov.temp+'\xb0F'}].map(function(a){return '<div style="font-size:10px;font-weight:600;color:var(--md-on-surface);background:var(--md-surface-variant);border-radius:5px;padding:2px 5px;">'+a.l+' <span style="color:var(--md-primary);">'+a.v+'</span></div>';}).join('')+'</div></div>');}
+
+  if(lastSession){glanceItems.push('<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;flex:1;min-width:0;"><div style="font-size:9px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:5px;">Last session</div><div style="font-size:11px;color:var(--md-on-surface-dim);margin-bottom:4px;">'+lastSession.date+'</div><div style="display:flex;align-items:center;justify-content:space-between;gap:6px;"><div style="font-size:11px;font-weight:600;color:var(--md-on-surface);">'+lastSession.type+'</div><div style="display:flex;align-items:center;gap:4px;">'+miniSparkline_ov(sessions_ov)+'<div style="font-size:14px;font-weight:700;color:var(--md-primary);">'+lastSession.tqs+'</div></div></div></div>');}
+
+  if(lastComp_ov){glanceItems.push('<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;flex:1;min-width:0;"><div style="font-size:9px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:5px;">Last result</div><div style="font-size:11px;color:var(--md-on-surface-dim);margin-bottom:4px;">'+lastComp_ov.date+'</div><div style="display:flex;align-items:center;justify-content:space-between;gap:4px;"><div style="font-size:11px;font-weight:600;color:var(--md-on-surface);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+lastComp_ov.test+'</div><div style="font-size:14px;font-weight:700;color:'+(lastComp_ov.score>=70?'var(--md-secondary)':lastComp_ov.score>=65?'var(--md-primary)':'var(--md-warning)')+';">'+lastComp_ov.score+'%</div></div></div>');}
+
+  var glanceRow_ov=glanceItems.length?'<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">'+glanceItems.join('')+'</div>':'';
+
+  var passCard_ov=upPass_ov?'<div onclick="S.horseTab=\'competitions\';rerender()" style="background:linear-gradient(135deg,#112030 0%,#1E3A52 100%);border:1.5px solid rgba(58,172,190,0.3);border-radius:12px;padding:12px 14px;margin-bottom:12px;cursor:pointer;display:flex;align-items:center;gap:10px;"><div style="flex:1;"><div style="font-size:9px;font-weight:700;color:rgba(58,172,190,0.8);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:2px;">Upcoming competition</div><div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:1px;">'+upPass_ov.event.name+'</div><div style="font-size:11px;color:rgba(255,255,255,0.6);">'+upPass_ov.event.date+'</div></div><div style="background:rgba(58,172,190,0.15);border:1px solid rgba(58,172,190,0.3);border-radius:8px;padding:6px 10px;font-size:10px;font-weight:700;color:rgba(58,172,190,0.9);display:flex;align-items:center;gap:3px;flex-shrink:0;">'+msiIcon('arrow_forward',12,'rgba(58,172,190,0.9)')+'View</div></div>':'';
+
+  var prosCard_ov=(h.pros&&h.pros.length)?'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);overflow:hidden;margin-bottom:12px;"><div style="padding:10px 13px;border-bottom:1px solid var(--md-outline-variant);font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;">Upcoming appointments</div>'+h.pros.map(function(p,i){return '<div style="display:flex;align-items:center;gap:9px;padding:9px 13px;'+(i<h.pros.length-1?'border-bottom:1px solid var(--md-outline-variant)':'')+';"><div style="width:32px;height:32px;border-radius:8px;background:var(--md-surface-variant);display:flex;align-items:center;justify-content:center;">'+msiIcon(p.role==='Farrier'?'build':p.role==='Dentist'?'medical_services':'groups',15,'var(--md-on-surface-dim)')+'</div><div style="flex:1;"><div style="font-size:12px;font-weight:600;color:var(--md-on-surface);">'+p.name+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+p.role+'</div></div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+p.next+'</div></div>';}).join('')+'</div>':'';
+
+  const overviewTab='<div style="padding:14px;">'+alertBanner_ov+statGrid_ov+noteCard_ov+medCard_ov+glanceRow_ov+passCard_ov+prosCard_ov+'</div>'
 
   // Training stub -- reuse trainer progress if available
-  let trainingTab='<div style="padding:20px;text-align:center;color:var(--md-on-surface-dim);font-size:13px;">No training records yet for '+h.name+'.</div>';
-  if(window.TRAINER_HORSE_PROGRESS){const hp=TRAINER_HORSE_PROGRESS.find(function(p){return p.horseId===h.id;});if(hp){const avgScore=Math.round(hp.skills.reduce(function(s,k){return s+k.score;},0)/hp.skills.length);trainingTab='<div style="padding:14px;"><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;"><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-tertiary);">'+hp.totalSessions+'</div><div style="font-size:10px;color:var(--md-on-surface-dim);">Total</div></div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-tertiary);">'+hp.thisMonth+'</div><div style="font-size:10px;color:var(--md-on-surface-dim);">This month</div></div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px;text-align:center;"><div style="font-size:20px;font-weight:700;color:'+(avgScore>=70?t.SUC:avgScore>=50?t.WARN:t.DNG)+';">'+avgScore+'</div><div style="font-size:10px;color:var(--md-on-surface-dim);">Avg score</div></div></div>'+'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:12px 14px;">'+hp.skills.map(function(sk){const c=sk.score>=70?t.SUC:sk.score>=50?t.WARN:t.DNG;const tr=sk.trend==='up'?t.SUC:sk.trend==='down'?t.DNG:t.TX3;const arr=sk.trend==='up'?'↑':sk.trend==='down'?'↓':'–';return '<div style="margin-bottom:9px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;"><span style="font-size:13px;font-weight:600;color:var(--md-on-surface);">'+sk.name+'</span><div style="display:flex;align-items:center;gap:5px;"><span style="font-size:11px;font-weight:700;color:'+tr+';">'+arr+' '+(sk.change>0?'+':'')+sk.change+'</span><span style="font-size:13px;font-weight:700;color:'+c+';">'+sk.score+'</span></div></div><div style="height:7px;background:var(--md-outline-variant);border-radius:10px;overflow:hidden;"><div style="height:100%;width:'+sk.score+'%;background:'+c+';border-radius:10px;"></div></div></div>';}).join('')+'</div>'+'<div style="background:var(--md-primary-container);border-radius:var(--md-shape-md);border:1px solid var(--md-outline);padding:11px 13px;margin-top:12px;"><div style="font-size:10px;font-weight:700;color:var(--md-on-primary-container);text-transform:uppercase;margin-bottom:4px;">Latest note</div><div style="font-size:13px;color:var(--md-on-surface-variant);line-height:1.55;font-style:italic;">"'+hp.recentNotes+'"</div></div></div>';}}
+
+  // Health tab — role-aware with full immunizations, exams, imaging, vitals
+  var canVaccine=anyRole('vet','manager','owner');
+  var canExam=anyRole('vet');
+  var canVitals=anyRole('vet','manager','staff','trainer');
+  var canObs=anyRole('vet','manager','staff','trainer');
+  var canImaging=anyRole('vet','owner');
+  var canGenDoc=anyRole('vet','owner');
+
+  // Action bar
+  var actionBtns=[];
+  if(canExam) actionBtns.push('<button onclick="S.quickAction=\'document-exam\';S.selectedHorse=null;rerender()" style="flex:1;background:var(--md-secondary-container);border:none;border-radius:10px;padding:9px 8px;font-family:\'DM Sans\',sans-serif;font-size:11px;font-weight:700;color:var(--md-secondary);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">'+msiIcon('assignment',18,'var(--md-secondary)')+'<span>Exam</span></button>');
+  if(canVaccine) actionBtns.push('<button onclick="S.quickAction=\'document-vaccine\';S.selectedHorse=null;rerender()" style="flex:1;background:var(--md-primary-container);border:none;border-radius:10px;padding:9px 8px;font-family:\'DM Sans\',sans-serif;font-size:11px;font-weight:700;color:var(--md-primary);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">'+msiIcon('vaccines',18,'var(--md-primary)')+'<span>Vaccine</span></button>');
+  if(canVitals) actionBtns.push('<button onclick="S.quickAction=\'document-vitals\';S.selectedHorse=null;rerender()" style="flex:1;background:var(--md-surface-variant);border:none;border-radius:10px;padding:9px 8px;font-family:\'DM Sans\',sans-serif;font-size:11px;font-weight:700;color:var(--md-on-surface-variant);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">'+msiIcon('monitor_heart',18,'var(--md-on-surface-variant)')+'<span>Vitals</span></button>');
+  if(canImaging) actionBtns.push('<button onclick="S.quickAction=\'upload-imaging\';S.selectedHorse=null;rerender()" style="flex:1;background:var(--md-tertiary-container);border:none;border-radius:10px;padding:9px 8px;font-family:\'DM Sans\',sans-serif;font-size:11px;font-weight:700;color:var(--md-tertiary);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">'+msiIcon('radiology',18,'var(--md-tertiary)')+'<span>Imaging</span></button>');
+  var actionBar=actionBtns.length?'<div style="display:flex;gap:6px;margin-bottom:14px;">'+actionBtns.join('')+'</div>':'';
+
+  // Immunizations section (collapsible)
+  var vaxData=hh.vaccinations&&typeof hh.vaccinations==='object'&&!Array.isArray(hh.vaccinations)?hh.vaccinations:{core:Array.isArray(hh.vaccinations)?hh.vaccinations:[],riskBased:[]};
+  var allVax=[...vaxData.core,...vaxData.riskBased];
+  var alertVax=allVax.filter(function(v){return v.alert;});
+  var totalVax=allVax.length;
+  var expandedVax=S.expandedVax&&S.expandedVax[h.id];
+
+  function vaxRow(v,last){
+    var alertDot=v.alert?'<span style="width:7px;height:7px;border-radius:50%;background:var(--md-warning);display:inline-block;margin-left:4px;vertical-align:middle;"></span>':'';
+    var seal=v.confirmed?'<span style="font-size:9px;font-weight:700;color:var(--md-secondary);background:var(--md-secondary)22;padding:2px 6px;border-radius:10px;">✓ SEALED</span>':'';
+    if(!expandedVax){
+      return '<div style="padding:9px 14px;'+(last?'':'border-bottom:1px solid var(--md-outline-variant)')+';display:flex;align-items:center;gap:9px;">'
+        +'<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="'+(v.alert?'var(--md-warning)':'var(--md-secondary)')+'22" stroke="'+(v.alert?'var(--md-warning)':'var(--md-secondary)')+'" stroke-width="1.2"/><path d="M3.5 7l2.5 2.5 4.5-4.5" stroke="'+(v.alert?'var(--md-warning)':'var(--md-secondary)')+'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+        +'<div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--md-on-surface);">'+v.name+alertDot+'</div>'
+        +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+v.date+'</div></div>'
+        +'<div style="text-align:right;"><div style="font-size:10px;color:'+(v.alert?'var(--md-warning)':'var(--md-on-surface-dim)')+';">Next '+v.next+'</div>'+seal+'</div></div>';
+    }
+    return '<div style="padding:11px 14px;'+(last?'':'border-bottom:1px solid var(--md-outline-variant)')+';">'
+      +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+v.name+alertDot+'</div>'
+      +seal+'</div>'
+      +'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-bottom:3px;">'+v.brand+' · Lot: '+v.lot+'</div>'
+      +'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-bottom:3px;">Administered '+v.date+' · '+v.vet+'</div>'
+      +'<div style="font-size:11px;color:'+(v.alert?'var(--md-warning)':'var(--md-secondary)')+';">Next due: '+v.next+'</div></div>';
+  }
+
+  function catHeader(label,items){
+    return items.length?'<div style="padding:6px 14px;background:var(--md-surface-variant);font-size:9px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.6px;">'+label+'</div>':'';
+  }
+
+  var vaxSummary='<div style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;">'
+    +'<div style="display:flex;align-items:center;gap:8px;">'
+    +(alertVax.length?'<div style="width:8px;height:8px;border-radius:50%;background:var(--md-warning);flex-shrink:0;"></div>':'<div style="width:8px;height:8px;border-radius:50%;background:var(--md-secondary);flex-shrink:0;"></div>')
+    +'<div>'
+    +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+totalVax+' immunizations</div>'
+    +'<div style="font-size:11px;color:'+(alertVax.length?'var(--md-warning)':'var(--md-on-surface-dim)')+';">'+(alertVax.length?alertVax.length+' due soon · ':'All current · ')+( totalVax-alertVax.length)+' up to date</div></div></div>'
+    +'<button onclick="if(!S.expandedVax)S.expandedVax={};S.expandedVax[\''+h.id+'\']='+(expandedVax?'false':'true')+';rerender()" style="background:none;border:none;cursor:pointer;padding:4px;">'+msiIcon(expandedVax?'expand_less':'expand_more',20,'var(--md-on-surface-dim)')+'</button>'
+    +'</div>';
+
+  var vaxRows=expandedVax
+    ?(catHeader('Core vaccines',vaxData.core)+vaxData.core.map(function(v,i){return vaxRow(v,i===vaxData.core.length-1&&!vaxData.riskBased.length);}).join('')
+     +catHeader('Risk-based',vaxData.riskBased)+vaxData.riskBased.map(function(v,i){return vaxRow(v,i===vaxData.riskBased.length-1);}).join(''))
+    :allVax.slice(0,3).map(function(v,i){return vaxRow(v,i===Math.min(allVax.length,3)-1);}).join('');
+
+  var immunizationsSection='<div style="margin-bottom:14px;">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
+    +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Immunizations</div>'
+    +(canGenDoc?'<button onclick="generateHealthRecord(\''+h.id+'\');void 0" style="font-size:11px;font-weight:600;color:var(--md-primary);background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:3px;">'+msiIcon('description',14,'var(--md-primary)')+'Health record</button>':'')
+    +'</div>'
+    +'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);overflow:hidden;">'
+    +vaxSummary+vaxRows+'</div></div>';
+
+  // Vitals section
+  var vitalsSection=hh.vitals.length?'<div style="margin-bottom:14px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Latest vitals</div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:12px 14px;"><div style="font-size:11px;color:var(--md-on-surface-dim);margin-bottom:8px;">'+hh.vitals[0].date+'</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px;">'+[{l:'Heart rate',v:hh.vitals[0].HR+' bpm'},{l:'Resp. rate',v:hh.vitals[0].RR+' brpm'},{l:'Temp',v:hh.vitals[0].temp+'°F'},{l:'Gut sounds',v:hh.vitals[0].gut}].map(function(a){return '<div><div style="font-size:10px;color:var(--md-on-surface-dim);text-transform:uppercase;margin-bottom:1px;">'+a.l+'</div><div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">'+a.v+'</div></div>';}).join('')+'</div>'+(hh.vitals[0].notes?'<div style="font-size:12px;color:var(--md-on-surface-dim);font-style:italic;">'+hh.vitals[0].notes+'</div>':'')+'</div></div>':'';
+
+  // Exams section (vet-documented)
+  var examsSection=(hh.exams&&hh.exams.length)?'<div style="margin-bottom:14px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Exams</div>'
+    +hh.exams.map(function(e){return '<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:11px 14px;margin-bottom:7px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+e.type+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+e.date+'</div></div><div style="font-size:11px;color:var(--md-on-surface-dim);margin-bottom:4px;">'+e.vet+'</div><div style="font-size:12px;color:var(--md-on-surface-variant);font-style:italic;margin-bottom:4px;">'+e.findings+'</div>'+(e.treatment?'<div style="font-size:11px;color:var(--md-primary);">Rx: '+e.treatment+'</div>':'')+'</div>';}).join('')
+    +'</div>':'';
+
+  // Labs section
+  var labsSection=hh.labs&&hh.labs.length?'<div style="margin-bottom:14px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Lab tests</div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 14px;">'+hh.labs.map(function(l){return '<div style="font-size:13px;font-weight:600;color:var(--md-on-surface);">'+l.name+' — <span style="color:var(--md-secondary);">'+l.result+'</span></div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+l.date+' · '+l.lab+' · '+l.acc+'</div>';}).join('')+'</div></div>':'';
+
+  // Visit history
+  var visitsSection=hh.visits&&hh.visits.length?'<div><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Visit history</div>'+hh.visits.map(function(v){return '<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:11px 14px;margin-bottom:7px;"><div style="font-size:13px;font-weight:600;color:var(--md-on-surface);margin-bottom:2px;">'+v.type+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);margin-bottom:4px;">'+v.date+' · '+v.vet+'</div><div style="font-size:12px;color:var(--md-on-surface-variant);font-style:italic;">'+v.outcome+'</div></div>';}).join('')+'</div>':'';
+
+  var healthTab='<div style="padding:14px;">'+actionBar+vitalsSection+immunizationsSection+examsSection+labsSection+visitsSection+'</div>';
+
+  var sessions=(HORSE_TRAINING_HISTORY[h.id]||[]);
+
+  if(!window._inviteState)window._inviteState={open:false,name:'',role:'Veterinarian',email:'',phone:''};
+  var inv=window._inviteState;
+
+  // ── Connections Tab ───────────────────────────────────────────────────────
+  (function buildConnectionsTab(){
+
+  var barnData={name:'Sunrise Stables',manager:'Charlene',phone:'(518) 555-0192',email:'charlene@sunrisestables.com',address:'14 Meadow Ln, Saratoga Springs, NY',nayNay:true};
+
+  function connCard(opts){
+    // opts: face, name, role, detail, email, phone, nayNay, badge, actionLabel, actionFn
+    var faceColor=opts.faceColor||'var(--md-primary)';
+    var faceBg=opts.faceBg||'var(--md-primary-container)';
+    return '<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);padding:13px 14px;margin-bottom:10px;">'
+      +'<div style="display:flex;align-items:flex-start;gap:11px;">'
+      +'<div style="width:44px;height:44px;border-radius:50%;background:'+faceBg+';display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
+      +'<span class="msi" style="font-size:28px;color:'+faceColor+';">'+opts.face+'</span>'
+      +'</div>'
+      +'<div style="flex:1;min-width:0;">'
+      +'<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:2px;">'
+      +'<div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">'+opts.name+'</div>'
+      +(opts.nayNay?'<div style="background:var(--md-primary-container);border-radius:20px;padding:2px 7px;font-size:9px;font-weight:700;color:var(--md-primary);">on NayNay</div>':'<div style="background:var(--md-surface-variant);border-radius:20px;padding:2px 7px;font-size:9px;font-weight:600;color:var(--md-on-surface-dim);">not on NayNay</div>')
+      +'</div>'
+      +'<div style="font-size:12px;font-weight:600;color:var(--md-on-surface-dim);margin-bottom:4px;">'+opts.role+'</div>'
+      +(opts.detail?'<div style="font-size:12px;color:var(--md-on-surface-dim);margin-bottom:2px;">'+opts.detail+'</div>':'')
+      +(opts.email?'<div style="font-size:11px;color:var(--md-on-surface-dim);display:flex;align-items:center;gap:4px;">'+msiIcon('mail',12,'var(--md-on-surface-dim)')+opts.email+'</div>':'')
+      +(opts.phone?'<div style="font-size:11px;color:var(--md-on-surface-dim);display:flex;align-items:center;gap:4px;">'+msiIcon('phone',12,'var(--md-on-surface-dim)')+opts.phone+'</div>':'')
+      +'</div></div>'
+      +(opts.actionLabel?'<div style="border-top:1px solid var(--md-outline-variant);margin:10px -14px 0;padding:8px 14px 0;">'
+        +'<button onclick="'+opts.actionFn+'" style="font-size:12px;font-weight:600;color:var(--md-primary);background:none;border:none;cursor:pointer;font-family:\'DM Sans\',sans-serif;display:flex;align-items:center;gap:4px;">'+msiIcon('send',13,'var(--md-primary)')+opts.actionLabel+'</button>'
+        +'</div>':'')
+      +'</div>';
+  }
+
+  function sectionHead(label,icon){
+    return '<div style="display:flex;align-items:center;gap:7px;margin:14px 0 8px;">'
+      +'<div style="width:26px;height:26px;border-radius:7px;background:var(--md-primary-container);display:flex;align-items:center;justify-content:center;">'+msiIcon(icon,14,'var(--md-primary)')+'</div>'
+      +'<div style="font-size:12px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;">'+label+'</div>'
+      +'</div>';
+  }
+
+  // ── Owners section ───────────────────────────────────────────────────────
+  var ownerCards=(h.owners||[]).map(function(o){
+    var isCurrentUser=S.roles.includes('owner');
+    return connCard({
+      face:'face_2',faceColor:'#C04A6A',faceBg:'#FCE8EF',
+      name:o.name,role:'Owner'+(o.share&&o.share!=='Full'?' · '+o.share+' interest':''),
+      detail:null,email:null,phone:null,
+      nayNay:true,
+    });
+  }).join('');
+
+  // ── Barn section ─────────────────────────────────────────────────────────
+  var barnCard=connCard({
+    face:'home',faceColor:'var(--md-primary)',faceBg:'var(--md-primary-container)',
+    name:barnData.name,role:'Barn · Manager: '+barnData.manager,
+    detail:barnData.address,email:barnData.email,phone:barnData.phone,
+    nayNay:barnData.nayNay,
+  });
+
+  // ── Veterinarian section ─────────────────────────────────────────────────
+  var vetPro=BARN_PROFESSIONALS.find(function(p){return p.type==='Vet';});
+  var vetCard=vetPro?connCard({
+    face:vetPro.face||'face_6',faceColor:vetPro.color,faceBg:vetPro.bg,
+    name:vetPro.name,role:'Veterinarian',
+    detail:vetPro.nayNay?'Active on NayNay — records shared automatically':null,
+    email:vetPro.email||null,phone:vetPro.phone||null,
+    nayNay:vetPro.nayNay,
+    actionLabel:vetPro.nayNay?null:'Invite to NayNay',actionFn:"window._inviteState={open:true,name:'"+vetPro.name+"',role:'Veterinarian',email:'"+(vetPro.email||'')+"',phone:''};rerender()",
+  }):'';
+
+  // ── Trainer section ───────────────────────────────────────────────────────
+  var trainerName=h.trainer||'Jordan M.';
+  var trainerPro=BARN_PROFESSIONALS.find(function(p){return p.type==='Trainer';});
+  var trainerCard=connCard({
+    face:trainerPro?trainerPro.face:'face_5',
+    faceColor:trainerPro?trainerPro.color:'var(--md-tertiary)',
+    faceBg:trainerPro?trainerPro.bg:'var(--md-tertiary-container)',
+    name:trainerName,role:'Trainer',
+    detail:trainerPro&&trainerPro.nayNay?'Active on NayNay — training logs shared':null,
+    email:trainerPro?trainerPro.email:null,phone:null,
+    nayNay:trainerPro?trainerPro.nayNay:false,
+    actionLabel:trainerPro&&!trainerPro.nayNay?'Invite to NayNay':null,
+    actionFn:"window._inviteState={open:true,name:'"+trainerName+"',role:'Trainer',email:'"+(trainerPro&&trainerPro.email||'')+"',phone:''};rerender()",
+  });
+
+  // ── Other professionals ───────────────────────────────────────────────────
+  var otherPros=BARN_PROFESSIONALS.filter(function(p){return p.type!=='Vet'&&p.type!=='Trainer';});
+  var otherCards=otherPros.map(function(p){
+    return connCard({
+      face:p.face,faceColor:p.color,faceBg:p.bg,
+      name:p.name,role:p.type,
+      email:p.email||null,phone:p.phone||null,
+      nayNay:p.nayNay,
+      actionLabel:!p.nayNay?'Invite to NayNay':null,
+      actionFn:"window._inviteState={open:true,name:'"+p.name+"',role:'"+p.type+"',email:'"+(p.email||'')+"',phone:'"+(p.phone||'')+"'};rerender()",
+    });
+  }).join('');
+
+  // ── Invite panel ─────────────────────────────────────────────────────────
+  var ROLE_OPTIONS=['Veterinarian','Trainer','Farrier','Dentist','Chiropractor','Acupuncturist','Masseuse','Nutritionist','Other'];
+  var invitePanel=inv.open
+    ?'<div style="background:var(--md-primary-container);border:1.5px solid var(--md-primary)44;border-radius:var(--md-shape-lg);padding:14px;margin-bottom:14px;">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:12px;display:flex;align-items:center;gap:7px;">'+msiIcon('person_add',16,'var(--md-primary)')+'Add a professional</div>'
+      +'<div style="margin-bottom:8px;"><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">Name</label>'
+      +'<input type="text" value="'+inv.name+'" oninput="_inviteState.name=this.value" placeholder="Full name" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>'
+      +'<div style="margin-bottom:8px;"><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">Role</label>'
+      +'<select oninput="_inviteState.role=this.value" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;">'+ROLE_OPTIONS.map(function(r){return '<option'+(r===inv.role?' selected':'')+'>'+r+'</option>';}).join('')+'</select></div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">'
+      +'<div><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">Email</label>'
+      +'<input type="email" value="'+inv.email+'" oninput="_inviteState.email=this.value" placeholder="email@example.com" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>'
+      +'<div><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">Phone</label>'
+      +'<input type="tel" value="'+inv.phone+'" oninput="_inviteState.phone=this.value" placeholder="(555) 000-0000" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>'
+      +'</div>'
+      +'<div style="background:var(--md-surface);border-radius:9px;padding:9px 11px;font-size:11px;color:var(--md-on-surface-dim);margin-bottom:10px;line-height:1.5;">'+msiIcon('info',12,'var(--md-primary)')+'&nbsp;They will receive an email invitation to join NayNay and will automatically be connected to '+h.name+'\'s care team.</div>'
+      +'<div style="display:flex;gap:8px;">'
+      +'<button onclick="window._inviteState.open=false;rerender()" style="flex:1;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:9px;padding:10px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface-dim);cursor:pointer;">Cancel</button>'
+      +'<button onclick="showToast(\'Invitation sent to \'+(window._inviteState.name||\'professional\')+\'!\',\'check_circle\',\'success\');window._inviteState={open:false,name:\'\',role:\'Veterinarian\',email:\'\',phone:\'\'};rerender()" style="flex:1;background:var(--md-primary);border:none;border-radius:9px;padding:10px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">'+msiIcon('send',14,'#fff')+'Send Invite</button>'
+      +'</div></div>'
+    :'';
+
+  // ── Add professional button ───────────────────────────────────────────────
+  var addProBtn='<button onclick="window._inviteState={open:true,name:\'\',role:\'Veterinarian\',email:\'\',phone:\'\'};rerender()" style="width:100%;background:var(--md-surface);border:2px dashed var(--md-outline);border-radius:var(--md-shape-md);padding:12px;font-size:13px;font-weight:600;font-family:\'DM Sans\',sans-serif;color:var(--md-primary);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:4px;">'+msiIcon('person_add',16,'var(--md-primary)')+'Add a professional</button>';
+
+  connectionsTab='<div style="padding:14px;">'
+    +invitePanel
+    +sectionHead('Owners','person')
+    +ownerCards
+    +sectionHead('Barn','home')
+    +barnCard
+    +sectionHead('Veterinarian','medical_services')
+    +vetCard
+    +sectionHead('Trainer','sports')
+    +trainerCard
+    +(otherPros.length?sectionHead('Other professionals','groups')+otherCards:'')
+    +addProBtn
+    +'</div>';
+
+  })();
+
+    // ── Competitions Tab ─────────────────────────────────────────────────────
+  var compHistory=(HORSE_COMPETITION_HISTORY[h.id]||[]);
+  var upcomingPass=EVENT_PASSES.find(function(p){return p.horseId===h.id;});
+
+  function scoreColor(s){return s>=70?'var(--md-secondary)':s>=65?'var(--md-primary)':'var(--md-warning)';}
+  function placeBadge(pl,plOf){
+    var colors={1:'background:#FFD700;color:#5A4000;',2:'background:#C0C0C0;color:#333;',3:'background:#CD7F32;color:#fff;'};
+    var bg=colors[pl]||'background:var(--md-surface-variant);color:var(--md-on-surface-dim);';
+    return '<div style="'+bg+'border-radius:20px;padding:3px 9px;font-size:10px;font-weight:700;white-space:nowrap;">'+pl+(pl===1?'st':pl===2?'nd':pl===3?'rd':'th')+' / '+plOf+'</div>';
+  }
+
+  // Score trend chart
+  function makeScoreChart(comps){
+    if(!comps.length)return '';
+    var rev=comps.slice().reverse();
+    var W=320,H=100,pl=36,pr=10,pt2=12,pb=24,iW=W-pl-pr,iH=H-pt2-pb;
+    var minS=Math.max(55,Math.floor(Math.min.apply(null,rev.map(function(c){return c.score;}))-2));
+    var maxS=Math.min(100,Math.ceil(Math.max.apply(null,rev.map(function(c){return c.score;}))+2));
+    var coords=rev.map(function(c,i){return {x:pl+(i/(rev.length-1||1))*iW,y:pt2+iH-(((c.score-minS)/(maxS-minS))*iH),s:c};});
+    var poly=coords.map(function(p){return p.x+','+p.y;}).join(' ');
+    var fill=poly+' '+coords[coords.length-1].x+','+(pt2+iH)+' '+coords[0].x+','+(pt2+iH);
+    // Y grid at 65, 70, 75
+    var gridVals=[65,70,75].filter(function(v){return v>=minS&&v<=maxS;});
+    var grid=gridVals.map(function(v){var y=pt2+iH-(((v-minS)/(maxS-minS))*iH);return '<line x1="'+pl+'" y1="'+y+'" x2="'+(W-pr)+'" y2="'+y+'" stroke="var(--md-outline-variant)" stroke-width="0.5" stroke-dasharray="3,3"/><text x="'+(pl-4)+'" y="'+(y+3)+'" text-anchor="end" font-size="8" fill="var(--md-on-surface-dim)">'+v+'</text>';}).join('');
+    var dots=coords.map(function(p){return '<circle cx="'+p.x+'" cy="'+p.y+'" r="4" fill="'+scoreColor(p.s.score)+'" stroke="var(--md-surface)" stroke-width="1.5"/>';}).join('');
+    var xlbls=coords.map(function(p){var d=p.s.dateISO.substring(5,10).replace('-','/');return '<text x="'+p.x+'" y="'+(H-4)+'" text-anchor="middle" font-size="7" fill="var(--md-on-surface-dim)">'+d+'</text>';}).join('');
+    // Level change markers
+    var levelMarkers='';
+    rev.forEach(function(c,i){
+      if(i>0&&c.level!==rev[i-1].level){
+        var x=pl+(i/(rev.length-1||1))*iW;
+        levelMarkers+='<line x1="'+x+'" y1="'+pt2+'" x2="'+x+'" y2="'+(pt2+iH)+'" stroke="var(--md-tertiary)" stroke-width="1" stroke-dasharray="2,2"/>';
+        levelMarkers+='<text x="'+(x+3)+'" y="'+(pt2+8)+'" font-size="7" fill="var(--md-tertiary)">Level up</text>';
+      }
+    });
+    return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="overflow:visible;">'+grid+levelMarkers+'<polygon points="'+fill+'" fill="var(--md-primary)" fill-opacity="0.08"/><polyline points="'+poly+'" fill="none" stroke="var(--md-primary)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>'+dots+xlbls+'</svg>';
+  }
+
+  // Pre-comp factor insights
+  function compInsights(comps,sess){
+    if(comps.length<2)return '';
+    var ins=[];
+    // Training volume correlation
+    var highVol=comps.filter(function(c){return c.trainingWeek.sessions>=4;});
+    var lowVol=comps.filter(function(c){return c.trainingWeek.sessions<4;});
+    function avgScore(arr){return arr.length?(arr.reduce(function(s,c){return s+c.score;},0)/arr.length).toFixed(1)*1:null;}
+    var hva=avgScore(highVol),lva=avgScore(lowVol);
+    if(hva&&lva&&Math.abs(hva-lva)>=1.0)ins.push(msiIcon('fitness_center',13,'var(--md-secondary)')+'&nbsp;Scores '+(hva-lva).toFixed(1)+' pts higher after 4+ training sessions/week ('+hva+'% vs '+lva+'%)');
+    // Weather / temp correlation
+    var coolComps=comps.filter(function(c){return c.weather.temp<65;});
+    var warmComps=comps.filter(function(c){return c.weather.temp>=65;});
+    var cca=avgScore(coolComps),wca=avgScore(warmComps);
+    if(cca&&wca&&Math.abs(cca-wca)>=1.5)ins.push(msiIcon('thermometer',13,'var(--md-primary)')+'&nbsp;'+Math.abs(cca-wca).toFixed(1)+'% better '+(cca>wca?'in cool conditions (<65\xb0F)':'in warm conditions'));
+    // Best TQS week
+    var best=comps.reduce(function(a,b){return a.score>b.score?a:b;});
+    if(best.trainingWeek)ins.push(msiIcon('emoji_events',13,'var(--md-warning)')+'&nbsp;Best result ('+best.score+'%) followed a week with '+best.trainingWeek.sessions+' sessions, avg TQS '+best.trainingWeek.avgTQS);
+    // Feed change
+    var withFeed=comps.filter(function(c){return c.feedChange;});
+    if(withFeed.length)ins.push(msiIcon('nutrition',13,'var(--md-tertiary)')+'&nbsp;Feed change before '+withFeed.map(function(c){return c.date;}).join(', ')+(withFeed[0].feedNote?' \u2014 '+withFeed[0].feedNote:''));
+    if(!ins.length)return '';
+    return '<div style="background:var(--md-secondary-container);border-radius:10px;padding:10px 12px;margin-bottom:12px;"><div style="font-size:10px;font-weight:700;color:var(--md-secondary);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;">Pre-competition insights</div>'+ins.map(function(x){return '<div style="font-size:12px;color:var(--md-on-surface);display:flex;align-items:center;gap:4px;margin-bottom:3px;">'+x+'</div>';}).join('')+'</div>';
+  }
+
+  // Competition result card (expandable)
+  function compCard(comp,idx){
+    var expanded=S.expandedSession===('comp_'+comp.id);
+    var isUpcoming=comp.passId&&upcomingPass&&comp.passId===upcomingPass.id;
+    return '<div style="border-bottom:1px solid var(--md-outline-variant);">'
+      +'<div onclick="toggleSessionEl(this)" data-key="comp_'+comp.id+'" style="display:flex;align-items:flex-start;gap:10px;padding:11px 14px;cursor:pointer;">'
+      +'<div style="min-width:44px;text-align:center;">'
+      +'<div style="font-size:16px;font-weight:700;color:'+scoreColor(comp.score)+';">'+comp.score+'%</div>'
+      +'<div style="font-size:9px;color:var(--md-on-surface-dim);">score</div>'
+      +'</div>'
+      +'<div style="flex:1;min-width:0;">'
+      +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px;">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+comp.event+'</div>'
+      +(isUpcoming?'<span style="font-size:9px;font-weight:700;background:var(--md-primary-container);color:var(--md-primary);padding:2px 6px;border-radius:8px;">Upcoming</span>':'')
+      +(comp.feedChange?'<span style="font-size:9px;font-weight:700;background:var(--md-tertiary-container);color:var(--md-tertiary);padding:2px 5px;border-radius:6px;">feed \u0394</span>':'')
+      +'</div>'
+      +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+comp.date+' \xb7 '+comp.test+'</div>'
+      +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+comp.location+' \xb7 '+comp.weather.temp+'\xb0F \xb7 '+comp.weather.conditions+'</div>'
+      +'</div>'
+      +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">'+placeBadge(comp.placement,comp.placementOf)
+      +'</div>'
+      +'<svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;transform:'+(expanded?'rotate(180deg)':'rotate(0)')+';margin-top:2px;"><path d="M4 6l4 4 4-4" stroke="var(--md-on-surface-dim)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      +'</div>'
+      +(expanded?'<div style="padding:0 14px 12px;">'
+        // Pre-comp factors strip
+        +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;">'
+        +[{l:'Pre-comp sessions',v:comp.trainingWeek.sessions},{l:'Pre-comp TQS',v:comp.trainingWeek.avgTQS},{l:'Humidity',v:comp.weather.humidity+'%'}]
+        .map(function(a){return '<div style="background:var(--md-surface-variant);border-radius:8px;padding:7px 9px;"><div style="font-size:9px;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:1px;">'+a.l+'</div><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+a.v+'</div></div>';}).join('')
+        +'</div>'
+        // Judge remarks
+        +(comp.remarks?'<div style="background:var(--md-surface);border:1px solid var(--md-outline-variant);border-radius:9px;padding:10px 12px;margin-bottom:8px;">'
+          +'<div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;margin-bottom:4px;">Judge remarks \xb7 '+comp.judge+'</div>'
+          +'<div style="font-size:12px;color:var(--md-on-surface-variant);line-height:1.55;font-style:italic;">"'+comp.remarks+'"</div></div>':'')
+        // Collective marks
+        +(comp.coefficients?'<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+          +Object.entries(comp.coefficients).map(function(e){return '<div style="background:var(--md-primary-container);border-radius:7px;padding:5px 9px;"><div style="font-size:9px;color:var(--md-on-surface-dim);text-transform:capitalize;">'+e[0]+'</div><div style="font-size:13px;font-weight:700;color:var(--md-primary);">'+e[1]+'</div></div>';}).join('')+'</div>':'')
+        // Link to event pass
+        +(isUpcoming?'<button onclick="S.ownerEventPass=\''+upcomingPass.id+'\';S.showScanOverlay=true;rerender()" style="width:100%;margin-top:10px;background:var(--md-primary);color:#fff;border:none;border-radius:9px;padding:10px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">'+msiIcon('qr_code_scanner',16,'#fff')+'View Event Pass</button>':'')
+        +'</div>'
+        :'')
+      +'</div>';
+  }
+
+  // Build competitions tab
+  var competitionsTab;
+  if(!compHistory.length){
+    competitionsTab='<div style="padding:20px;text-align:center;color:var(--md-on-surface-dim);font-size:13px;">No competition records for '+h.name+'.</div>';
+  } else {
+    var bestComp=compHistory.reduce(function(a,b){return a.score>b.score?a:b;});
+    var lastComp=compHistory[0];
+    var avgScoreAll=Math.round(compHistory.reduce(function(s,c){return s+c.score;},0)/compHistory.length*10)/10;
+    var sessions_var=HORSE_TRAINING_HISTORY[h.id]||[];
+
+    // Summary stats
+    var summaryStrip='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">'
+      +[{l:'Shows',v:compHistory.length},{l:'Avg score',v:avgScoreAll+'%'},{l:'Best',v:bestComp.score+'%'}]
+      .map(function(a){return '<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;"><div style="font-size:10px;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">'+a.l+'</div><div style="font-size:18px;font-weight:700;color:var(--md-on-surface);">'+a.v+'</div></div>';}).join('')
+      +'</div>';
+
+    // Upcoming pass card if exists
+    var passCard='';
+    if(upcomingPass){
+      passCard='<div style="background:linear-gradient(135deg,#112030 0%,#1E3A52 100%);border:1.5px solid rgba(58,172,190,0.35);border-radius:14px;padding:14px;margin-bottom:12px;display:flex;align-items:center;gap:12px;">'
+        +'<div style="flex:1;"><div style="font-size:10px;font-weight:700;color:rgba(58,172,190,0.8);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:3px;">Next Competition</div>'
+        +'<div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:2px;">'+upcomingPass.event.name+'</div>'
+        +'<div style="font-size:12px;color:rgba(255,255,255,0.6);">'+upcomingPass.event.date+' \xb7 '+upcomingPass.event.venue+'</div></div>'
+        +'<button onclick="S.ownerEventPass=\''+upcomingPass.id+'\';S.showScanOverlay=true;rerender()" style="background:rgba(58,172,190,0.2);border:1.5px solid rgba(58,172,190,0.4);color:rgba(58,172,190,0.9);border-radius:10px;padding:8px 12px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px;">'+msiIcon('qr_code_scanner',14,'rgba(58,172,190,0.9)')+'Pass</button>'
+        +'</div>';
+    }
+
+    competitionsTab='<div style="padding:14px;">'
+      +summaryStrip
+      +passCard
+      +compInsights(compHistory,sessions_var)
+      +'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:12px;margin-bottom:12px;"><div style="font-size:11px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Score trend</div>'+makeScoreChart(compHistory)+'</div>'
+      +'<div style="font-size:12px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Results</div>'
+      +'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);overflow:hidden;">'+compHistory.map(compCard).join('')+'</div>'
+      +'</div>';
+  }
+
+
+  function tqsColor(v){return v>=7.5?'var(--md-secondary)':v>=6.5?'var(--md-primary)':'var(--md-warning)';}
+  function typeColor(tp){return ({Dressage:'var(--md-secondary)',Flat:'var(--md-primary)',Hack:'var(--md-tertiary)',Fitness:'var(--md-warning)',Jump:'var(--md-error)'})[tp]||'var(--md-on-surface-dim)';}
+
+  function makeTqsChart(ss){
+    if(!ss.length)return '';
+    var pts=ss.slice().reverse().slice(0,12);
+    var W=320,H=100,pl=30,pr=10,pt2=10,pb=24,iW=W-pl-pr,iH=H-pt2-pb;
+    var coords=pts.map(function(s,i){return {x:pl+(i/(pts.length-1||1))*iW,y:pt2+iH-(((s.tqs-5)/5)*iH),tqs:s.tqs,date:s.date};});
+    var poly=coords.map(function(p){return p.x+','+p.y;}).join(' ');
+    var fill=poly+' '+coords[coords.length-1].x+','+(pt2+iH)+' '+coords[0].x+','+(pt2+iH);
+    var grid=[6,7,8].map(function(v){var y=pt2+iH-(((v-5)/5)*iH);return '<line x1="'+pl+'" y1="'+y+'" x2="'+(W-pr)+'" y2="'+y+'" stroke="var(--md-outline-variant)" stroke-width="0.5"/><text x="'+(pl-4)+'" y="'+(y+3)+'" text-anchor="end" font-size="8" fill="var(--md-on-surface-dim)">'+v+'</text>';}).join('');
+    var dots=coords.map(function(p){return '<circle cx="'+p.x+'" cy="'+p.y+'" r="3" fill="'+tqsColor(p.tqs)+'" stroke="var(--md-surface)" stroke-width="1.5"/>';}).join('');
+    var xlbls=coords.filter(function(_,i){return i===0||i===Math.floor(coords.length/2)||i===coords.length-1;}).map(function(p){return '<text x="'+p.x+'" y="'+(H-4)+'" text-anchor="middle" font-size="7.5" fill="var(--md-on-surface-dim)">'+p.date+'</text>';}).join('');
+    return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="overflow:visible;">'+grid+'<polygon points="'+fill+'" fill="var(--md-primary)" fill-opacity="0.08"/><polyline points="'+poly+'" fill="none" stroke="var(--md-primary)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>'+dots+xlbls+'</svg>';
+  }
+
+  function makeRadarChart(ss){
+    if(!ss.length)return '';
+    var ks=['rhythm','suppleness','contact','impulsion','straightness','collection'];
+    var ls=['Rhythm','Supple','Contact','Impuls','Straight','Collect'];
+    var rec=ss.slice(0,4),prv=ss.slice(4,8);
+    function avg(arr,k){var v=arr.map(function(s){return s.skills[k];}).filter(function(x){return x!=null;});return v.length?v.reduce(function(a,b){return a+b;},0)/v.length:0;}
+    var cx=75,cy=75,R=52,N=6;
+    function ptXY(i,v){var a=-Math.PI/2+(i/N)*2*Math.PI,r=(v/10)*R;return [(cx+r*Math.cos(a)).toFixed(1),(cy+r*Math.sin(a)).toFixed(1)];}
+    function axXY(i){var a=-Math.PI/2+(i/N)*2*Math.PI;return [(cx+(R+11)*Math.cos(a)).toFixed(1),(cy+(R+11)*Math.sin(a)).toFixed(1)];}
+    var rings=[5,7.5,10].map(function(v){return '<polygon points="'+ks.map(function(_,i){var p=ptXY(i,v);return p[0]+','+p[1];}).join(' ')+'" fill="none" stroke="var(--md-outline-variant)" stroke-width="0.5"/>';}).join('');
+    var axes=ks.map(function(_,i){var e=axXY(i);return '<line x1="'+cx+'" y1="'+cy+'" x2="'+e[0]+'" y2="'+e[1]+'" stroke="var(--md-outline-variant)" stroke-width="0.7"/>';}).join('');
+    var lbls=ks.map(function(_,i){var e=axXY(i);return '<text x="'+e[0]+'" y="'+e[1]+'" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="var(--md-on-surface-dim)">'+ls[i]+'</text>';}).join('');
+    var curPts=ks.map(function(k,i){var p=ptXY(i,avg(rec,k));return p[0]+','+p[1];}).join(' ');
+    var prvPts=prv.length?ks.map(function(k,i){var p=ptXY(i,avg(prv,k));return p[0]+','+p[1];}).join(' '):'';
+    return '<svg viewBox="0 0 150 150" width="150" height="150">'+rings+axes+lbls+(prvPts?'<polygon points="'+prvPts+'" fill="var(--md-on-surface-dim)" fill-opacity="0.07" stroke="var(--md-on-surface-dim)" stroke-width="1" stroke-dasharray="2,2"/>':'')+'<polygon points="'+curPts+'" fill="var(--md-primary)" fill-opacity="0.2" stroke="var(--md-primary)" stroke-width="1.5"/></svg>';
+  }
+
+  function makeFreqChart(ss){
+    if(!ss.length)return '';
+    var weeks={};
+    ss.forEach(function(s){var d=new Date(s.dateISO+'T12:00:00'),day=d.getDay(),mon=new Date(d);mon.setDate(d.getDate()-(day===0?6:day-1));var key=mon.toISOString().split('T')[0];weeks[key]=(weeks[key]||0)+1;});
+    var keys=Object.keys(weeks).sort().slice(-8);
+    if(!keys.length)return '';
+    var maxC=Math.max.apply(null,keys.map(function(k){return weeks[k];}));
+    var W=320,H=60,bw=Math.floor((W-20)/keys.length)-4;
+    return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="overflow:visible;">'+keys.map(function(k,i){var cnt=weeks[k],bh=Math.round((cnt/maxC)*40),x=10+i*(bw+4),y=H-bh-16;return '<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+bh+'" rx="3" fill="var(--md-primary)" fill-opacity="0.7"/><text x="'+(x+bw/2)+'" y="'+(H-4)+'" text-anchor="middle" font-size="7" fill="var(--md-on-surface-dim)">'+k.slice(5,7)+'/'+k.slice(8,10)+'</text><text x="'+(x+bw/2)+'" y="'+(y-2)+'" text-anchor="middle" font-size="8" font-weight="700" fill="var(--md-primary)">'+cnt+'</text>';}).join('')+'</svg>';
+  }
+
+  function envInsights(ss){
+    if(ss.length<4)return '';
+    function avg(arr){return arr.length?(arr.reduce(function(s,x){return s+x.tqs;},0)/arr.length).toFixed(1)*1:null;}
+    var cool=ss.filter(function(s){return s.env.temp<65;}),warm=ss.filter(function(s){return s.env.temp>=65;});
+    var ca=avg(cool),wa=avg(warm),ins=[];
+    if(ca&&wa&&Math.abs(ca-wa)>=0.3)ins.push(msiIcon('thermometer',13,'var(--md-secondary)')+'&nbsp;Scores '+Math.abs(ca-wa).toFixed(1)+' pts higher '+(ca>wa?'on cool days (&lt;65\xb0F)':'on warm days'));
+    var gf=ss.filter(function(s){return s.env.footing==='Good';}),sf=ss.filter(function(s){return s.env.footing==='Soft';});
+    var ga=avg(gf),sa=avg(sf);
+    if(ga&&sa&&Math.abs(ga-sa)>=0.3)ins.push(msiIcon('grass',13,'var(--md-primary)')+'&nbsp;'+(ga>sa?'Better on firm footing':'Better on soft footing')+' ('+Math.abs(ga-sa).toFixed(1)+' pt diff)');
+    var fc=ss.filter(function(s){return s.feedChange;});
+    if(fc.length)ins.push(msiIcon('nutrition',13,'var(--md-tertiary)')+'&nbsp;Feed change '+fc[0].date+(fc[0].feedNote?' \u2014 '+fc[0].feedNote:''));
+    if(!ins.length)return '';
+    return '<div style="background:var(--md-secondary-container);border-radius:10px;padding:10px 12px;margin-bottom:12px;"><div style="font-size:10px;font-weight:700;color:var(--md-secondary);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;">Insights</div>'+ins.map(function(x){return '<div style="font-size:12px;color:var(--md-on-surface);display:flex;align-items:center;gap:4px;margin-bottom:3px;">'+x+'</div>';}).join('')+'</div>';
+  }
+
+  function sessionRow(s){
+    var sk=['rhythm','suppleness','contact','impulsion','straightness','collection'];
+    var sessKey=s.dateISO+'_'+h.id;
+    var expanded=S.expandedSession===sessKey;
+    var skillBars=sk.filter(function(k){return s.skills[k]!=null;}).map(function(k){var v=s.skills[k];return '<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;"><div style="font-size:9px;color:var(--md-on-surface-dim);width:44px;flex-shrink:0;">'+k.charAt(0).toUpperCase()+k.slice(0,5)+'</div><div style="flex:1;height:4px;background:var(--md-surface-variant);border-radius:2px;"><div style="height:100%;width:'+Math.round(v/10*100)+'%;background:'+tqsColor(v)+';border-radius:2px;"></div></div><div style="font-size:9px;font-weight:700;color:var(--md-on-surface-dim);width:22px;text-align:right;">'+v+'</div></div>';}).join('');
+    return '<div style="border-bottom:1px solid var(--md-outline-variant);">'
+      +'<div onclick="toggleSessionEl(this)" data-key="'+sessKey+'" style="display:flex;align-items:center;gap:9px;padding:10px 14px;cursor:pointer;">'
+      +'<div style="width:36px;height:36px;border-radius:9px;background:'+typeColor(s.type)+'22;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon(s.type==='Dressage'?'sports':s.type==='Hack'?'nature':'fitness_center',18,typeColor(s.type))+'</div>'
+      +'<div style="flex:1;min-width:0;"><div style="display:flex;align-items:center;gap:6px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+s.type+'</div>'+(s.feedChange?'<span style="font-size:9px;font-weight:700;background:var(--md-tertiary-container);color:var(--md-tertiary);padding:2px 5px;border-radius:6px;">feed \u0394</span>':'')+'</div>'
+      +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+s.date+' \xb7 '+s.duration+' min \xb7 '+s.env.temp+'\xb0F \xb7 '+s.env.weather+'</div>'
+      +(s.focus&&s.focus.length?'<div style="font-size:11px;color:var(--md-on-surface-variant);margin-top:1px;">'+s.focus.join(' \xb7 ')+'</div>':'')+'</div>'
+      +'<div style="text-align:right;flex-shrink:0;"><div style="font-size:16px;font-weight:700;color:'+tqsColor(s.tqs)+';">'+s.tqs+'</div><div style="font-size:9px;color:var(--md-on-surface-dim);">TQS</div></div>'
+      +'<svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;transform:'+(expanded?'rotate(180deg)':'rotate(0deg)')+';"><path d="M4 6l4 4 4-4" stroke="var(--md-on-surface-dim)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      +'</div>'
+      +(expanded?'<div style="padding:0 14px 12px;"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div>'+skillBars+'</div><div style="background:var(--md-surface-variant);border-radius:9px;padding:9px;">'+(s.notes?'<div style="font-size:11px;color:var(--md-on-surface-variant);line-height:1.5;margin-bottom:6px;font-style:italic;">'+s.notes+'</div>':'')+'<div style="font-size:10px;color:var(--md-on-surface-dim);">'+s.env.footing+' footing \xb7 '+s.env.humidity+'% humidity</div>'+(s.feedChange&&s.feedNote?'<div style="font-size:10px;color:var(--md-tertiary);margin-top:4px;">'+s.feedNote+'</div>':'')+'</div></div></div>':'')
+      +'</div>';
+  }
+
+  var trainingTab;
+  if(!sessions.length){
+    trainingTab='<div style="padding:20px;text-align:center;color:var(--md-on-surface-dim);font-size:13px;">No training records for '+h.name+'.</div>';
+  } else {
+    var ra=sessions.slice(0,4).reduce(function(s,x){return s+x.tqs;},0)/Math.min(sessions.length,4);
+    var dsCnt=sessions.filter(function(s){return s.type==='Dressage';}).length;
+    trainingTab='<div style="padding:14px;">'
+      +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">'
+      +[{l:'Sessions',v:sessions.length},{l:'Dressage',v:dsCnt},{l:'Avg TQS',v:Math.round(ra*10)/10}].map(function(a){return '<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;"><div style="font-size:10px;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">'+a.l+'</div><div style="font-size:18px;font-weight:700;color:var(--md-on-surface);">'+a.v+'</div></div>';}).join('')+'</div>'
+      +envInsights(sessions)
+      +'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:12px;margin-bottom:12px;"><div style="font-size:11px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Training Quality Score</div>'+makeTqsChart(sessions)+'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">'
+      +'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:12px;display:flex;flex-direction:column;align-items:center;"><div style="font-size:11px;font-weight:700;color:var(--md-on-surface);margin-bottom:6px;align-self:flex-start;">Skill profile</div>'+makeRadarChart(sessions)+'<div style="font-size:9px;color:var(--md-on-surface-dim);margin-top:4px;align-self:flex-start;display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:10px;height:2px;background:var(--md-primary);vertical-align:middle;"></span>Recent <span style="display:inline-block;width:12px;border-top:1px dashed var(--md-on-surface-dim);vertical-align:middle;margin-left:4px;"></span>Prior</div></div>'
+      +'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:12px;"><div style="font-size:11px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Sessions / week</div>'+makeFreqChart(sessions)+'</div>'
+      +'</div>'
+      +'<div style="font-size:12px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Session log</div>'
+      +'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);overflow:hidden;">'+sessions.map(sessionRow).join('')+'</div>'
+      +'</div>';
+  }
+
 
   // Feed & Meds
   const reg=HORSE_REGIMENS[h.id]||{feed:[],supplements:[],medications:[],vetNotes:''};
   function regRow(item,cc,cb){return '<div style="padding:9px 0;border-bottom:1px solid var(--md-outline-variant);display:flex;gap:9px;align-items:flex-start;">'+(item.changed?'<span style="font-size:9px;font-weight:700;background:'+cb+';color:'+cc+';padding:2px 6px;border-radius:6px;flex-shrink:0;margin-top:2px;">Changed</span>':'<div style="width:8px;flex-shrink:0;"></div>')+'<div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--md-on-surface);">'+item.label+'</div><div style="font-size:12px;color:var(--md-on-surface-dim);">'+item.amount+(item.schedule?' · '+item.schedule:'')+'</div>'+(item.changeNote?'<div style="font-size:11px;color:'+cc+';margin-top:2px;line-height:1.4;">'+item.changeNote+'</div>':'')+'</div></div>';}
-  const feedTab='<div style="padding:14px;">'+(reg.feed&&reg.feed.length?'<div style="margin-bottom:12px;"><div style="font-size:12px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Feed</div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:0 13px;">'+reg.feed.map(function(i){return regRow(i,t.WARN,t.WARNBG);}).join('')+'</div></div>':'')+(reg.supplements&&reg.supplements.length?'<div style="margin-bottom:12px;"><div style="font-size:12px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Supplements</div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:0 13px;">'+reg.supplements.map(function(i){return regRow(i,'var(--md-tertiary)','var(--md-tertiary-container)');}).join('')+'</div></div>':'')+(reg.medications&&reg.medications.length?'<div style="margin-bottom:12px;"><div style="font-size:12px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Medications</div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:0 13px;">'+reg.medications.map(function(i){return regRow(i,t.DNG,t.DNGBG);}).join('')+'</div></div>':'')+(reg.vetNotes?'<div style="background:var(--md-primary-container);border-radius:var(--md-shape-md);border:1px solid var(--md-outline);padding:11px 13px;"><div style="font-size:10px;font-weight:700;color:var(--md-on-primary-container);text-transform:uppercase;margin-bottom:4px;">Vet notes</div><div style="font-size:13px;color:var(--md-on-surface-variant);line-height:1.55;font-style:italic;">'+reg.vetNotes+'</div></div>':'')+'</div>';
+  // Feed & Meds state
+  if(!window._regimenEditState) window._regimenEditState={type:null,horseId:h.id};
+  var reState=window._regimenEditState;
 
-  const content={overview:overviewTab,health:healthTab,training:trainingTab,feed:feedTab}[tab]||overviewTab;
-  return '<div style="display:flex;flex-direction:column;height:100%;">'+hero+tabBar+'<div style="flex:1;overflow-y:auto;">'+content+'</div></div>';
+  function addRegimenForm(type){
+    var label=type==='feed'?'Feed item':type==='supplement'?'Supplement':'Medication';
+    var units=type==='feed'?['flake','lbs','kg','oz','cup','scoop']:type==='supplement'?['g','mg','oz','scoop','pump','ml']:['mg','g','ml','tablet','cc','pump'];
+    var days=['Mo','Tu','We','Th','Fr','Sa','Su'];
+    return '<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1.5px solid var(--md-primary)44;padding:14px;margin-bottom:12px;">'
+      +'<div style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:10px;">Add '+label+'</div>'
+      +'<input type="text" placeholder="'+label+' name" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;margin-bottom:8px;"/>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">'
+      +'<div><label style="font-size:9px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;display:block;margin-bottom:4px;">Amount</label>'
+      +'<input type="number" placeholder="e.g. 2" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>'
+      +'<div><label style="font-size:9px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;display:block;margin-bottom:4px;">Unit</label>'
+      +'<select style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;">'+units.map(function(u){return '<option>'+u+'</option>';}).join('')+'</select></div>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">'
+      +'<div><label style="font-size:9px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;display:block;margin-bottom:4px;">Times per day</label>'
+      +'<select style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;"><option>1x</option><option>2x</option><option>3x</option><option>4x</option></select></div>'
+      +'<div><label style="font-size:9px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;display:block;margin-bottom:4px;">Starting</label>'
+      +'<input type="date" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>'
+      +'</div>'
+      +'<label style="font-size:9px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;display:block;margin-bottom:6px;">Days of week</label>'
+      +'<div style="display:flex;gap:5px;margin-bottom:8px;">'+days.map(function(d){return '<button style="flex:1;padding:6px 2px;border-radius:7px;border:1.5px solid var(--md-outline);background:var(--md-surface-variant);font-size:11px;font-weight:700;color:var(--md-on-surface-dim);font-family:\'DM Sans\',sans-serif;cursor:pointer;" onclick="this.style.background=this.style.background===\'var(--md-primary)\'?\'var(--md-surface-variant)\':\'var(--md-primary)\';this.style.color=this.style.color===\'#fff\'?\'var(--md-on-surface-dim)\':\'#fff\'">'+d+'</button>';}).join('')+'</div>'
+      +(type!=='feed'?'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">'
+      +'<div><label style="font-size:9px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;display:block;margin-bottom:4px;">Duration</label>'
+      +'<input type="number" placeholder="e.g. 7" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>'
+      +'<div><label style="font-size:9px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;display:block;margin-bottom:4px;">Period</label>'
+      +'<select style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;"><option>days</option><option>weeks</option><option>months</option><option>ongoing</option></select></div>'
+      +'</div>':'')
+      +(type==='supplement'||type==='feed'?'':'<div style="margin-bottom:8px;"><label style="font-size:9px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;display:block;margin-bottom:4px;">Notes / Instructions</label><textarea rows="2" placeholder="Administration notes..." style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;resize:none;box-sizing:border-box;"></textarea></div>')
+      +'<div style="display:flex;gap:8px;">'
+      +'<button onclick="window._regimenEditState={type:null,horseId:\''+h.id+'\'};rerender()" style="flex:1;background:var(--md-surface-variant);border:none;border-radius:9px;padding:10px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface-dim);cursor:pointer;">Cancel</button>'
+      +'<button onclick="showToast(\'Item added\',\'check_circle\',\'success\');window._regimenEditState={type:null,horseId:\''+h.id+'\'};rerender()" style="flex:1;background:var(--md-primary);border:none;border-radius:9px;padding:10px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;color:#fff;cursor:pointer;">Save</button>'
+      +'</div></div>';
+  }
+
+  function addBtn(type,label){
+    var canEdit=anyRole('vet','manager','staff');
+    if(!canEdit)return '';
+    return '<button onclick="window._regimenEditState={type:\''+type+'\',horseId:\''+h.id+'\'};rerender()" style="display:flex;align-items:center;gap:5px;background:none;border:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--md-primary);font-family:\'DM Sans\',sans-serif;padding:0;">'+msiIcon('add',15,'var(--md-primary)')+'Add '+label+'</button>';
+  }
+
+  var feedSection=(reg.feed&&reg.feed.length?'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:0 13px;">'+reg.feed.map(function(i){return regRow(i,t.WARN,t.WARNBG);}).join('')+'</div>':'<div style="font-size:12px;color:var(--md-on-surface-dim);padding:4px 0;">No feed items defined.</div>');
+  var suppSection=(reg.supplements&&reg.supplements.length?'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:0 13px;">'+reg.supplements.map(function(i){return regRow(i,t.SUCC,t.SUCBG);}).join('')+'</div>':'<div style="font-size:12px;color:var(--md-on-surface-dim);padding:4px 0;">No supplements.</div>');
+  var medSection=(reg.medications&&reg.medications.length?'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:0 13px;">'+reg.medications.map(function(i){return regRow(i,t.DNG,t.DNGBG);}).join('')+'</div>':'<div style="font-size:12px;color:var(--md-on-surface-dim);padding:4px 0;">No medications.</div>');
+
+  var feedTabSections=
+    '<div style="margin-bottom:14px;">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><div style="font-size:12px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;">Feed</div>'+addBtn('feed','feed item')+'</div>'
+    +(reState.type==='feed'?addRegimenForm('feed'):'')
+    +feedSection+'</div>'
+    +'<div style="margin-bottom:14px;">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><div style="font-size:12px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;">Supplements</div>'+addBtn('supplement','supplement')+'</div>'
+    +(reState.type==='supplement'?addRegimenForm('supplement'):'')
+    +suppSection+'</div>'
+    +'<div style="margin-bottom:14px;">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><div style="font-size:12px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;">Medications</div>'+addBtn('medication','medication')+'</div>'
+    +(reState.type==='medication'?addRegimenForm('medication'):'')
+    +medSection+'</div>'
+    +(reg.vetNotes?'<div style="background:var(--md-surface-variant);border-radius:10px;padding:11px 13px;"><div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;margin-bottom:4px;">Vet notes</div><div style="font-size:13px;color:var(--md-on-surface-variant);line-height:1.5;">'+reg.vetNotes+'</div></div>':'');
+  var feedTab='<div style="padding:14px;">'+feedTabSections+'</div>';
+
+
+  const content={overview:overviewTab,health:healthTab,training:trainingTab,competitions:competitionsTab,connections:connectionsTab,feed:feedTab}[tab]||overviewTab;
+  return '<div style="display:flex;flex-direction:column;height:100%;">'+hero+tabBar+'<div id="horse-tab-body" style="flex:1;overflow-y:auto;">'+content+'</div></div>';
 }
 
 // --- BARN PROFESSIONALS DATA ---------------------------------
