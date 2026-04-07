@@ -971,6 +971,7 @@ function rToast(){
 
 function rerender(){
   const app=document.getElementById('app');if(!app.querySelector('#content-area')){render();return;}
+  if(window._ob&&window._ob.active){app.querySelector('#content-area').innerHTML=rOnboarding();return;}
   const t=TH,isVet=S.roles.length===1&&S.role==='vet',isMgr=S.roles.length===1&&S.role==='manager',isOwner=S.roles.length===1&&S.role==='owner',isTrainer=S.roles.length===1&&S.role==='trainer';
   const showHorse=!!S.selectedHorse&&!isVet,showBack=anyRole('manager')&&S.mgrView==='assignments';
   app.querySelector('#nav-bar').innerHTML=buildNav(isMgr,isVet,showBack,showHorse);
@@ -993,10 +994,706 @@ function render(){
   const app=document.getElementById('app');const t=TH,isVet=S.roles.length===1&&S.role==='vet',isMgr=S.roles.length===1&&S.role==='manager',isOwner=S.roles.length===1&&S.role==='owner',isTrainer=S.roles.length===1&&S.role==='trainer';
   const showHorse=!!S.selectedHorse&&!isVet,showBack=isMgr&&S.mgrView==='assignments';
   const showBB=!isVet||(isVet&&S.vetSignedIn);const pad=getPad(isVet,showHorse);
+  if(window._ob&&window._ob.active){
+    app.innerHTML=rToast()+'<div id="content-area" style="background:var(--md-background);flex:1;overflow-y:auto;height:100%;"></div>';
+    app.querySelector('#content-area').innerHTML=rOnboarding();
+    return;
+  }
   app.innerHTML=rToast()+'<div id="nav-bar">'+buildNav(isMgr,isVet,showBack,showHorse)+'</div><div id="content-area" style="background:var(--md-background);flex:1;padding:'+pad+';overflow-y:auto;"></div><div id="bottom-bar">'+(showBB?bottomBar(isMgr,isVet):'')+'</div>';
   app.querySelector('#content-area').innerHTML=getContent(isVet,isMgr,showHorse);
 }
+// ══════════════════════════════════════════════════════════════════════════
+// ONBOARDING STATE
+// ══════════════════════════════════════════════════════════════════════════
+if(!window._ob) window._ob={
+  active:false,
+  step:'splash',        // splash|role|account|setup_horse|setup_barn|setup_care|setup_invite|done
+  entryPoint:'fresh',   // fresh|invited|post_vax
+  inviteCtx:null,       // {from,fromRole,horseName,barnName,role,proType}
+  // role selection
+  roles:[],             // ['owner','manager','vet','trainer','staff']
+  proType:null,         // 'Veterinarian'|'Trainer'|'Farrier'|'Dentist'|'Chiropractor'|'Other'
+  // account
+  name:'',email:'',
+  // owner setup
+  horses:[{name:'',breed:'',color:'',age:'',sex:'Mare',photo:'',usef:''}],
+  horseIdx:0,
+  usef_open:false,
+  usef_user:'',usef_pass:'',usef_loading:false,usef_done:false,
+  barnSearch:'',barnFound:null,barnSent:false,
+  careTeam:{vet:{name:'',contact:'',sent:false},trainer:{name:'',contact:'',sent:false},farrier:{name:'',contact:'',sent:false}},
+  // manager setup
+  barnName:'',barnAddress:'',barnCity:'',barnState:'',barnStalls:'',
+  services:{board_full:true,board_partial:false,board_pasture:false,training:true,lessons_private:true,lessons_group:false,show_prep:false,breeding:false,haul_in:false,trailer:false},
+  tasks:{am_feed:{on:true,req:true},pm_feed:{on:true,req:true},am_turnout:{on:true,req:false},pm_turnout:{on:true,req:false},stall:{on:true,req:true},water:{on:true,req:false},blanket:{on:false,req:false},meds:{on:false,req:false}},
+  teamInvites:{staff:{name:'',contact:'',sent:false},vet:{name:'',contact:'',sent:false},trainer:{name:'',contact:'',sent:false},farrier:{name:'',contact:'',sent:false}},
+  // vet setup
+  practiceName:'',practiceCity:'',practiceState:'',vetServices:{wellness:true,coggins:true,vaccines:true,dental:false,lameness:false,prepurchase:false,emergency:false,imaging:false,surgery:false},
+  // multi-role queue
+  roleQueue:[],         // remaining roles to set up
+  currentSetupRole:null,
+};
+
+function obStart(entryPoint,inviteCtx){
+  if(!window._ob)window._ob={active:false,step:'splash',entryPoint:'fresh',inviteCtx:null,roles:[],proType:null,name:'',email:'',phone:'',phoneFormatted:'',verify:{code:'',entered:'',state:'idle',attemptsLeft:3},horses:[{name:'',breed:'',color:'',age:'',sex:'Mare',photo:'',usef:''}],horseIdx:0,usef_open:false,usef_user:'',usef_pass:'',usef_loading:false,usef_done:false,barnSearch:'',barnFound:null,barnSent:false,careTeam:{vet:{name:'',contact:'',sent:false},trainer:{name:'',contact:'',sent:false},farrier:{name:'',contact:'',sent:false}},barnName:'',barnAddress:'',barnCity:'',barnState:'',barnStalls:'',services:{board_full:true,board_partial:false,board_pasture:false,training:true,lessons_private:true,lessons_group:false,show_prep:false,breeding:false,haul_in:false,trailer:false},tasks:{am_feed:{on:true,req:true},pm_feed:{on:true,req:true},am_turnout:{on:true,req:false},pm_turnout:{on:true,req:false},stall:{on:true,req:true},water:{on:true,req:false},blanket:{on:false,req:false},meds:{on:false,req:false}},teamInvites:{staff:{name:'',contact:'',sent:false},vet:{name:'',contact:'',sent:false},trainer:{name:'',contact:'',sent:false},farrier:{name:'',contact:'',sent:false}},practiceName:'',practiceCity:'',practiceState:'',vetServices:{wellness:true,coggins:true,vaccines:true,dental:false,lameness:false,prepurchase:false,emergency:false,imaging:false,surgery:false},roleQueue:[],currentSetupRole:null};
+  window._ob.active=true;
+  window._ob.step='splash';
+  window._ob.entryPoint=entryPoint||'fresh';
+  if(inviteCtx) window._ob.inviteCtx=inviteCtx;
+  render();
+}
+function obNext(step){ window._ob.step=step; rerender(); }
+function obSetRole(r){
+  var ob=window._ob;
+  var idx=ob.roles.indexOf(r);
+  if(idx>=0) ob.roles.splice(idx,1); else ob.roles.push(r);
+  rerender();
+}
+function obComplete(){
+  var ob=window._ob;
+  // Set roles and route to appropriate home
+  var roles=ob.roles.length?ob.roles:['owner'];
+  S.roles=roles;
+  S.role=roles[0];
+  // pick best primary role
+  if(roles.includes('manager'))S.role='manager';
+  else if(roles.includes('vet'))S.role='vet';
+  else if(roles.includes('trainer'))S.role='trainer';
+  else if(roles.includes('owner'))S.role='owner';
+  else S.role=roles[0];
+  S.roleComboIdx=ROLE_COMBOS.findIndex(function(c){
+    return c.roles.length===roles.length&&roles.every(function(r){return c.roles.includes(r);});
+  });
+  if(S.roleComboIdx<0) S.roleComboIdx=0;
+  S.activeTab='home';S.vetSignedIn=true;
+  ob.active=false;
+  render();
+}
+function obSimulateUSEF(){
+  var ob=window._ob;
+  ob.usef_loading=true; rerender();
+  setTimeout(function(){
+    var h=ob.horses[ob.horseIdx]||ob.horses[0];
+    h.name=h.name||'Rivendell';
+    h.breed='Hanoverian';h.color='Dark Bay';h.age='11 years';h.sex='Mare';
+    h.usef='USEF #2024-HAV-8821';
+    ob.usef_loading=false;ob.usef_done=true;ob.usef_open=false;
+    rerender();
+  },1400);
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// ONBOARDING RENDERER
+// ══════════════════════════════════════════════════════════════════════════
+// Phone formatting helper
+function obFormatPhone(raw){
+  var d=raw.replace(/\D/g,'').substring(0,10);
+  if(d.length===0)return '';
+  if(d.length<=3)return '('+d;
+  if(d.length<=6)return '('+d.substring(0,3)+') '+d.substring(3);
+  return '('+d.substring(0,3)+') '+d.substring(3,6)+'-'+d.substring(6);
+}
+
+// Simulate sending SMS code
+function obSendCode(){
+  var ob=window._ob;
+  ob.verify.state='sending';
+  rerender();
+  setTimeout(function(){
+    // Generate a demo code — always '847291' for the demo
+    ob.verify.code='847291';
+    ob.verify.state='sent';
+    ob.verify.entered='';
+    ob.verify.attemptsLeft=3;
+    ob.step='verify';
+    rerender();
+  },1200);
+}
+
+// Simulate verifying code
+function obVerifyCode(){
+  var ob=window._ob;
+  ob.verify.state='checking';
+  rerender();
+  setTimeout(function(){
+    var entered=ob.verify.entered.replace(/\s/g,'');
+    // Demo phone numbers and their states:
+    // (555) 867-5309 → phone already registered to another user
+    // Any other phone + code '847291' → check for invite claim
+    var rawPhone=ob.phone.replace(/\D/g,'');
+    if(rawPhone==='5558675309'){
+      ob.verify.state='phone_taken';
+      rerender();
+      return;
+    }
+    if(entered!==ob.verify.code){
+      ob.verify.attemptsLeft--;
+      ob.verify.state=ob.verify.attemptsLeft>0?'wrong_code':'wrong_code_final';
+      rerender();
+      return;
+    }
+    // Correct code — check if this phone matches a pending invite
+    // Demo: if entryPoint is 'invited' OR phone ends in same digits as invite context → claim
+    var hasPendingInvite=ob.entryPoint==='invited';
+    ob.verify.state=hasPendingInvite?'claimed':'success';
+    rerender();
+  },1000);
+}
+
+
+function obUpdateSendBtn(){
+  var ob=window._ob;
+  if(!ob||ob.step!=='account')return;
+  var phoneRaw=ob.phone?ob.phone.replace(/\D/g,''):'';
+  var canSend=ob.name.trim().length>1&&phoneRaw.length===10&&(!ob.verify||ob.verify.state!=='sending');
+  var btn=document.getElementById('ob-send-btn');
+  if(!btn)return;
+  btn.disabled=!canSend;
+  btn.style.background=canSend?'var(--md-primary)':'var(--md-outline-variant)';
+  btn.style.color=canSend?'#fff':'var(--md-on-surface-dim)';
+  btn.style.cursor=canSend?'pointer':'not-allowed';
+}
+function obUpdateVerifyBtn(){
+  var ob=window._ob;
+  if(!ob||ob.step!=='verify')return;
+  var vs=ob.verify||{};
+  var codeVal=(vs.entered||'').replace(/\D/g,'').substring(0,6);
+  var canVerify=codeVal.length===6&&vs.state!=='checking'&&vs.state!=='wrong_code_final';
+  var btn=document.getElementById('ob-verify-btn');
+  if(!btn)return;
+  btn.disabled=!canVerify;
+  btn.style.background=canVerify?'var(--md-primary)':'var(--md-outline-variant)';
+  btn.style.color=canVerify?'#fff':'var(--md-on-surface-dim)';
+  btn.style.cursor=canVerify?'pointer':'not-allowed';
+}
+
+
+function rOnboarding(){
+  var ob=window._ob;
+  var t=TH;
+
+  // Full-screen wrapper (hides nav/bottom bar via CSS in the render() intercept)
+  var wrap=function(inner,showBack,backStep,hideProgress,stepNum,stepTotal){
+    var progress='';
+    if(!hideProgress&&stepNum&&stepTotal){
+      progress='<div style="display:flex;gap:5px;justify-content:center;margin-bottom:20px;">'
+        +Array.from({length:stepTotal},function(_,i){
+          return '<div style="width:'+(i<stepNum?'22':'8')+'px;height:8px;border-radius:10px;background:'+(i<stepNum?'var(--md-primary)':'var(--md-outline-variant)')+';transition:all 0.2s;"></div>';
+        }).join('')+'</div>';
+    }
+    var back=showBack?'<button onclick="obNext(\''+backStep+'\')" style="position:absolute;top:0;left:0;background:none;border:none;cursor:pointer;padding:4px;">'+msiIcon('arrow_back',22,'var(--md-on-surface)')+'</button>':'';
+    return '<div style="display:flex;flex-direction:column;min-height:100%;background:var(--md-background);">'
+      +'<div style="flex:1;padding:24px 20px 16px;max-width:480px;margin:0 auto;width:100%;box-sizing:border-box;">'
+      +'<div style="position:relative;min-height:28px;margin-bottom:16px;">'+back+'</div>'
+      +progress+inner
+      +'</div></div>';
+  };
+
+  // ── SPLASH ─────────────────────────────────────────────────────────────
+  if(ob.step==='splash'){
+    var inner='<div style="text-align:center;padding-top:20px;">'
+      // Logo + horse
+      +'<div style="margin-bottom:6px;">'+logoSVG(52,'var(--md-primary)')+'</div>'
+      +'<div style="font-size:28px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">NayNay</div>'
+      +'<div style="font-size:14px;color:var(--md-on-surface-dim);margin-bottom:36px;">Equine care, connected.</div>'
+      // Big horse avatar
+      +'<div style="margin:0 auto 36px;width:140px;height:140px;border-radius:50%;background:linear-gradient(135deg,var(--md-primary-container),var(--md-tertiary-container));display:flex;align-items:center;justify-content:center;">'
+      +'<svg viewBox="0 0 100 100" width="100" height="100">'
+      +'<ellipse cx="50" cy="62" rx="32" ry="26" fill="#4A2A0A"/>'
+      +'<ellipse cx="50" cy="36" rx="18" ry="18" fill="#4A2A0A"/>'
+      +'<ellipse cx="44" cy="30" rx="5" ry="8" fill="#F5EDE0"/>'
+      +'<ellipse cx="42" cy="72" rx="6" ry="8" fill="#F5EDE0"/>'
+      +'<ellipse cx="58" cy="72" rx="6" ry="8" fill="#F5EDE0"/>'
+      +'</svg>'
+      +'</div>'
+      // CTAs
+      +'<button onclick="obNext(\'role\')" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-bottom:12px;">Get started</button>'
+      +'<button onclick="obNext(\'invited\')" style="width:100%;background:transparent;color:var(--md-primary);border:2px solid var(--md-primary)33;border-radius:14px;padding:14px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-bottom:28px;">I was invited <span style="opacity:0.6;">›</span></button>'
+      +'<div style="font-size:11px;color:var(--md-on-surface-dim);">Already have an account? <span onclick="obComplete()" style="color:var(--md-primary);font-weight:600;cursor:pointer;">Sign in</span></div>'
+      +'</div>';
+    return wrap(inner,false,null,true);
+  }
+
+  // ── INVITED ────────────────────────────────────────────────────────────
+  if(ob.step==='invited'){
+    var ctx=ob.inviteCtx||{from:'Sarah K.',fromRole:'Owner',horseName:'Rivendell',barnName:'Sunrise Stables',role:'Veterinarian'};
+    var demoHorse=HORSES_ALL.find(function(h){return h.name===ctx.horseName;})||HORSES_ALL[0];
+    var inner='<div>'
+      +'<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">You\'ve been invited</div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:20px;">'+ctx.from+' has invited you to join '+ctx.horseName+'\'s care team on NayNay.</div>'
+      // Warm context card
+      +'<div style="background:var(--md-surface);border-radius:16px;border:1.5px solid var(--md-primary)33;padding:16px;margin-bottom:20px;">'
+      +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">'
+      +horseAvatar(demoHorse,52)
+      +'<div><div style="font-size:16px;font-weight:700;color:var(--md-on-surface);">'+ctx.horseName+'</div>'
+      +'<div style="font-size:12px;color:var(--md-on-surface-dim);">'+demoHorse.breed+' · '+(demoHorse.color||'')+'</div>'
+      +'<div style="font-size:12px;color:var(--md-on-surface-dim);">'+ctx.barnName+'</div>'
+      +'</div></div>'
+      +'<div style="height:1px;background:var(--md-outline-variant);margin-bottom:12px;"></div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;">'
+      +'<div><div style="font-size:11px;color:var(--md-on-surface-dim);">Invited by</div><div style="font-size:13px;font-weight:600;color:var(--md-on-surface);">'+ctx.from+'</div></div>'
+      +'<div style="text-align:right;"><div style="font-size:11px;color:var(--md-on-surface-dim);">Your role</div><div style="font-size:13px;font-weight:700;color:var(--md-primary);">'+ctx.role+'</div></div>'
+      +'</div></div>'
+      +'<button onclick="(function(){window._ob.roles=[\''+(ctx.role==='Veterinarian'?'vet':ctx.role==='Trainer'?'trainer':ctx.role==='Barn Manager'?'manager':'staff')+'\'];if(window._ob.roles[0]===\'vet\')window._ob.proType=\'Veterinarian\';obNext(\'account\');})()" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-bottom:12px;">Accept invitation</button>'
+      +'<button onclick="obNext(\'splash\')" style="width:100%;background:transparent;color:var(--md-on-surface-dim);border:none;padding:12px;font-size:13px;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Not for me</button>'
+      +'</div>';
+    return wrap(inner,true,'splash',true);
+  }
+
+  // ── ROLE SELECTION ─────────────────────────────────────────────────────
+  if(ob.step==='role'){
+    var ROLES=[
+      {id:'owner',   icon:'favorite',    label:'Horse Owner',   sub:'I own or co-own a horse'},
+      {id:'manager', icon:'home',        label:'Barn Manager',  sub:'I manage a barn or facility'},
+      {id:'vet',     icon:'medical_services', label:'Professional', sub:'Vet, trainer, farrier, or specialist'},
+      {id:'staff',   icon:'person',      label:'Barn Staff',    sub:'I work at a barn'},
+    ];
+    var PRO_TYPES=['Veterinarian','Trainer','Farrier','Dentist','Chiropractor','Other'];
+    var hasPro=ob.roles.includes('vet');
+    var hasMulti=ob.roles.length>1;
+    var roleCards=ROLES.map(function(r){
+      var on=ob.roles.includes(r.id);
+      return '<div onclick="obSetRole(\''+r.id+'\')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--md-surface);border-radius:14px;border:2px solid '+(on?'var(--md-primary)':'var(--md-outline-variant)')+';cursor:pointer;margin-bottom:10px;transition:border-color 0.15s;">'
+        +'<div style="width:44px;height:44px;border-radius:12px;background:'+(on?'var(--md-primary-container)':'var(--md-surface-variant)')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
+        +msiIcon(r.icon,22,on?'var(--md-primary)':'var(--md-on-surface-dim)')+'</div>'
+        +'<div style="flex:1;"><div style="font-size:15px;font-weight:700;color:var(--md-on-surface);">'+r.label+'</div>'
+        +'<div style="font-size:12px;color:var(--md-on-surface-dim);">'+r.sub+'</div></div>'
+        +(on?'<div style="width:24px;height:24px;border-radius:50%;background:var(--md-primary);display:flex;align-items:center;justify-content:center;">'+msiIcon('check',14,'#fff')+'</div>':'')
+        +'</div>';
+    }).join('');
+    var proTypeRow=hasPro?'<div style="background:var(--md-primary-container)33;border-radius:12px;padding:12px 14px;margin-bottom:10px;">'
+      +'<div style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">What kind of professional?</div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:7px;">'
+      +PRO_TYPES.map(function(pt){
+        var on=ob.proType===pt;
+        return '<button onclick="window._ob.proType=\''+pt+'\';rerender()" style="padding:6px 14px;border-radius:20px;border:1.5px solid '+(on?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(on?'var(--md-primary)':'var(--md-surface)')+';color:'+(on?'#fff':'var(--md-on-surface-variant)')+';font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">'+pt+'</button>';
+      }).join('')+'</div></div>':'';
+    var multiNote=hasMulti?'<div style="font-size:12px;color:var(--md-on-surface-dim);text-align:center;margin-bottom:12px;">You\'ll set up each role separately — takes about 2 min each.</div>':'';
+    var canContinue=ob.roles.length>0&&(!hasPro||ob.proType);
+    var inner='<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">What\'s your role?</div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:20px;">Select all that apply — you can always add more later.</div>'
+      +roleCards+proTypeRow+multiNote
+      +'<button onclick="obNext(\'account\')" '+(canContinue?'':'disabled ')+'style="width:100%;background:'+(canContinue?'var(--md-primary)':'var(--md-outline-variant)')+';color:'+(canContinue?'#fff':'var(--md-on-surface-dim)')+';border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(canContinue?'pointer':'not-allowed')+';margin-top:4px;">Continue</button>';
+    return wrap(inner,true,'splash',true);
+  }
+
+  // ── ACCOUNT BASICS ─────────────────────────────────────────────────────
+  // ── ACCOUNT: NAME + PHONE ─────────────────────────────────────────────────
+  if(ob.step==='account'){
+    var inpStyle='width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:12px;padding:12px 14px;font-size:15px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
+    var phoneRaw=ob.phone?ob.phone.replace(/\D/g,''):'';
+    var canSend=ob.name.trim().length>1&&phoneRaw.length===10&&(!ob.verify||ob.verify.state!=='sending');
+    var isSending=ob.verify&&ob.verify.state==='sending';
+    var inner='<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Create your account</div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:24px;">We use your mobile number as your unique identity and to verify you.</div>'
+      +'<div style="text-align:center;margin-bottom:20px;"><div style="width:72px;height:72px;border-radius:50%;background:var(--md-primary-container);border:2px dashed var(--md-primary)44;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;cursor:pointer;">'+msiIcon('add_a_photo',26,'var(--md-primary)')+'</div>'
+      +'<div style="font-size:12px;color:var(--md-on-surface-dim);">Add photo · optional</div></div>'
+      +'<div style="margin-bottom:14px;"><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Full name</label>'
+      +'<input type="text" value="'+ob.name+'" oninput="window._ob.name=this.value;obUpdateSendBtn()" placeholder="Your name" style="'+inpStyle+'"/></div>'
+      +'<div style="margin-bottom:6px;"><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Mobile number</label>'
+      +'<div style="display:flex;gap:8px;">'
+      +'<div style="background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:12px;padding:12px 14px;font-size:15px;color:var(--md-on-surface-dim);font-family:\'DM Sans\',sans-serif;white-space:nowrap;">+1</div>'
+      +'<input type="tel" value="'+(ob.phoneFormatted||'')+'" oninput="var r2=this.value.replace(/\\D/g,\'\');window._ob.phone=r2.substring(0,10);window._ob.phoneFormatted=obFormatPhone(this.value);this.value=window._ob.phoneFormatted;obUpdateSendBtn()" placeholder="(555) 000-0000" style="'+inpStyle+'"/>'
+      +'</div></div>'
+      +'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:5px;margin-bottom:20px;">A verification code will be sent to this number.</div>'
+      +(isSending
+        ?'<div style="width:100%;background:var(--md-outline-variant);border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface-dim);text-align:center;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;">'+msiIcon('sms',18,'var(--md-on-surface-dim)')+' Sending code…</div>'
+        :'<button id="ob-send-btn" onclick="obSendCode()" '+(canSend?'':'disabled ')+'style="width:100%;background:'+(canSend?'var(--md-primary)':'var(--md-outline-variant)')+';color:'+(canSend?'#fff':'var(--md-on-surface-dim)')+';border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(canSend?'pointer':'not-allowed')+';margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;">'+msiIcon('sms',18,canSend?'#fff':'var(--md-on-surface-dim)')+' Send verification code</button>')
+      +'<div style="font-size:12px;color:var(--md-on-surface-dim);text-align:center;margin-bottom:16px;">By continuing you agree to NayNay\'s <span style="color:var(--md-primary);">Terms</span> and <span style="color:var(--md-primary);">Privacy Policy</span>.</div>'
+      +'<div style="background:var(--md-surface-variant);border-radius:10px;padding:10px 12px;">'
+      +'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);margin-bottom:4px;">Demo numbers to try:</div>'
+      +'<div style="font-size:11px;color:var(--md-on-surface-dim);line-height:2;">Any number → new account or invite claim<br><span style="color:var(--md-error);font-weight:600;">(555) 867-5309</span> → already registered<br>SMS code is always <span style="font-family:monospace;font-weight:700;color:var(--md-primary);">847291</span></div></div>';
+    return wrap(inner,true,'role',false,1,4);
+  }
+
+  // ── VERIFY: SMS CODE ENTRY + OUTCOMES ─────────────────────────────────────
+  if(ob.step==='verify'){
+    var vs=ob.verify||{code:'847291',entered:'',state:'sent',attemptsLeft:3};
+    var nextStep2=ob.roles.includes('owner')?'setup_horse':ob.roles.includes('manager')?'setup_barn':ob.roles.includes('vet')?'setup_vet':'done';
+    var isChecking=vs.state==='checking';
+    var isClaimed=vs.state==='claimed';
+    var isSuccess=vs.state==='success';
+    var isTaken=vs.state==='phone_taken';
+    var isWrong=vs.state==='wrong_code';
+    var isFinal=vs.state==='wrong_code_final';
+
+    if(isClaimed){
+      var ctx2=ob.inviteCtx||{from:'Sarah K.',horseName:'Rivendell',barnName:'Sunrise Stables',role:'Veterinarian'};
+      return wrap(
+        '<div style="text-align:center;padding-top:10px;">'
+        +'<div style="width:64px;height:64px;border-radius:50%;background:var(--md-secondary-container);border:3px solid var(--md-secondary)44;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">'
+        +'<svg width="30" height="30" viewBox="0 0 28 28" fill="none"><path d="M5 14l6.5 6.5L23 8" stroke="var(--md-secondary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
+        +'<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:6px;">Account claimed!</div>'
+        +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:20px;line-height:1.6;">Your number matched a pending invitation. You\'re pre-connected.</div>'
+        +'<div style="background:var(--md-secondary-container);border-radius:14px;padding:14px 16px;margin-bottom:24px;text-align:left;">'+msiIcon('link',16,'var(--md-secondary)')
+        +'<span style="font-size:12px;font-weight:700;color:var(--md-secondary);margin-left:6px;">Invite matched</span>'
+        +'<div style="font-size:13px;color:var(--md-on-surface);margin-top:8px;font-weight:600;">'+ctx2.from+' → '+ctx2.horseName+'</div>'
+        +'<div style="font-size:12px;color:var(--md-on-surface-dim);">'+ctx2.barnName+' · '+ctx2.role+'</div></div>'
+        +'<button onclick="obNext(\''+nextStep2+'\')" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Continue setup →</button>'
+        +'</div>',false,null,true);
+    }
+
+    if(isSuccess){
+      return wrap(
+        '<div style="text-align:center;padding-top:10px;">'
+        +'<div style="width:64px;height:64px;border-radius:50%;background:var(--md-primary-container);border:3px solid var(--md-primary)44;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">'
+        +'<svg width="30" height="30" viewBox="0 0 28 28" fill="none"><path d="M5 14l6.5 6.5L23 8" stroke="var(--md-primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
+        +'<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:6px;">Number verified!</div>'
+        +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:24px;line-height:1.6;">'+(ob.phoneFormatted||'Your number')+' is your NayNay identity. Let\'s finish your profile.</div>'
+        +'<button onclick="obNext(\''+nextStep2+'\')" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Continue →</button>'
+        +'</div>',false,null,true);
+    }
+
+    if(isTaken){
+      return wrap(
+        '<div style="text-align:center;padding-top:10px;">'
+        +'<div style="width:64px;height:64px;border-radius:50%;background:var(--md-error-container);border:3px solid var(--md-error)44;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">'+msiIcon('phone_locked',28,'var(--md-error)')+'</div>'
+        +'<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:6px;">Number already registered</div>'
+        +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:16px;line-height:1.6;"><strong>'+(ob.phoneFormatted||'This number')+'</strong> is already linked to a NayNay account.</div>'
+        +'<div style="background:var(--md-error-container);border-radius:12px;padding:11px 13px;margin-bottom:20px;text-align:left;display:flex;align-items:center;gap:8px;">'+msiIcon('info',14,'var(--md-error)')+'<span style="font-size:12px;color:var(--md-error);font-weight:600;">Each mobile number can only be linked to one account.</span></div>'
+        +'<button onclick="window._ob.phone=\'\';window._ob.phoneFormatted=\'\';window._ob.verify={code:\'\',entered:\'\',state:\'idle\',attemptsLeft:3};obNext(\'account\')" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-bottom:10px;">Try a different number</button>'
+        +'<button style="width:100%;background:var(--md-surface);color:var(--md-primary);border:1.5px solid var(--md-primary)33;border-radius:14px;padding:14px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-bottom:10px;">Sign in to existing account</button>'
+        +'<button onclick="obNext(\'splash\')" style="width:100%;background:transparent;color:var(--md-on-surface-dim);border:none;padding:11px;font-size:13px;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Cancel</button>'
+        +'</div>',false,null,true);
+    }
+
+    // Code entry
+    var hasError=isWrong||isFinal;
+    var codeVal=(vs.entered||'').replace(/\D/g,'').substring(0,6);
+    var canVerify=codeVal.length===6&&!isChecking&&!isFinal;
+    return wrap(
+      '<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Enter verification code</div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:4px;">6-digit code sent to</div>'
+      +'<div style="font-size:16px;font-weight:700;color:var(--md-primary);margin-bottom:22px;">'+(ob.phoneFormatted||'your phone')+'</div>'
+      +'<input type="tel" maxlength="6" value="'+(vs.entered||'')+'" oninput="window._ob.verify.entered=this.value.replace(/\\D/g,\'\').substring(0,6);if(window._ob.verify.state===\'wrong_code\'){window._ob.verify.state=\'sent\';rerender();}else{obUpdateVerifyBtn();}" placeholder="000000" style="width:100%;background:var(--md-surface-variant);border:2px solid '+(hasError?'var(--md-error)':'var(--md-outline)')+';border-radius:12px;padding:16px;font-size:32px;font-weight:700;font-family:monospace;letter-spacing:14px;color:var(--md-on-surface);outline:none;box-sizing:border-box;text-align:center;margin-bottom:'+(hasError?'8':'16')+'px;"/>'
+      +(hasError?'<div style="display:flex;align-items:center;gap:6px;background:var(--md-error-container);border-radius:10px;padding:10px 12px;margin-bottom:10px;">'+msiIcon('error',14,'var(--md-error)')+'<div style="font-size:12px;font-weight:700;color:var(--md-error);">'+(isFinal?'Too many attempts. Request a new code.':'Incorrect — '+vs.attemptsLeft+' attempt'+(vs.attemptsLeft===1?'':'s')+' remaining.')+'</div></div>':'')
+      +(isChecking
+        ?'<div style="width:100%;background:var(--md-outline-variant);border-radius:14px;padding:16px;text-align:center;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface-dim);">Verifying…</div>'
+        :isFinal
+          ?'<button onclick="window._ob.verify={code:\'\',entered:\'\',state:\'idle\',attemptsLeft:3};obSendCode()" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Request new code</button>'
+          :'<button id="ob-verify-btn" onclick="obVerifyCode()" '+(canVerify?'':'disabled ')+'style="width:100%;background:'+(canVerify?'var(--md-primary)':'var(--md-outline-variant)')+';color:'+(canVerify?'#fff':'var(--md-on-surface-dim)')+';border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(canVerify?'pointer':'not-allowed')+';">Verify</button>')
+      +'<div style="display:flex;align-items:center;justify-content:center;gap:4px;font-size:13px;color:var(--md-on-surface-dim);margin-top:16px;">Didn\'t get it?<button onclick="obSendCode()" style="background:none;border:none;color:var(--md-primary);font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;padding:0 4px;">Resend</button><span style="opacity:0.5;">·</span><button onclick="window._ob.phone=\'\';window._ob.phoneFormatted=\'\';window._ob.verify.state=\'idle\';obNext(\'account\')" style="background:none;border:none;color:var(--md-primary);font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;padding:0 4px;">Change number</button></div>',
+      false,null,false,1,4);
+  }
+
+  // ── OWNER: HORSE SETUP ─────────────────────────────────────────────────
+  if(ob.step==='setup_horse'){
+    var h=ob.horses[ob.horseIdx]||{name:'',breed:'',color:'',age:'',sex:'Mare',photo:'',usef:''};
+    var BREEDS=['Warmblood','Quarter Horse','Thoroughbred','Arabian','Friesian','Draft','Paint','Morgan','Other'];
+    var SEXES=['Mare','Gelding','Stallion','Filly','Colt'];
+    var inpStyle='width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:12px;padding:11px 13px;font-size:14px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
+    // USEF sheet
+    var usefSheet=ob.usef_open?'<div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:3000;display:flex;flex-direction:column;justify-content:flex-end;" onclick="window._ob.usef_open=false;rerender()">'
+      +'<div style="background:var(--md-surface);border-radius:20px 20px 0 0;padding:20px;" onclick="event.stopPropagation()">'
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">'
+      +'<div style="width:32px;height:32px;border-radius:8px;background:#003087;display:flex;align-items:center;justify-content:center;"><span style="font-size:11px;font-weight:900;color:#fff;">USEF</span></div>'
+      +'<div><div style="font-size:15px;font-weight:700;color:var(--md-on-surface);">Login to USEF</div>'
+      +'<div style="font-size:11px;color:var(--md-on-surface-dim);">Import your horse\'s registered info</div></div>'
+      +'</div>'
+      +'<div style="height:1px;background:var(--md-outline-variant);margin:12px 0;"></div>'
+      +(ob.usef_loading
+        ?'<div style="text-align:center;padding:20px 0;"><div style="font-size:14px;color:var(--md-on-surface-dim);">Importing from USEF…</div></div>'
+        :'<div style="margin-bottom:10px;"><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Username or member #</label>'
+        +'<input type="text" value="'+ob.usef_user+'" oninput="window._ob.usef_user=this.value" placeholder="USEF username" style="'+inpStyle+'"/></div>'
+        +'<div style="margin-bottom:16px;"><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Password</label>'
+        +'<input type="password" value="'+ob.usef_pass+'" oninput="window._ob.usef_pass=this.value" placeholder="Password" style="'+inpStyle+'"/></div>'
+        +'<button onclick="obSimulateUSEF()" style="width:100%;background:#003087;color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Import from USEF</button>'
+        +'<button onclick="window._ob.usef_open=false;rerender()" style="width:100%;background:transparent;color:var(--md-on-surface-dim);border:none;padding:11px;font-size:13px;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-top:4px;">Cancel</button>')
+      +'</div></div>':'';
+    var ufTag=ob.usef_done&&h.usef?'<div style="display:inline-flex;align-items:center;gap:5px;background:var(--md-secondary-container);border-radius:20px;padding:4px 10px;margin-bottom:12px;">'+msiIcon('check_circle',14,'var(--md-secondary)')+'<span style="font-size:12px;font-weight:700;color:var(--md-secondary);">'+h.usef+' · imported</span></div>':'';
+    var inner='<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Let\'s meet your horse</div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:16px;">Add their basic info — we\'ll build their profile from here.</div>'
+      +ufTag
+      // Horse avatar placeholder + photo
+      +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">'
+      +'<div style="width:64px;height:64px;border-radius:50%;background:var(--md-primary-container);border:2px dashed var(--md-primary)44;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;">'+msiIcon('add_a_photo',22,'var(--md-primary)')+'</div>'
+      +'<div style="flex:1;">'
+      +'<div style="margin-bottom:8px;"><input type="text" value="'+h.name+'" oninput="window._ob.horses[window._ob.horseIdx].name=this.value" placeholder="Horse name *" style="'+inpStyle+'"/></div>'
+      +'<button onclick="window._ob.usef_open=true;rerender()" style="display:flex;align-items:center;gap:6px;background:#EEF2FF;border:1.5px solid #003087;border-radius:10px;padding:7px 12px;cursor:pointer;font-family:\'DM Sans\',sans-serif;">'
+      +'<div style="width:20px;height:20px;border-radius:5px;background:#003087;display:flex;align-items:center;justify-content:center;"><span style="font-size:8px;font-weight:900;color:#fff;">USEF</span></div>'
+      +'<span style="font-size:12px;font-weight:700;color:#003087;">Import from USEF</span></button>'
+      +'</div></div>'
+      // Breed chips
+      +'<div style="margin-bottom:12px;"><div style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:7px;">Breed</div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:6px;">'
+      +BREEDS.map(function(b){var on=h.breed===b;return '<button onclick="window._ob.horses[window._ob.horseIdx].breed=\''+b+'\';rerender()" style="padding:5px 12px;border-radius:20px;border:1.5px solid '+(on?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(on?'var(--md-primary-container)':'var(--md-surface)')+';color:'+(on?'var(--md-primary)':'var(--md-on-surface-dim)')+';font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">'+b+'</button>';}).join('')
+      +'</div></div>'
+      // Sex + Age
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">'
+      +'<div><div style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Sex</div>'
+      +'<select oninput="window._ob.horses[window._ob.horseIdx].sex=this.value" style="'+inpStyle+'">'
+      +SEXES.map(function(s){return '<option'+(h.sex===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>'
+      +'<div><div style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Age</div>'
+      +'<input type="text" value="'+h.age+'" oninput="window._ob.horses[window._ob.horseIdx].age=this.value" placeholder="e.g. 8 years" style="'+inpStyle+'"/></div>'
+      +'</div>'
+      // Add another
+      +'<button onclick="window._ob.horses.push({name:\'\',breed:\'\',color:\'\',age:\'\',sex:\'Mare\',photo:\'\',usef:\'\'});window._ob.horseIdx=window._ob.horses.length-1;window._ob.usef_done=false;rerender()" style="display:flex;align-items:center;gap:6px;background:transparent;color:var(--md-primary);border:none;padding:0;cursor:pointer;font-family:\'DM Sans\',sans-serif;font-size:13px;font-weight:600;margin-bottom:20px;">'+msiIcon('add_circle',16,'var(--md-primary)')+'Add another horse</button>'
+      +(ob.horses.length>1?'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;">'
+        +ob.horses.map(function(hh,i){return '<div onclick="window._ob.horseIdx='+i+';rerender()" style="padding:5px 12px;border-radius:20px;background:'+(ob.horseIdx===i?'var(--md-primary-container)':'var(--md-surface-variant)')+';border:1.5px solid '+(ob.horseIdx===i?'var(--md-primary)':'var(--md-outline-variant)')+';font-size:12px;font-weight:700;color:'+(ob.horseIdx===i?'var(--md-primary)':'var(--md-on-surface-dim)')+';cursor:pointer;">'+(hh.name||'Horse '+(i+1))+'</div>';}).join('')
+        +'</div>':'')
+      +'<button onclick="obNext(\'setup_barn_search\')" '+(h.name?'':'disabled ')+'style="width:100%;background:'+(h.name?'var(--md-primary)':'var(--md-outline-variant)')+';color:'+(h.name?'#fff':'var(--md-on-surface-dim)')+';border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(h.name?'pointer':'not-allowed')+';">Continue</button>';
+    return wrap(usefSheet+inner,true,'account',false,2,4);
+  }
+
+  // ── OWNER: BARN SEARCH ─────────────────────────────────────────────────
+  if(ob.step==='setup_barn_search'){
+    var DEMO_BARNS=[
+      {id:'sunrise',name:'Sunrise Stables',manager:'Charlene G.',location:'Bedford, NY',horses:12},
+      {id:'ridgeline',name:'Ridgeline Farm',manager:'Marcus H.',location:'Pleasantville, NY',horses:8},
+      {id:'blueridge',name:'Blue Ridge Equestrian',manager:'Dana S.',location:'Armonk, NY',horses:15},
+    ];
+    var filtered=ob.barnSearch.length>0?DEMO_BARNS.filter(function(b){return b.name.toLowerCase().includes(ob.barnSearch.toLowerCase());}):[];
+    var inpStyle='width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:12px;padding:12px 13px;font-size:14px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
+    var barnResults=filtered.map(function(b){
+      var sel=ob.barnFound&&ob.barnFound.id===b.id;
+      return '<div onclick="window._ob.barnFound='+JSON.stringify(b)+';rerender()" style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--md-surface);border-radius:12px;border:2px solid '+(sel?'var(--md-primary)':'var(--md-outline-variant)')+';margin-bottom:8px;cursor:pointer;">'
+        +'<div style="width:40px;height:40px;border-radius:10px;background:var(--md-primary-container);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon('home',20,'var(--md-primary)')+'</div>'
+        +'<div style="flex:1;"><div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">'+b.name+'</div>'
+        +'<div style="font-size:12px;color:var(--md-on-surface-dim);">'+b.location+' · '+b.horses+' horses · '+b.manager+'</div></div>'
+        +(sel?'<div style="width:24px;height:24px;border-radius:50%;background:var(--md-primary);display:flex;align-items:center;justify-content:center;">'+msiIcon('check',14,'#fff')+'</div>':'')
+        +'</div>';
+    }).join('');
+    var notFoundNudge=ob.barnSearch.length>2&&filtered.length===0
+      ?'<div style="background:var(--md-surface);border-radius:12px;border:1.5px solid var(--md-outline-variant);padding:14px;margin-bottom:10px;">'
+        +msiIcon('info',16,'var(--md-on-surface-dim)')
+        +'<span style="font-size:13px;color:var(--md-on-surface-dim);margin-left:6px;">Barn not found on NayNay yet.</span>'
+        +'<div style="margin-top:10px;"><div style="font-size:13px;color:var(--md-on-surface);font-weight:600;margin-bottom:4px;">Invite your barn manager?</div>'
+        +'<div style="font-size:12px;color:var(--md-on-surface-dim);margin-bottom:10px;">We\'ll send '+ob.barnSearch+' an invite. They\'ll see your horse connection request when they join.</div>'
+        +'<button onclick="showToast(\'Invite sent to '+ob.barnSearch+'!\',\'send\',\'success\')" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">'+msiIcon('send',14,'#fff')+' Send invite</button>'
+        +'</div></div>'
+      :'';
+    var inner='<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Where is your horse?</div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:20px;">Search for your barn on NayNay.</div>'
+      +'<div style="margin-bottom:12px;position:relative;">'
+      +msiIcon('search',18,'var(--md-on-surface-dim)')
+      +'<input type="text" value="'+ob.barnSearch+'" oninput="window._ob.barnSearch=this.value;window._ob.barnFound=null;rerender()" placeholder="Search by barn name…" style="'+inpStyle+'padding-left:38px;"/>'
+      +'</div>'
+      +barnResults+notFoundNudge
+      +(ob.barnFound&&!ob.barnSent
+        ?'<div style="background:var(--md-secondary-container);border-radius:12px;padding:12px 14px;margin-bottom:16px;display:flex;align-items:center;gap:8px;">'
+          +msiIcon('pending',16,'var(--md-secondary)')
+          +'<span style="font-size:13px;color:var(--md-secondary);font-weight:600;">Connection request will be sent to '+ob.barnFound.manager+'</span></div>':'')
+      +'<button onclick="window._ob.barnSent=true;obNext(\'setup_care\')" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-bottom:10px;">'+(ob.barnFound?'Send connection request':'Continue without barn')+'</button>'
+      +'<button onclick="obNext(\'setup_care\')" style="width:100%;background:transparent;color:var(--md-on-surface-dim);border:none;padding:11px;font-size:13px;font-family:\'DM Sans\',sans-serif;cursor:pointer;">I board at home · skip</button>';
+    return wrap(inner,true,'setup_horse',false,3,4);
+  }
+
+  // ── OWNER: CARE TEAM ───────────────────────────────────────────────────
+  if(ob.step==='setup_care'){
+    var ct=ob.careTeam;
+    var inpStyle='flex:1;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
+    function careRow(key,icon,label,color){
+      var row=ct[key]||{name:'',contact:'',sent:false};
+      return '<div style="background:var(--md-surface);border-radius:12px;border:1.5px solid var(--md-outline-variant);padding:12px 13px;margin-bottom:10px;">'
+        +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">'
+        +'<div style="width:32px;height:32px;border-radius:8px;background:'+color+'22;display:flex;align-items:center;justify-content:center;">'+msiIcon(icon,17,color)+'</div>'
+        +'<div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">'+label+'</div>'
+        +(row.sent?'<span style="margin-left:auto;font-size:11px;font-weight:700;background:var(--md-secondary-container);color:var(--md-secondary);padding:2px 8px;border-radius:10px;">Invite sent ✓</span>':'')
+        +'</div>'
+        +(row.sent?''
+          :'<div style="display:flex;gap:7px;margin-bottom:7px;">'
+          +'<input type="text" value="'+row.name+'" oninput="window._ob.careTeam.'+key+'.name=this.value" placeholder="Name (optional)" style="'+inpStyle+'"/>'
+          +'<input type="text" value="'+row.contact+'" oninput="window._ob.careTeam.'+key+'.contact=this.value" placeholder="Email or phone" style="'+inpStyle+'"/>'
+          +'</div>'
+          +'<button onclick="if(window._ob.careTeam.'+key+'.contact){window._ob.careTeam.'+key+'.sent=true;showToast(\'Invite sent!\',\'send\',\'success\');rerender();}" style="width:100%;background:var(--md-surface-variant);color:var(--md-primary);border:1.5px solid var(--md-primary)33;border-radius:10px;padding:9px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">'+msiIcon('send',13,'var(--md-primary)')+' Send invite</button>')
+        +'</div>';
+    }
+    var inner='<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Your care team</div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:6px;">Invite the people who help care for your horse. They\'ll get a link to join and connect automatically.</div>'
+      +'<div style="background:var(--md-primary-container)33;border-radius:10px;padding:10px 12px;margin-bottom:16px;display:flex;align-items:flex-start;gap:8px;">'
+      +msiIcon('info',14,'var(--md-primary)')
+      +'<div style="font-size:12px;color:var(--md-on-surface-variant);line-height:1.5;"><strong>Why invite them?</strong> When your vet, trainer, and barn manager are on NayNay, care notes, health records, and appointments all stay in sync — automatically.</div>'
+      +'</div>'
+      +careRow('vet','medical_services','Veterinarian','var(--md-secondary)')
+      +careRow('trainer','fitness_center','Trainer','var(--md-tertiary)')
+      +careRow('farrier','construction','Farrier','var(--md-primary)')
+      +'<button onclick="obNext(\'done\')" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-top:8px;margin-bottom:10px;">Continue</button>'
+      +'<button onclick="obNext(\'done\')" style="width:100%;background:transparent;color:var(--md-on-surface-dim);border:none;padding:11px;font-size:13px;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Skip for now</button>';
+    return wrap(inner,true,'setup_barn_search',false,4,4);
+  }
+
+  // ── BARN MANAGER: BARN INFO ────────────────────────────────────────────
+  if(ob.step==='setup_barn'){
+    var inpStyle='width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:12px;padding:11px 13px;font-size:14px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
+    var canGo2=ob.barnName.trim().length>0;
+    var inner='<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Set up your barn</div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:20px;">This is how owners and professionals will find you on NayNay.</div>'
+      // Barn photo
+      +'<div style="width:100%;height:120px;border-radius:14px;background:var(--md-surface-variant);border:2px dashed var(--md-outline);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;margin-bottom:16px;cursor:pointer;">'
+      +msiIcon('add_photo_alternate',28,'var(--md-on-surface-dim)')
+      +'<div style="font-size:12px;color:var(--md-on-surface-dim);">Add barn photo <span style="color:var(--md-primary);">· optional</span></div>'
+      +'</div>'
+      +'<div style="margin-bottom:12px;"><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Barn name *</label>'
+      +'<input type="text" value="'+ob.barnName+'" oninput="window._ob.barnName=this.value" placeholder="e.g. Sunrise Stables" style="'+inpStyle+'"/></div>'
+      +'<div style="margin-bottom:12px;"><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Street address</label>'
+      +'<input type="text" value="'+ob.barnAddress+'" oninput="window._ob.barnAddress=this.value" placeholder="Street address" style="'+inpStyle+'"/></div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">'
+      +'<div><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">City</label>'
+      +'<input type="text" value="'+ob.barnCity+'" oninput="window._ob.barnCity=this.value" placeholder="City" style="'+inpStyle+'"/></div>'
+      +'<div><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">State</label>'
+      +'<input type="text" value="'+ob.barnState+'" oninput="window._ob.barnState=this.value" placeholder="NY" style="'+inpStyle+'"/></div>'
+      +'</div>'
+      +'<div style="margin-bottom:20px;"><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Number of stalls <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--md-on-surface-dim);">(optional)</span></label>'
+      +'<input type="number" value="'+ob.barnStalls+'" oninput="window._ob.barnStalls=this.value" placeholder="e.g. 24" style="'+inpStyle+'"/></div>'
+      +'<button onclick="obNext(\'setup_services\')" '+(canGo2?'':'disabled ')+'style="width:100%;background:'+(canGo2?'var(--md-primary)':'var(--md-outline-variant)')+';color:'+(canGo2?'#fff':'var(--md-on-surface-dim)')+';border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(canGo2?'pointer':'not-allowed')+';">Continue</button>';
+    return wrap(inner,true,'account',false,2,4);
+  }
+
+  // ── BARN MANAGER: SERVICES ─────────────────────────────────────────────
+  if(ob.step==='setup_services'){
+    var SVCS=[
+      {id:'board_full',label:'Full board',sub:'Stall, feed, turnout, daily care'},
+      {id:'board_partial',label:'Partial board',sub:'Stall with owner participation'},
+      {id:'board_pasture',label:'Pasture board',sub:'Outdoor turnout with shelter'},
+      {id:'training',label:'Training',sub:'Professional training program'},
+      {id:'lessons_private',label:'Private lessons',sub:'One-on-one instruction'},
+      {id:'lessons_group',label:'Group lessons',sub:'Group instruction'},
+      {id:'show_prep',label:'Show preparation',sub:'Competition readiness coaching'},
+      {id:'breeding',label:'Breeding services',sub:'Mare/stallion breeding program'},
+      {id:'haul_in',label:'Haul-in lessons',sub:'Lessons for off-property horses'},
+      {id:'trailer',label:'Trailer parking',sub:'On-site trailer storage'},
+    ];
+    var inner='<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">What do you offer?</div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:20px;">Toggle the services your barn provides. You can add pricing and details later.</div>'
+      +SVCS.map(function(sv){
+        var on=ob.services[sv.id];
+        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 13px;background:var(--md-surface);border-radius:12px;border:1.5px solid '+(on?'var(--md-primary)33':'var(--md-outline-variant)')+';margin-bottom:8px;cursor:pointer;" onclick="window._ob.services.'+sv.id+'=!window._ob.services.'+sv.id+';rerender()">'
+          +'<div><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+sv.label+'</div>'
+          +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+sv.sub+'</div></div>'
+          +mdToggle(on,'window._ob.services.'+sv.id+'=!window._ob.services.'+sv.id+';rerender()')
+          +'</div>';
+      }).join('')
+      +'<button onclick="obNext(\'setup_tasks\')" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-top:8px;">Continue</button>';
+    return wrap(inner,true,'setup_barn',false,3,4);
+  }
+
+  // ── BARN MANAGER: TASKS ────────────────────────────────────────────────
+  if(ob.step==='setup_tasks'){
+    var TASK_DEFS=[
+      {id:'am_feed',   label:'AM feed',      icon:'grass'},
+      {id:'pm_feed',   label:'PM feed',      icon:'grass'},
+      {id:'am_turnout',label:'AM turnout',   icon:'wb_sunny'},
+      {id:'pm_turnout',label:'PM turnout',   icon:'nights_stay'},
+      {id:'stall',     label:'Stall cleaning',icon:'cleaning_services'},
+      {id:'water',     label:'Water check',  icon:'water_drop'},
+      {id:'blanket',   label:'Blanket check',icon:'dry_cleaning'},
+      {id:'meds',      label:'Medications',  icon:'medication'},
+    ];
+    var inner='<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Daily care routine</div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:20px;">Set up your barn\'s daily tasks. Staff will see these in their task list each day.</div>'
+      +TASK_DEFS.map(function(td){
+        var tk=ob.tasks[td.id]||{on:false,req:false};
+        return '<div style="display:flex;align-items:center;gap:10px;padding:10px 13px;background:var(--md-surface);border-radius:12px;border:1.5px solid '+(tk.on?'var(--md-primary)33':'var(--md-outline-variant)')+';margin-bottom:8px;">'
+          +'<div style="width:32px;height:32px;border-radius:8px;background:'+(tk.on?'var(--md-primary-container)':'var(--md-surface-variant)')+';display:flex;align-items:center;justify-content:center;">'+msiIcon(td.icon,17,tk.on?'var(--md-primary)':'var(--md-on-surface-dim)')+'</div>'
+          +'<div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+td.label+'</div></div>'
+          +(tk.on?'<select onclick="event.stopPropagation()" oninput="window._ob.tasks.'+td.id+'.req=(this.value===\'required\');rerender()" style="font-size:11px;font-weight:700;background:var(--md-surface-variant);border:1px solid var(--md-outline);border-radius:8px;padding:4px 7px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface-dim);"><option value="required"'+(tk.req?' selected':'')+'>Required</option><option value="optional"'+(!tk.req?' selected':'')+'>Optional</option></select>':'')
+          +'<div onclick="window._ob.tasks.'+td.id+'.on=!window._ob.tasks.'+td.id+'.on;rerender()">'+mdToggle(tk.on,'')+'</div>'
+          +'</div>';
+      }).join('')
+      +'<button onclick="obNext(\'setup_team\')" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-top:8px;">Continue</button>';
+    return wrap(inner,true,'setup_services',false,4,4); // Note: removed 5th step by combining
+  }
+
+  // ── BARN MANAGER: TEAM INVITES ─────────────────────────────────────────
+  if(ob.step==='setup_team'){
+    var ti=ob.teamInvites;
+    var inpStyle='flex:1;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
+    function teamRow(key,icon,label,color){
+      var row=ti[key]||{name:'',contact:'',sent:false};
+      return '<div style="background:var(--md-surface);border-radius:12px;border:1.5px solid var(--md-outline-variant);padding:12px 13px;margin-bottom:10px;">'
+        +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">'
+        +'<div style="width:32px;height:32px;border-radius:8px;background:'+color+'22;display:flex;align-items:center;justify-content:center;">'+msiIcon(icon,17,color)+'</div>'
+        +'<div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">'+label+'</div>'
+        +(row.sent?'<span style="margin-left:auto;font-size:11px;font-weight:700;background:var(--md-secondary-container);color:var(--md-secondary);padding:2px 8px;border-radius:10px;">Invite sent ✓</span>':'')
+        +'</div>'
+        +(row.sent?''
+          :'<div style="display:flex;gap:7px;margin-bottom:7px;">'
+          +'<input type="text" value="'+row.name+'" oninput="window._ob.teamInvites.'+key+'.name=this.value" placeholder="Name" style="'+inpStyle+'"/>'
+          +'<input type="text" value="'+row.contact+'" oninput="window._ob.teamInvites.'+key+'.contact=this.value" placeholder="Email or phone" style="'+inpStyle+'"/>'
+          +'</div>'
+          +'<button onclick="if(window._ob.teamInvites.'+key+'.contact){window._ob.teamInvites.'+key+'.sent=true;showToast(\'Invite sent!\',\'send\',\'success\');rerender();}" style="width:100%;background:var(--md-surface-variant);color:var(--md-primary);border:1.5px solid var(--md-primary)33;border-radius:10px;padding:9px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">'+msiIcon('send',13,'var(--md-primary)')+' Send invite</button>')
+        +'</div>';
+    }
+    var inner='<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Build your team</div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:6px;">Invite the people who work at your barn. They\'ll get a secure link to join and connect.</div>'
+      +'<div style="background:var(--md-primary-container)33;border-radius:10px;padding:10px 12px;margin-bottom:16px;display:flex;align-items:flex-start;gap:8px;">'
+      +msiIcon('info',14,'var(--md-primary)')
+      +'<div style="font-size:12px;color:var(--md-on-surface-variant);line-height:1.5;">When your staff and professionals are on NayNay, daily tasks, health records, and visits are all coordinated in one place — without phone tag.</div>'
+      +'</div>'
+      +teamRow('staff','person','Staff member','var(--md-on-surface-dim)')
+      +teamRow('vet','medical_services','Veterinarian','var(--md-secondary)')
+      +teamRow('trainer','fitness_center','Trainer','var(--md-tertiary)')
+      +teamRow('farrier','construction','Farrier','var(--md-primary)')
+      +'<button onclick="obNext(\'done\')" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-top:8px;margin-bottom:10px;">Finish setup</button>'
+      +'<button onclick="obNext(\'done\')" style="width:100%;background:transparent;color:var(--md-on-surface-dim);border:none;padding:11px;font-size:13px;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Skip for now</button>';
+    return wrap(inner,true,'setup_tasks',false,4,4);  // adjusted — tasks is step 3 but showing as 4
+  }
+
+  // ── VET SETUP ──────────────────────────────────────────────────────────
+  if(ob.step==='setup_vet'){
+    var inpStyle='width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:12px;padding:11px 13px;font-size:14px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
+    var VET_SVCS=[
+      {id:'wellness',label:'Annual wellness exam'},{id:'coggins',label:'Coggins / EIA test'},
+      {id:'vaccines',label:'Vaccination'},{id:'dental',label:'Dental float'},
+      {id:'lameness',label:'Lameness evaluation'},{id:'prepurchase',label:'Pre-purchase exam'},
+      {id:'emergency',label:'Emergency visit'},{id:'imaging',label:'Imaging / ultrasound'},
+      {id:'surgery',label:'Surgery consult'},
+    ];
+    var inner='<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Your practice</div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:20px;">Tell us about your practice and what services you offer.</div>'
+      +'<div style="margin-bottom:12px;"><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Practice / clinic name</label>'
+      +'<input type="text" value="'+ob.practiceName+'" oninput="window._ob.practiceName=this.value" placeholder="e.g. Millbrook Equine Clinic" style="'+inpStyle+'"/></div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">'
+      +'<div><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">City</label>'
+      +'<input type="text" value="'+ob.practiceCity+'" oninput="window._ob.practiceCity=this.value" placeholder="City" style="'+inpStyle+'"/></div>'
+      +'<div><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">State</label>'
+      +'<input type="text" value="'+ob.practiceState+'" oninput="window._ob.practiceState=this.value" placeholder="NY" style="'+inpStyle+'"/></div>'
+      +'</div>'
+      +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:10px;">Services you offer</div>'
+      +VET_SVCS.map(function(sv){
+        var on=ob.vetServices[sv.id];
+        return '<div onclick="window._ob.vetServices.'+sv.id+'=!window._ob.vetServices.'+sv.id+';rerender()" style="display:flex;align-items:center;justify-content:space-between;padding:10px 13px;background:var(--md-surface);border-radius:12px;border:1.5px solid '+(on?'var(--md-primary)33':'var(--md-outline-variant)')+';margin-bottom:7px;cursor:pointer;">'
+          +'<div style="font-size:13px;font-weight:'+(on?'700':'400')+';color:'+(on?'var(--md-on-surface)':'var(--md-on-surface-dim)')+';">'+sv.label+'</div>'
+          +mdToggle(on,'window._ob.vetServices.'+sv.id+'=!window._ob.vetServices.'+sv.id+';rerender()')
+          +'</div>';
+      }).join('')
+      +'<button onclick="obNext(\'done\')" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-top:8px;">Finish setup</button>';
+    return wrap(inner,true,'account',false,2,3);
+  }
+
+  // ── DONE ───────────────────────────────────────────────────────────────
+  if(ob.step==='done'){
+    var isOwner2=ob.roles.includes('owner');
+    var isMgr3=ob.roles.includes('manager');
+    var isVet3=ob.roles.includes('vet');
+    var horseName=(ob.horses[0]&&ob.horses[0].name)||'your horse';
+    var doneTitle=isMgr3?(ob.barnName||'Your barn')+' is live on NayNay!':isOwner2?'Welcome to NayNay, '+(ob.name||'there')+'!':isVet3?'Your practice is on NayNay, Dr. '+(ob.name.split(' ').pop()||'there')+'!':'Welcome to NayNay, '+(ob.name||'there')+'!';
+    var doneSub=isMgr3?'Your team invites are on the way. You\'ll be notified when they join.':isOwner2?horseName+' is all set. Your care team invites have been sent.':isVet3?'Owners and barn managers can now reach you directly.':'You\'re all set and ready to go.';
+    var doneCta=isMgr3?'Go to my barn':isOwner2?'Go to my horses':isVet3?'Go to my dashboard':'Get started';
+    var checks=[
+      isMgr3?ob.barnName:'Your profile',
+      isMgr3?'Services configured':'Your horse',
+      'Invites sent',
+    ];
+    var inner='<div style="text-align:center;padding-top:10px;">'
+      +'<div style="width:72px;height:72px;border-radius:50%;background:var(--md-secondary-container);border:3px solid var(--md-secondary)44;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">'
+      +'<svg width="32" height="32" viewBox="0 0 28 28" fill="none"><path d="M5 14l6.5 6.5L23 8" stroke="var(--md-secondary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      +'</div>'
+      +'<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:6px;">'+doneTitle+'</div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:28px;line-height:1.6;">'+doneSub+'</div>'
+      +'<div style="background:var(--md-surface);border-radius:14px;border:1.5px solid var(--md-outline-variant);padding:14px 16px;margin-bottom:28px;text-align:left;">'
+      +checks.map(function(ch){return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;"><div style="width:22px;height:22px;border-radius:50%;background:var(--md-secondary-container);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon('check',13,'var(--md-secondary)')+'</div><div style="font-size:13px;color:var(--md-on-surface);">'+ch+'</div></div>';}).join('')
+      +'</div>'
+      +'<button onclick="obComplete()" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">'+doneCta+' →</button>'
+      +'</div>';
+    return wrap(inner,false,null,true);
+  }
+
+  return wrap('<div>Loading...</div>',false,null,true);
+}
+
 function getContent(isVet,isMgr,showHorse){
+  if(window._ob&&window._ob.active) return rOnboarding();
   if(S.notifyCtx&&S.notifyCtx.active) return rNotifyStep();
   if(S.roles.length>1&&S.activeTab==='home'&&S.mgrView!=='assignments'&&!S.quickAction&&!S.ownerEventPass&&!S.bookingVisitId&&!showHorse) return rMultiRoleHome();
   if(S.roles.length>1&&S.activeTab==='setup'&&!showHorse){
@@ -3838,6 +4535,8 @@ function rRolePickerSheet(){
   const t=TH;
   // Single-role rows (index 0-4) shown as user cards
   const singleCombos=ROLE_COMBOS.slice(0,5);
+  // Demo onboarding trigger
+  var obDemoBtn='<div style="padding:10px 16px;border-bottom:1px solid var(--md-outline-variant);"><button onclick="S.showRolePicker=false;window._ob=null;obStart(\'fresh\');" style="width:100%;background:var(--md-primary-container);color:var(--md-primary);border:1.5px solid var(--md-primary)33;border-radius:10px;padding:10px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">'+msiIcon('rocket_launch',15,'var(--md-primary)')+' Demo: New user onboarding</button></div>';
   const multiCombos=ROLE_COMBOS.slice(5);
   const active=S.roleComboIdx;
 
@@ -3893,6 +4592,7 @@ function rRolePickerSheet(){
     +'<div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">Switch user</div>'
     +'<button onclick="S.showRolePicker=false;rerender()" style="background:var(--md-surface-variant);border:none;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:var(--md-on-surface-dim);">&times;</button>'
     +'</div>'
+    +obDemoBtn
     +userCards
     +multiSection
     +'</div>';
