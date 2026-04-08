@@ -214,7 +214,7 @@ function mdToggle(on,onclick){
 
 // Setting row with toggle -- MD style
 function mdSettingToggle(label,sub,on,onclick){
-  return '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--md-outline-variant);"><div style="flex:1;padding-right:12px;"><div style="font-size:14px;font-weight:500;color:var(--md-on-surface);">'+label+'</div>'+(sub?'<div style="font-size:12px;color:var(--md-on-surface-variant);margin-top:2px;">'+sub+'</div>':'')+'</div>'+mdToggle(on,onclick)+'</div>';
+  return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--md-outline-variant);"><div style="flex:1;padding-right:12px;"><div style="font-size:14px;font-weight:500;color:var(--md-on-surface);">'+label+'</div>'+(sub?'<div style="font-size:12px;color:var(--md-on-surface-variant);margin-top:2px;">'+sub+'</div>':'')+'</div>'+mdToggle(on,onclick)+'</div>';
 }
 
 // Setting input row -- MD style
@@ -779,7 +779,15 @@ let S={
   expandedSession:null,
   showAddHorse:false,
   expandedCompSchedule:false,
+  barnConnectFlow:null,
+  staffJoinRequests:[],  // [{name,phone,role,barnId,barnName,requestedAt,status}]
 };
+
+// Seed a demo staff join request so manager sees one on load
+if(!S.staffJoinRequests.length){
+  S.staffJoinRequests=[{id:'sr1',name:'Alex T.',phone:'(555) 201-4812',role:'Barn Staff',barnId:'sunrise',barnName:'Sunrise Stables',requestedAt:'Today 8:14 AM',status:'pending'}];
+}
+
 
 function getAssign(date){if(!S.assignments[date])S.assignments[date]=makeDefaultAssignments();return S.assignments[date];}
 function getTrainingAssign(date){if(!S.trainingAssignments[date])S.trainingAssignments[date]=makeDefaultTrainingAssignments();return S.trainingAssignments[date];}
@@ -915,10 +923,15 @@ function buildNav(isMgr,isVet,showBack,showHorse){
   const t=TH;
   const roleLabel=comboLabel();
   const rolePill='<button onclick="openRolePicker()" style="font-family:\'DM Sans\',sans-serif;display:flex;align-items:center;gap:5px;background:var(--nn-bg-subtle);border:1px solid var(--nn-border);border-radius:20px;padding:5px 12px 5px 9px;cursor:pointer;"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 8c0-3.3 2.7-6 6-6 1.8 0 3.4.8 4.5 2" stroke="var(--nn-tx2)" stroke-width="1.5" stroke-linecap="round"/><path d="M14 8c0 3.3-2.7 6-6 6-1.8 0-3.4-.8-4.5-2" stroke="var(--nn-tx2)" stroke-width="1.5" stroke-linecap="round"/><polyline points="11.5,1 13.5,3 11.5,5" stroke="var(--nn-tx2)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><polyline points="4.5,11 2.5,13 4.5,15" stroke="var(--nn-tx2)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-size:12px;font-weight:700;color:var(--nn-tx);">'+roleLabel+'</span></button>';
-  const _unreadCount=hasRole('owner')?OWNER_NOTIFICATIONS.filter(function(n){return !n.read;}).length:3;
+  var _barnReqs=(BARN_JOIN_REQUESTS||[]).filter(function(r){return r.status==='pending';});
+  var _staffReqs=(STAFF_JOIN_REQUESTS||[]).filter(function(r){return r.status==='pending';});
+  const _unreadCount=hasRole('owner')?OWNER_NOTIFICATIONS.filter(function(n){return !n.read;}).length:hasRole('manager')?_staffReqs.length+_barnReqs.length+1:hasRole('staff')?1:3;
   const notifDot=_unreadCount>0?'<div style="position:absolute;top:5px;right:5px;width:8px;height:8px;border-radius:50%;background:var(--md-error);border:1.5px solid var(--nn-bg-card);"></div>':'';
   const notifBell='<button onclick="S.showNotifPanel=!S.showNotifPanel;rerender()" style="background:var(--nn-bg-subtle);border:1px solid var(--nn-border);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;flex-shrink:0;"><svg width="17" height="17" viewBox="0 0 20 20" fill="none"><path d="M10 2a6 6 0 00-6 6v3l-1.5 2.5h15L16 11V8a6 6 0 00-6-6z" stroke="var(--nn-tx)" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 16.5a2 2 0 004 0" stroke="var(--nn-tx)" stroke-width="1.4" stroke-linecap="round"/></svg>'+notifDot+'</button>';
-  const notifItems=hasRole('owner')?OWNER_NOTIFICATIONS.map(function(n){return {icon:n.icon,title:n.title,sub:n.body.substring(0,42)+(n.body.length>42?'...':'')+' · '+n.time,unread:!n.read};}): [{icon:msiIcon('medication',18,'var(--md-primary)'),title:'Medication update — Luna',sub:'Magnesium increased · Today 7:00 AM',unread:true},{icon:msiIcon('visibility',18,'var(--md-secondary)'),title:'Barn obs — Rivendell',sub:'Charlene: recovery on track · Today 8:15 AM',unread:true},{icon:msiIcon('event',18,'var(--md-tertiary)'),title:'Appointment confirmed',sub:'Dr. Goudz · Mar 22, 10:00 AM',unread:false}];
+  var _barnReqs=(BARN_JOIN_REQUESTS||[]).filter(function(r){return r.status==='pending';});
+  var _mgrNotifItems=_staffReqs.map(function(r){return {icon:msiIcon('person_add',18,'var(--md-primary)'),title:'Join request: '+r.name,sub:r.message+' · '+r.time,id:r.id,type:'staff_join'};});
+  _mgrNotifItems.push({icon:msiIcon('notifications',18,'var(--md-tertiary)'),title:'Task updates pending',sub:'2 required tasks overdue today'});
+  const notifItems=hasRole('owner')?OWNER_NOTIFICATIONS.map(function(n){return {icon:n.icon,title:n.title,sub:n.body.substring(0,42)+(n.body.length>42?'...':'')+' · '+n.time,unread:!n.read};}):hasRole('manager')?_mgrNotifItems:hasRole('staff')?[{icon:msiIcon('assignment',18,'var(--md-secondary)'),title:'4 tasks assigned today',sub:'AM feed, turnout, stall · Due now',unread:true},{icon:msiIcon('check_circle',18,'var(--md-tertiary)'),title:'Yesterday complete',sub:'All tasks logged · Good work!',unread:false}]:[];
   const notifRows=notifItems.map(function(n){return '<div style="padding:10px 14px;border-bottom:1px solid var(--md-outline-variant);display:flex;gap:9px;align-items:flex-start;background:'+(n.unread?t.TL:'transparent')+'"><span style="font-size:16px;flex-shrink:0;">'+n.icon+'</span><div style="flex:1"><div style="font-size:13px;font-weight:'+(n.unread?700:500)+';color:var(--md-on-surface);">'+n.title+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+n.sub+'</div></div>'+(n.unread?'<div style="width:7px;height:7px;border-radius:50%;background:var(--md-primary);flex-shrink:0;margin-top:3px;"></div>':'')+'</div>';}).join('');
   const notifPanel=S.showNotifPanel?('<div onclick="S.showNotifPanel=false;rerender()" style="position:fixed;inset:0;z-index:1000;"></div><div style="position:absolute;top:52px;right:10px;width:300px;background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.18);z-index:1001;overflow:hidden;"><div style="padding:11px 14px;border-bottom:1px solid var(--md-outline-variant);display:flex;align-items:center;justify-content:space-between;"><span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Notifications</span><span style="font-size:10px;font-weight:700;background:var(--md-error);color:#fff;padding:2px 7px;border-radius:10px;">2 new</span></div>'+notifRows+'</div>') :'';
   let leftEl;
@@ -1035,11 +1048,31 @@ if(!window._ob) window._ob={
 };
 
 function obStart(entryPoint,inviteCtx){
-  if(!window._ob)window._ob={active:false,step:'splash',entryPoint:'fresh',inviteCtx:null,roles:[],proType:null,name:'',email:'',phone:'',phoneFormatted:'',verify:{code:'',entered:'',state:'idle',attemptsLeft:3},horses:[{name:'',breed:'',color:'',age:'',sex:'Mare',photo:'',usef:''}],horseIdx:0,usef_open:false,usef_user:'',usef_pass:'',usef_loading:false,usef_done:false,barnSearch:'',barnFound:null,barnSent:false,careTeam:{vet:{name:'',contact:'',sent:false},trainer:{name:'',contact:'',sent:false},farrier:{name:'',contact:'',sent:false}},barnName:'',barnAddress:'',barnCity:'',barnState:'',barnStalls:'',services:{board_full:true,board_partial:false,board_pasture:false,training:true,lessons_private:true,lessons_group:false,show_prep:false,breeding:false,haul_in:false,trailer:false},tasks:{am_feed:{on:true,req:true},pm_feed:{on:true,req:true},am_turnout:{on:true,req:false},pm_turnout:{on:true,req:false},stall:{on:true,req:true},water:{on:true,req:false},blanket:{on:false,req:false},meds:{on:false,req:false}},teamInvites:{staff:{name:'',contact:'',sent:false},vet:{name:'',contact:'',sent:false},trainer:{name:'',contact:'',sent:false},farrier:{name:'',contact:'',sent:false}},practiceName:'',practiceCity:'',practiceState:'',vetServices:{wellness:true,coggins:true,vaccines:true,dental:false,lameness:false,prepurchase:false,emergency:false,imaging:false,surgery:false},roleQueue:[],currentSetupRole:null};
-  window._ob.active=true;
-  window._ob.step='splash';
-  window._ob.entryPoint=entryPoint||'fresh';
-  if(inviteCtx) window._ob.inviteCtx=inviteCtx;
+  // Always fully reinit — never trust stale _ob state from a prior flow
+  var fresh={active:true,step:entryPoint==='post_vax'?'account':'splash',
+    entryPoint:entryPoint||'fresh',inviteCtx:inviteCtx||null,
+    roles:[],proType:null,name:'',email:'',phone:'',phoneFormatted:'',
+    verify:{code:'',entered:'',state:'idle',attemptsLeft:3},
+    horses:[{name:'',breed:'',color:'',age:'',sex:'Mare',photo:'',usef:''}],
+    horseIdx:0,usef_open:false,usef_user:'',usef_pass:'',usef_loading:false,usef_done:false,
+    barnSearch:'',barnFound:null,barnSent:false,staffBarnSearch:'',staffBarnFound:null,staffBarnSent:false,
+    careTeam:{vet:{name:'',contact:'',sent:false},trainer:{name:'',contact:'',sent:false},farrier:{name:'',contact:'',sent:false}},
+    barnName:'',barnAddress:'',barnCity:'',barnState:'',barnStalls:'',
+    services:{board_full:true,board_partial:false,board_pasture:false,training:true,lessons_private:true,lessons_group:false,show_prep:false,breeding:false,haul_in:false,trailer:false},
+    tasks:{am_feed:{on:true,req:true},pm_feed:{on:true,req:true},am_turnout:{on:true,req:false},pm_turnout:{on:true,req:false},stall:{on:true,req:true},water:{on:true,req:false},blanket:{on:false,req:false},meds:{on:false,req:false}},
+    teamInvites:{staff:{name:'',contact:'',sent:false},vet:{name:'',contact:'',sent:false},trainer:{name:'',contact:'',sent:false},farrier:{name:'',contact:'',sent:false}},
+    practiceName:'',practiceCity:'',practiceState:'',
+    vetServices:{wellness:true,coggins:true,vaccines:true,dental:false,lameness:false,prepurchase:false,emergency:false,imaging:false,surgery:false},
+    trainerDisciplines:[],trainerServices:{flat:true,jump:false,ground:false,hack:true,lunge:false,show_prep:false,lessons_private:true,lessons_group:false,young_horse:false,rehab:false},
+    trainerCerts:'',staffTasks:{feed:true,turnout:true,stalls:true,blankets:false,water:true,meds:false,obs:true,tack:false},
+    roleQueue:[],currentSetupRole:null,_completedRoles:[],_doneRole:null,_nextRole:null
+  };
+  if(entryPoint==='post_vax'){
+    fresh.roles=['vet'];fresh.proType='Veterinarian';
+    fresh.name=((vetVaxData.vetPrefix||'')+' '+(vetVaxData.vetFirst||'')+' '+(vetVaxData.vetLast||'')).trim();
+    fresh.practiceName='';
+  }
+  window._ob=fresh;
   render();
 }
 function obNext(step){ window._ob.step=step; rerender(); }
@@ -1097,6 +1130,8 @@ function obFormatPhone(raw){
 // Simulate sending SMS code
 function obSendCode(){
   var ob=window._ob;
+  if(!ob) return;
+  if(!ob.verify) ob.verify={code:'',entered:'',state:'idle',attemptsLeft:3};
   ob.verify.state='sending';
   rerender();
   setTimeout(function(){
@@ -1113,6 +1148,7 @@ function obSendCode(){
 // Simulate verifying code
 function obVerifyCode(){
   var ob=window._ob;
+  if(!ob||!ob.verify) return;
   ob.verify.state='checking';
   rerender();
   setTimeout(function(){
@@ -1138,6 +1174,51 @@ function obVerifyCode(){
     ob.verify.state=hasPendingInvite?'claimed':'success';
     rerender();
   },1000);
+}
+
+
+function obStartPostVax(){
+  // Pre-load vet name from vetVaxData
+  var vvd=window.vetVaxData||{};
+  var vetName=((vvd.vetPrefix||'')+' '+(vvd.vetFirst||'')+' '+(vvd.vetLast||'')).trim();
+  var horseName=vvd.horseName||'Rivendell';
+  var barnName='Sunrise Stables';
+  var ownerName='Sarah K.';
+  obStart('post_vax',{from:ownerName,fromRole:'Owner',horseName:horseName,barnName:barnName,role:'Veterinarian'});
+  var ob=window._ob;
+  ob.step='post_vax_confirm';
+  ob.roles=['vet'];
+  ob.proType='Veterinarian';
+  ob.name=vetName;
+  rerender();
+}
+
+function obStaffRequestBarn(barnId,barnName,staffName,staffPhone){
+  // Add a join request visible to the manager
+  if(!STAFF_JOIN_REQUESTS) STAFF_JOIN_REQUESTS=[];
+  var exists=STAFF_JOIN_REQUESTS.find(function(r){return r.phone===staffPhone;});
+  if(!exists){
+    STAFF_JOIN_REQUESTS.push({
+      id:'sjr'+Date.now(),name:staffName,phone:staffPhone,
+      requestedBarn:barnId,barnName:barnName,status:'pending',
+      time:'Just now',message:'Requesting to join as barn staff.'
+    });
+  }
+  showToast('Request sent to '+barnName,'send','success');
+  window._ob.staffBarnSent=true;
+  rerender();
+}
+
+
+function obNextMultiRole(justCompletedRole){
+  var ob=window._ob;
+  if(!ob._completedRoles) ob._completedRoles=[];
+  ob._completedRoles.push(justCompletedRole);
+  var remaining=ob.roles.filter(function(r){return ob._completedRoles.indexOf(r)<0;});
+  if(remaining.length===0){obNext('done');return;}
+  ob._doneRole=justCompletedRole;
+  ob._nextRole=remaining[0];
+  obNext('role_transition');
 }
 
 
@@ -1282,19 +1363,16 @@ function rOnboarding(){
   if(ob.step==='account'){
     var inpStyle='width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:12px;padding:12px 14px;font-size:15px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
     var phoneRaw=ob.phone?ob.phone.replace(/\D/g,''):'';
-    var canSend=ob.name.trim().length>1&&phoneRaw.length===10&&(!ob.verify||ob.verify.state!=='sending');
+    var canSend=phoneRaw.length===10&&(!ob.verify||ob.verify.state!=='sending');
     var isSending=ob.verify&&ob.verify.state==='sending';
-    var inner='<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Create your account</div>'
+    var inner=(ob.entryPoint==='post_vax'&&ob.inviteCtx
+        ?'<div style="background:var(--md-surface);border-radius:14px;border:1.5px solid var(--md-primary)33;padding:13px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">'+msiIcon('vaccines',18,'var(--md-primary)')+'<div><div style="font-size:12px;font-weight:700;color:var(--md-primary);">Connecting you with '+ob.inviteCtx.barnName+'</div><div style="font-size:12px;color:var(--md-on-surface-dim);">You vaccinated '+ob.inviteCtx.horseName+' for '+ob.inviteCtx.from+'. Create your account to stay connected.</div></div></div>'
+        :'')
+      +'<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Create your account</div>'
       +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:24px;">We use your mobile number as your unique identity and to verify you.</div>'
-      +'<div style="text-align:center;margin-bottom:20px;"><div style="width:72px;height:72px;border-radius:50%;background:var(--md-primary-container);border:2px dashed var(--md-primary)44;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;cursor:pointer;">'+msiIcon('add_a_photo',26,'var(--md-primary)')+'</div>'
-      +'<div style="font-size:12px;color:var(--md-on-surface-dim);">Add photo · optional</div></div>'
-      +'<div style="margin-bottom:14px;"><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Full name</label>'
-      +'<input type="text" value="'+ob.name+'" oninput="window._ob.name=this.value;obUpdateSendBtn()" placeholder="Your name" style="'+inpStyle+'"/></div>'
       +'<div style="margin-bottom:6px;"><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Mobile number</label>'
-      +'<div style="display:flex;gap:8px;">'
-      +'<div style="background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:12px;padding:12px 14px;font-size:15px;color:var(--md-on-surface-dim);font-family:\'DM Sans\',sans-serif;white-space:nowrap;">+1</div>'
       +'<input type="tel" value="'+(ob.phoneFormatted||'')+'" oninput="var r2=this.value.replace(/\\D/g,\'\');window._ob.phone=r2.substring(0,10);window._ob.phoneFormatted=obFormatPhone(this.value);this.value=window._ob.phoneFormatted;obUpdateSendBtn()" placeholder="(555) 000-0000" style="'+inpStyle+'"/>'
-      +'</div></div>'
+      +'</div>'
       +'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:5px;margin-bottom:20px;">A verification code will be sent to this number.</div>'
       +(isSending
         ?'<div style="width:100%;background:var(--md-outline-variant);border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface-dim);text-align:center;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;">'+msiIcon('sms',18,'var(--md-on-surface-dim)')+' Sending code…</div>'
@@ -1309,7 +1387,7 @@ function rOnboarding(){
   // ── VERIFY: SMS CODE ENTRY + OUTCOMES ─────────────────────────────────────
   if(ob.step==='verify'){
     var vs=ob.verify||{code:'847291',entered:'',state:'sent',attemptsLeft:3};
-    var nextStep2=ob.roles.includes('owner')?'setup_horse':ob.roles.includes('manager')?'setup_barn':ob.roles.includes('vet')?'setup_vet':'done';
+    var nextStep2=ob.roles.includes('owner')?'setup_horse':ob.roles.includes('manager')?'setup_barn':ob.roles.includes('vet')?'setup_vet':ob.roles.includes('trainer')?'setup_trainer':ob.roles.includes('staff')?'setup_staff':'done';
     var isChecking=vs.state==='checking';
     var isClaimed=vs.state==='claimed';
     var isSuccess=vs.state==='success';
@@ -1689,6 +1767,196 @@ function rOnboarding(){
     return wrap(inner,false,null,true);
   }
 
+  // ── POST-VAX: warm context + phone verification ────────────────────────
+  if(ob.step==='post_vax_confirm'){
+    var vvd=window.vetVaxData||{};
+    var horseName2=vvd.horseName||'Rivendell';
+    var barnName2='Sunrise Stables';
+    var ownerName2='Sarah K.';
+    var demoHorse2=HORSES_ALL.find(function(h){return h.name===horseName2;})||HORSES_ALL[0];
+    var inner='<div style="text-align:center;margin-bottom:20px;">'
+      +'<div style="width:56px;height:56px;border-radius:50%;background:var(--md-secondary-container);border:2px solid var(--md-secondary)44;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;">'
+      +'<svg width="26" height="26" viewBox="0 0 28 28" fill="none"><path d="M5 14l6.5 6.5L23 8" stroke="var(--md-secondary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      +'</div>'
+      +'<div style="font-size:17px;font-weight:700;color:var(--md-on-surface);margin-bottom:3px;">Vaccination confirmed</div>'
+      +'<div style="font-size:12px;color:var(--md-on-surface-dim);">'+horseName2+'\'s records have been updated.</div>'
+      +'</div>'
+      +'<div style="background:var(--md-surface);border-radius:14px;border:1.5px solid var(--md-outline-variant);padding:14px 16px;margin-bottom:20px;">'
+      +'<div style="display:flex;align-items:center;gap:11px;margin-bottom:10px;">'
+      +horseAvatar(demoHorse2,44)
+      +'<div><div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">'+horseName2+'</div>'
+      +'<div style="font-size:12px;color:var(--md-on-surface-dim);">'+barnName2+' · '+ownerName2+'</div></div>'
+      +'</div>'
+      +'<div style="height:1px;background:var(--md-outline-variant);margin-bottom:10px;"></div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-variant);line-height:1.55;">'
+      +ownerName2+' and Charlene G. at '+barnName2+' can see your update. Create a free NayNay account to stay connected with their care team, get future requests directly, and manage your records.'
+      +'</div></div>'
+      +'<button onclick="obNext(\'account\')" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-bottom:10px;">Create my free vet account</button>'
+      +'<button onclick="S.vetConfirmPage=\'confirmed\';window._ob.active=false;rerender()" style="width:100%;background:transparent;color:var(--md-on-surface-dim);border:none;padding:11px;font-size:13px;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Not now — continue as guest</button>';
+    return wrap(inner,false,null,true);
+  }
+
+  // ── TRAINER SETUP ─────────────────────────────────────────────────────
+  if(ob.step==='setup_trainer'){
+    var inpS='width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:12px;padding:11px 13px;font-size:14px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
+    var TRAINER_DISCIPLINES=['Dressage','Hunter/Jumper','Western','Eventing','Reining','Trail','Endurance','Polo'];
+    var TRAINER_SERVICES=[
+      {id:'flat',label:'Flat work / Training rides'},
+      {id:'jump',label:'Jump sessions'},
+      {id:'ground',label:'Groundwork / Liberty'},
+      {id:'hack',label:'Hacks & trail rides'},
+      {id:'lunge',label:'Lunge sessions'},
+      {id:'show_prep',label:'Show preparation'},
+      {id:'lessons_private',label:'Private lessons'},
+      {id:'lessons_group',label:'Group lessons'},
+      {id:'young_horse',label:'Young horse starting'},
+      {id:'rehab',label:'Rehab / reconditioning'},
+    ];
+    if(!ob.trainerDisciplines)ob.trainerDisciplines=[];
+    if(!ob.trainerServices)ob.trainerServices={flat:true,jump:false,ground:false,hack:true,lunge:false,show_prep:false,lessons_private:true,lessons_group:false,young_horse:false,rehab:false};
+    if(!ob.trainerCerts)ob.trainerCerts='';
+    var inner='<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Your training practice</div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:20px;">Tell owners and barn managers what you specialize in.</div>'
+      +'<div style="margin-bottom:14px;"><div style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:7px;">Disciplines</div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:7px;">'
+      +TRAINER_DISCIPLINES.map(function(d){
+        var on=(ob.trainerDisciplines||[]).includes(d);
+        return '<button onclick="var td=window._ob.trainerDisciplines||[];var i=td.indexOf(\''+d+'\');if(i>=0)td.splice(i,1);else td.push(\''+d+'\');window._ob.trainerDisciplines=td;rerender()" style="padding:6px 13px;border-radius:20px;border:1.5px solid '+(on?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(on?'var(--md-primary-container)':'var(--md-surface)')+';color:'+(on?'var(--md-primary)':'var(--md-on-surface-dim)')+';font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">'+d+'</button>';
+      }).join('')+'</div></div>'
+      +'<div style="margin-bottom:14px;"><div style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Services you offer</div>'
+      +TRAINER_SERVICES.map(function(sv){
+        var on=ob.trainerServices[sv.id];
+        return '<div onclick="window._ob.trainerServices.'+sv.id+'=!window._ob.trainerServices.'+sv.id+';rerender()" style="display:flex;align-items:center;justify-content:space-between;padding:10px 13px;background:var(--md-surface);border-radius:12px;border:1.5px solid '+(on?'var(--md-primary)33':'var(--md-outline-variant)')+';margin-bottom:7px;cursor:pointer;">'
+          +'<div style="font-size:13px;font-weight:'+(on?'700':'400')+';color:'+(on?'var(--md-on-surface)':'var(--md-on-surface-dim)')+';">'+sv.label+'</div>'
+          +mdToggle(on,'window._ob.trainerServices.'+sv.id+'=!window._ob.trainerServices.'+sv.id+';rerender()')
+          +'</div>';
+      }).join('')+'</div>'
+      +'<div style="margin-bottom:20px;"><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Certifications <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--md-on-surface-dim);">· optional</span></label>'
+      +'<input type="text" value="'+(ob.trainerCerts||'')+'" oninput="window._ob.trainerCerts=this.value" placeholder="e.g. USDF, USEF, BHS, Centered Riding" style="'+inpS+'"/></div>'
+      +'<button onclick="obNext(\'done\')" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-bottom:10px;">Continue</button>'
+      +'<button onclick="obNext(\'done\')" style="width:100%;background:transparent;color:var(--md-on-surface-dim);border:none;padding:11px;font-size:13px;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Skip for now</button>';
+    return wrap(inner,true,'account',false,2,3);
+  }
+
+  // ── STAFF SETUP: BARN CONNECTION ──────────────────────────────────────
+  if(ob.step==='setup_staff'){
+    var ctx3=ob.inviteCtx;
+    // If they arrived via invite, show confirm screen
+    if(ctx3&&ctx3.barnName){
+      var inner='<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Confirm your barn</div>'
+        +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:20px;">Your invite has pre-connected you. Please confirm this is correct.</div>'
+        +'<div style="background:var(--md-surface);border-radius:14px;border:2px solid var(--md-primary)33;padding:16px;margin-bottom:20px;">'
+        +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">'
+        +'<div style="width:48px;height:48px;border-radius:12px;background:var(--md-primary-container);display:flex;align-items:center;justify-content:center;">'+msiIcon('home',24,'var(--md-primary)')+'</div>'
+        +'<div><div style="font-size:16px;font-weight:700;color:var(--md-on-surface);">'+ctx3.barnName+'</div>'
+        +'<div style="font-size:12px;color:var(--md-on-surface-dim);">Invited by '+ctx3.from+'</div>'
+        +'<div style="margin-top:4px;"><span style="font-size:11px;font-weight:700;background:var(--md-secondary-container);color:var(--md-secondary);padding:2px 8px;border-radius:10px;">Barn Staff</span></div>'
+        +'</div></div>'
+        +'<div style="height:1px;background:var(--md-outline-variant);margin-bottom:12px;"></div>'
+        +'<div style="font-size:12px;color:var(--md-on-surface-dim);">Your account will be connected to this barn. The barn manager will be notified.</div>'
+        +'</div>'
+        +'<button onclick="obNext(\'setup_staff_tasks\')" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-bottom:10px;">Yes, this is my barn</button>'
+        +'<button onclick="window._ob.inviteCtx=null;rerender()" style="width:100%;background:transparent;color:var(--md-primary);border:1.5px solid var(--md-primary)33;border-radius:14px;padding:13px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Search for a different barn</button>';
+      return wrap(inner,true,'account',false,2,3);
+    }
+    // No invite — show barn search
+    var DEMO_BARNS2=[
+      {id:'sunrise',name:'Sunrise Stables',manager:'Charlene G.',location:'Bedford, NY',horses:12},
+      {id:'ridgeline',name:'Ridgeline Farm',manager:'Marcus H.',location:'Pleasantville, NY',horses:8},
+      {id:'blueridge',name:'Blue Ridge Equestrian',manager:'Dana S.',location:'Armonk, NY',horses:15},
+    ];
+    var bSearch=ob.staffBarnSearch||'';
+    var bFound=ob.staffBarnFound||null;
+    var bSent=ob.staffBarnSent||false;
+    var inpS2='width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:12px;padding:11px 13px;font-size:14px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;padding-left:38px;';
+    var bFiltered=bSearch.length>0?DEMO_BARNS2.filter(function(b){return b.name.toLowerCase().includes(bSearch.toLowerCase());}):[];
+    var bResults=bFiltered.map(function(b){
+      var sel=bFound&&bFound.id===b.id;
+      return '<div onclick="window._ob.staffBarnFound='+JSON.stringify(b)+';rerender()" style="display:flex;align-items:center;gap:12px;padding:11px 13px;background:var(--md-surface);border-radius:12px;border:2px solid '+(sel?'var(--md-primary)':'var(--md-outline-variant)')+';margin-bottom:8px;cursor:pointer;">'
+        +'<div style="width:38px;height:38px;border-radius:9px;background:var(--md-primary-container);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon('home',19,'var(--md-primary)')+'</div>'
+        +'<div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+b.name+'</div>'
+        +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+b.location+' · Mgr: '+b.manager+'</div></div>'
+        +(sel?msiIcon('check_circle',20,'var(--md-primary)'):'')
+        +'</div>';
+    }).join('');
+    var inner='<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Find your barn</div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:20px;">Search for the barn you work at. The manager will receive a notification to approve your request.</div>'
+      +'<div style="position:relative;margin-bottom:10px;">'+msiIcon('search',18,'var(--md-on-surface-dim)')
+      +'<input type="text" value="'+bSearch+'" oninput="window._ob.staffBarnSearch=this.value;window._ob.staffBarnFound=null;window._ob.staffBarnSent=false;rerender()" placeholder="Search by barn name…" style="'+inpS2+'"/>'
+      +'</div>'
+      +bResults
+      +(bFound&&!bSent
+        ?'<div style="background:var(--md-primary-container);border-radius:12px;padding:11px 14px;margin-bottom:14px;display:flex;align-items:center;gap:8px;">'+msiIcon('info',14,'var(--md-primary)')+'<div style="font-size:12px;color:var(--md-primary);font-weight:600;">A request will be sent to '+bFound.manager+' for approval.</div></div>'
+        :'')
+      +(bSent
+        ?'<div style="background:var(--md-secondary-container);border-radius:12px;padding:11px 14px;margin-bottom:14px;display:flex;align-items:center;gap:8px;">'+msiIcon('check_circle',16,'var(--md-secondary)')+'<div style="font-size:12px;color:var(--md-secondary);font-weight:700;">Request sent to '+(bFound?bFound.manager:'the manager')+' at '+(bFound?bFound.name:'the barn')+'.</div></div>'
+        :'')
+      +(bFound&&!bSent
+        ?'<button onclick="obStaffRequestBarn(\''+bFound.id+'\',\''+bFound.name+'\',window._ob.name,window._ob.phoneFormatted)" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:7px;">'+msiIcon('send',16,'#fff')+' Send join request</button>'
+        :'')
+      +(bSent
+        ?'<button onclick="obNext(\'setup_staff_tasks\')" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-bottom:10px;">Continue</button>'
+        :'')
+      +'<button onclick="obNext(\'setup_staff_tasks\')" style="width:100%;background:transparent;color:var(--md-on-surface-dim);border:none;padding:11px;font-size:13px;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Skip for now</button>';
+    return wrap(inner,true,'account',false,2,3);
+  }
+
+  // ── STAFF SETUP: RESPONSIBILITIES ─────────────────────────────────────
+  if(ob.step==='setup_staff_tasks'){
+    var STAFF_TASKS=[
+      {id:'feed',label:'Feeding',icon:'grass'},
+      {id:'turnout',label:'Turnout',icon:'wb_sunny'},
+      {id:'stalls',label:'Stall cleaning',icon:'cleaning_services'},
+      {id:'blankets',label:'Blanket changes',icon:'dry_cleaning'},
+      {id:'water',label:'Water checks',icon:'water_drop'},
+      {id:'meds',label:'Medications',icon:'medication'},
+      {id:'obs',label:'Observations & notes',icon:'visibility'},
+      {id:'tack',label:'Tack cleaning / maintenance',icon:'construction'},
+    ];
+    if(!ob.staffTasks)ob.staffTasks={feed:true,turnout:true,stalls:true,blankets:false,water:true,meds:false,obs:true,tack:false};
+    var inner='<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Your responsibilities</div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:20px;">Select what you\'ll be doing. This sets your default task list — the manager can adjust anytime.</div>'
+      +STAFF_TASKS.map(function(st){
+        var on=ob.staffTasks[st.id];
+        return '<div onclick="window._ob.staffTasks.'+st.id+'=!window._ob.staffTasks.'+st.id+';rerender()" style="display:flex;align-items:center;gap:12px;padding:11px 13px;background:var(--md-surface);border-radius:12px;border:1.5px solid '+(on?'var(--md-primary)33':'var(--md-outline-variant)')+';margin-bottom:8px;cursor:pointer;">'
+          +'<div style="width:34px;height:34px;border-radius:9px;background:'+(on?'var(--md-primary-container)':'var(--md-surface-variant)')+';display:flex;align-items:center;justify-content:center;">'+msiIcon(st.icon,18,on?'var(--md-primary)':'var(--md-on-surface-dim)')+'</div>'
+          +'<div style="flex:1;font-size:13px;font-weight:'+(on?'700':'400')+';color:'+(on?'var(--md-on-surface)':'var(--md-on-surface-dim)')+';">'+st.label+'</div>'
+          +mdToggle(on,'window._ob.staffTasks.'+st.id+'=!window._ob.staffTasks.'+st.id+';rerender()')
+          +'</div>';
+      }).join('')
+      +'<button onclick="obNext(\'done\')" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-top:8px;">Finish setup</button>';
+    return wrap(inner,true,'setup_staff',false,3,3);
+  }
+
+
+  // ── MULTI-ROLE TRANSITION ─────────────────────────────────────────────
+  if(ob.step==='role_transition'){
+    var doneRole=ob._doneRole||'owner';
+    var nextRole=ob._nextRole||'trainer';
+    var RLA={owner:'Horse Owner',manager:'Barn Manager',vet:'Veterinarian',trainer:'Trainer',staff:'Barn Staff'};
+    var RIA={owner:'favorite',manager:'home',vet:'medical_services',trainer:'fitness_center',staff:'person'};
+    var rl=RLA[doneRole]||doneRole;
+    var nl=RLA[nextRole]||nextRole;
+    var ni=RIA[nextRole]||'person';
+    var nextSetupStep=nextRole==='owner'?'setup_horse':nextRole==='manager'?'setup_barn':nextRole==='vet'?'setup_vet':nextRole==='trainer'?'setup_trainer':nextRole==='staff'?'setup_staff':'done';
+    var inner='<div style="text-align:center;padding-top:16px;">'
+      +'<div style="width:56px;height:56px;border-radius:50%;background:var(--md-secondary-container);border:2px solid var(--md-secondary)44;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">'
+      +'<svg width="26" height="26" viewBox="0 0 28 28" fill="none"><path d="M5 14l6.5 6.5L23 8" stroke="var(--md-secondary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      +'</div>'
+      +'<div style="font-size:20px;font-weight:700;color:var(--md-on-surface);margin-bottom:6px;">'+rl+' profile done \u2713</div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:24px;line-height:1.6;">Now let us set up your '+nl.toLowerCase()+' profile. Takes about 1\u20132 minutes.</div>'
+      +'<div style="background:var(--md-surface);border-radius:14px;border:1.5px solid var(--md-outline-variant);padding:14px 16px;margin-bottom:24px;display:flex;align-items:center;gap:12px;">'
+      +'<div style="width:44px;height:44px;border-radius:12px;background:var(--md-primary-container);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon(ni,22,'var(--md-primary)')+'</div>'
+      +'<div><div style="font-size:15px;font-weight:700;color:var(--md-on-surface);">'+nl+'</div>'
+      +'<div style="font-size:12px;color:var(--md-on-surface-dim);">Services, connections, and preferences</div></div>'
+      +'</div>'
+      +'<button onclick="obNext(\''+nextSetupStep+'\')" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-bottom:10px;">Set up '+nl.toLowerCase()+' profile \u2192</button>'
+      +'<button onclick="obNext(\'done\')" style="width:100%;background:transparent;color:var(--md-on-surface-dim);border:none;padding:11px;font-size:13px;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Skip for now</button>'
+      +'</div>';
+    return wrap(inner,false,null,true);
+  }
+
+
   return wrap('<div>Loading...</div>',false,null,true);
 }
 
@@ -1921,6 +2189,40 @@ function rTrainingCard(d,a){
 // --- MANAGER HOME ---------------------------------------------
 function rMgrHome(){
   const t=TH;const assigns=getAssign(TODAY);const trainAssigns=getTrainingAssign(TODAY);
+  var pendingBarnReqs=(BARN_JOIN_REQUESTS||[]).filter(function(r){return r.status==='pending';});
+  var barnReqBanner=pendingBarnReqs.length
+    ?'<div style="background:var(--md-secondary-container);border:1.5px solid var(--md-secondary)33;border-radius:12px;padding:11px 14px;margin-bottom:12px;">'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'+msiIcon('medical_services',16,'var(--md-secondary)')+'<span style="font-size:13px;font-weight:700;color:var(--md-secondary);">'+pendingBarnReqs.length+' professional connection request'+(pendingBarnReqs.length>1?'s':'')+'</span></div>'
+      +pendingBarnReqs.map(function(r){
+        return '<div style="background:var(--md-surface);border-radius:10px;padding:10px 12px;margin-bottom:7px;">'
+          +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">'
+          +'<div style="width:36px;height:36px;border-radius:50%;background:var(--md-secondary-container);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon(r.role==='Veterinarian'?'medical_services':'fitness_center',17,'var(--md-secondary)')+'</div>'
+          +'<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+r.name+'</div>'
+          +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+r.role+' · Requesting to join '+r.barnName+' · '+r.time+'</div></div></div>'
+          +'<div style="font-size:12px;color:var(--md-on-surface-variant);line-height:1.5;margin-bottom:9px;padding:0 2px;">'+r.message+'</div>'
+          +'<div style="display:flex;gap:7px;">'
+          +'<button onclick="(function(){var br=(BARN_JOIN_REQUESTS||[]).find(function(x){return x.id===\''+r.id+'\';});if(br)br.status=\'approved\';showToast(\''+r.name.split(' ')[0]+' connected!\'\',\'check_circle\',\'success\');rerender();})()" style="flex:1;padding:8px 12px;background:var(--md-secondary);color:#fff;border:none;border-radius:9px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Approve connection</button>'
+          +'<button onclick="(function(){var br=(BARN_JOIN_REQUESTS||[]).find(function(x){return x.id===\''+r.id+'\';});if(br)br.status=\'declined\';showToast(\'Request declined\',\'close\',\'info\');rerender();})()" style="padding:8px 12px;background:var(--md-surface-variant);color:var(--md-on-surface-dim);border:1px solid var(--md-outline);border-radius:9px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Decline</button>'
+          +'</div></div>';
+      }).join('')
+      +'</div>'
+    :'';
+  var pendingStaffReqs=(STAFF_JOIN_REQUESTS||[]).filter(function(r){return r.status==='pending';});
+  var staffReqBanner=pendingStaffReqs.length
+    ?'<div style="background:var(--md-primary-container);border:1.5px solid var(--md-primary)33;border-radius:12px;padding:11px 14px;margin-bottom:12px;">'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'+msiIcon('person_add',16,'var(--md-primary)')+'<span style="font-size:13px;font-weight:700;color:var(--md-primary);">'+pendingStaffReqs.length+' staff join request'+(pendingStaffReqs.length>1?'s':'')+'</span></div>'
+      +pendingStaffReqs.map(function(r){
+        return '<div style="background:var(--md-surface);border-radius:10px;padding:10px 12px;margin-bottom:7px;display:flex;align-items:center;gap:10px;">'
+          +'<div style="width:36px;height:36px;border-radius:50%;background:var(--md-primary-container);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon('person',18,'var(--md-primary)')+'</div>'
+          +'<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+r.name+'</div>'
+          +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+r.message+' · '+r.time+'</div></div>'
+          +'<div style="display:flex;gap:6px;flex-shrink:0;">'
+          +'<button onclick="(function(){var sr=(STAFF_JOIN_REQUESTS||[]).find(function(x){return x.id===\''+r.id+'\';});if(sr)sr.status=\'approved\';showToast(\'Approved!\',\'check_circle\',\'success\');rerender();})()" style="padding:6px 12px;background:var(--md-primary);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Approve</button>'
+          +'<button onclick="(function(){var sr=(STAFF_JOIN_REQUESTS||[]).find(function(x){return x.id===\''+r.id+'\';});if(sr)sr.status=\'declined\';showToast(\'Declined\',\'close\',\'info\');rerender();})()" style="padding:6px 12px;background:var(--md-surface-variant);color:var(--md-on-surface-dim);border:1px solid var(--md-outline);border-radius:8px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Decline</button>'
+          +'</div></div>';
+      }).join('')
+      +'</div>'
+    :'';
   const total=TASK_DEFS.length,complete=TASK_DEFS.filter(d=>assigns[d.id]?.status==='complete').length;
   const inProg=TASK_DEFS.filter(d=>assigns[d.id]?.status==='in_progress').length;
   const reqLeft=TASK_DEFS.filter(d=>d.req&&assigns[d.id]?.status!=='complete').length;
@@ -1989,7 +2291,7 @@ function rMgrHome(){
   const pendingVisitSection=pendingVisits.length?'<div style="margin-bottom:14px;"><div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="'+TH.WARN+'" stroke-width="1.3"/><path d="M8 5v3.5L10 10" stroke="'+TH.WARN+'" stroke-width="1.3" stroke-linecap="round"/></svg><span style="font-size:12px;font-weight:700;color:'+TH.WARN+';">Visit requests pending your approval</span></div>'+pendingVisits.map(function(v){return visitCard(v,'manager');}).join('')+'</div>':'';
   const confirmedVisits=BARN_VISITS.filter(function(v){return v.status==='confirmed';});
   const visitsSection=confirmedVisits.length?'<div style="margin-bottom:14px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Upcoming visits</div>'+confirmedVisits.map(function(v){return visitCard(v,'manager');}).join('')+'</div>':'';
-  return dateBanner()+mgrHeader+pendingVisitSection+statsRow+assignBtn+visitsSection+trainingList+staffCards+quickActionsBar('manager');
+  return dateBanner()+barnReqBanner+staffReqBanner+mgrHeader+pendingVisitSection+statsRow+assignBtn+visitsSection+trainingList+staffCards+quickActionsBar('manager');
 }
 
 // --- MANAGER ASSIGNMENTS --------------------------------------
@@ -2143,7 +2445,7 @@ function rOwnerSetupNotifs(){
 
 function rTrainerSetup(){
   const t=TH;
-  const tabs=[{key:'account',label:'Account'},{key:'services',label:'Services'},{key:'barns',label:'Barns'},{key:'calendar',label:'Calendar'},{key:'notifications',label:'Notifications'}];
+  const tabs=[{key:'account',label:'Account'},{key:'services',label:'Services'},{key:'barns',label:'Barns'},{key:'payments',label:'Payments'},{key:'calendar',label:'Calendar'},{key:'notifications',label:'Notifications'}];
   S.trainerSetupTab=S.trainerSetupTab||'account';
   if(svcEditId!==null) S.trainerSetupTab='services';
   const tabRow='<div style="display:flex;border-bottom:2px solid '+TH.mdOutlineVar+';margin:-12px -14px 14px;background:'+TH.mdSurf+';overflow-x:auto;">'+tabs.map(function(tab){return '<button onclick="S.trainerSetupTab=\''+tab.key+'\';rerender()" style="font-family:\'DM Sans\',sans-serif;flex:1;font-size:12px;font-weight:700;cursor:pointer;padding:11px 5px;white-space:nowrap;background:transparent;color:'+(S.trainerSetupTab===tab.key?t.T:t.TX3)+';border:none;border-bottom:'+(S.trainerSetupTab===tab.key?'3px solid var(--md-primary)':'3px solid transparent')+';margin-bottom:-2px;white-space:nowrap;">'+tab.label+'</button>';}).join('')+'</div>';
@@ -2153,6 +2455,7 @@ function rTrainerSetup(){
   else if(S.trainerSetupTab==='barns') body=rTrainerSetupBarns();
   
   else if(S.trainerSetupTab==='calendar') body=rTrainerSetupCalendar();
+  else if(S.trainerSetupTab==='payments') body=rPaymentsTab('trainer');
   else body=rTrainerSetupNotifs();
   return tabRow+body;
 }
@@ -2169,11 +2472,134 @@ function rTrainerSetupAccount(){
     +creds;
 }
 
+
+function rBarnConnectFlow(role){
+  var bcf=S.barnConnectFlow||{step:'search',query:'',selected:null,sent:false};
+  var color=role==='vet'?'var(--md-primary)':'var(--md-tertiary)';
+  var DEMO_BARNS=[
+    {id:'sunrise',name:'Sunrise Stables',manager:'Charlene G.',location:'Bedford, NY',horses:12,lat:41.198,lng:-73.618,bio:'Full-service boarding and training facility. 3 arenas, 30 acres.'},
+    {id:'ridgeline',name:'Ridgeline Farm',manager:'Marcus H.',location:'Pleasantville, NY',horses:8,lat:41.134,lng:-73.788,bio:'Boutique dressage and eventing barn. Family-owned since 1987.'},
+    {id:'blueridge',name:'Blue Ridge Equestrian',manager:'Dana S.',location:'Armonk, NY',horses:15,lat:41.112,lng:-73.710,bio:'Hunter/jumper focus. Show preparation specialists. 2 outdoor rings.'},
+    {id:'oakwood',name:'Oakwood Farm',manager:'Patricia L.',location:'North Salem, NY',horses:6,lat:41.335,lng:-73.558,bio:'Small private barn accepting one or two new professionals.'},
+  ];
+  var filtered=bcf.query&&bcf.query.length>0
+    ?DEMO_BARNS.filter(function(b){return b.name.toLowerCase().includes(bcf.query.toLowerCase())||b.location.toLowerCase().includes(bcf.query.toLowerCase());})
+    :DEMO_BARNS;
+
+  // Back button resets flow
+  var backBtn='<button onclick="S.barnConnectFlow=null;rerender()" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:var(--md-on-surface-dim);font-family:\'DM Sans\',sans-serif;font-size:13px;padding:0;margin-bottom:16px;">'+msiIcon('arrow_back',18,'var(--md-on-surface-dim)')+' Back to barns</button>';
+
+  var inpStyle='width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:12px;padding:11px 13px 11px 38px;font-size:14px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
+
+  // ── Sent confirmation ────────────────────────────────────────────────
+  if(bcf.sent&&bcf.selected){
+    return backBtn
+      +'<div style="text-align:center;padding-top:10px;">'
+      +'<div style="width:60px;height:60px;border-radius:50%;background:var(--md-secondary-container);border:2px solid var(--md-secondary)44;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">'
+      +'<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M5 14l6.5 6.5L23 8" stroke="var(--md-secondary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      +'</div>'
+      +'<div style="font-size:20px;font-weight:700;color:var(--md-on-surface);margin-bottom:6px;">Request sent!</div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:20px;line-height:1.6;">'+bcf.selected.manager+' at '+bcf.selected.name+' will receive your request. Once approved, you can message, arrange visits, book appointments, and collaborate on equine care.</div>'
+      +'<div style="background:var(--md-surface);border-radius:12px;border:1.5px solid var(--md-outline-variant);padding:12px 14px;margin-bottom:20px;text-align:left;">'
+      +msiIcon('home_work',16,color)+'<span style="font-size:12px;font-weight:700;margin-left:6px;color:var(--md-on-surface);">'+bcf.selected.name+'</span>'
+      +'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:4px;">'+bcf.selected.location+' \xb7 '+bcf.selected.horses+' horses \xb7 Mgr: '+bcf.selected.manager+'</div>'
+      +'</div>'
+      +'<button onclick="S.barnConnectFlow=null;rerender()" style="width:100%;background:'+color+';color:#fff;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Back to Barns</button>'
+      +'</div>';
+  }
+
+  // ── Selected barn: confirm + value prop ───────────────────────────────
+  if(bcf.selected){
+    var b=bcf.selected;
+    return backBtn
+      +'<div style="font-size:20px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Request connection</div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:18px;">Send a connection request to '+b.manager+'. Once they approve, you\'ll be able to:</div>'
+      +'<div style="background:var(--md-surface);border-radius:14px;border:1.5px solid '+color+'33;padding:13px 14px;margin-bottom:16px;">'
+      +'<div style="display:flex;align-items:center;gap:11px;margin-bottom:12px;">'
+      +'<div style="width:44px;height:44px;border-radius:11px;background:var(--md-surface-variant);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="'+color+'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 22V12h6v10" stroke="'+color+'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
+      +'<div><div style="font-size:15px;font-weight:700;color:var(--md-on-surface);">'+b.name+'</div>'
+      +'<div style="font-size:12px;color:var(--md-on-surface-dim);">'+b.location+' \xb7 Mgr: '+b.manager+'</div>'
+      +(b.bio?'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:3px;font-style:italic;">'+b.bio+'</div>':'')
+      +'</div></div>'
+      +'<div style="height:1px;background:var(--md-outline-variant);margin-bottom:10px;"></div>'
+      +['Chat directly with the barn manager','Arrange and track vet/trainer visits','Book appointments for your horses','Stay updated on health, care, and events','Contribute to holistic equine care documentation'].map(function(item){
+        return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;color:var(--md-on-surface-variant);">'+msiIcon('check_circle',14,color)+' '+item+'</div>';
+      }).join('')
+      +'</div>'
+      +'<button onclick="(function(){BARN_JOIN_REQUESTS.push({id:\'bjr\'+Date.now(),name:vetSetup?vetSetup.firstName+\' \'+vetSetup.lastName:trainerSetup?trainerSetup.name:\'Professional\',role:S.barnConnectFlow.role===\'vet\'?\'Veterinarian\':\'Trainer\',barnId:\''+b.id+'\',barnName:\''+b.name+'\',status:\'pending\',time:\'Just now\',message:\'Requesting barn connection to coordinate care, arrange visits, and document equine health.\'});S.barnConnectFlow.sent=true;rerender();})()" style="width:100%;background:'+color+';color:#fff;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:7px;">'+msiIcon('send',16,'#fff')+' Send connection request</button>'
+      +'<button onclick="S.barnConnectFlow.selected=null;rerender()" style="width:100%;background:transparent;color:var(--md-on-surface-dim);border:none;padding:11px;font-size:13px;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Back to search</button>';
+  }
+
+  // ── Search + map list ─────────────────────────────────────────────────
+  var barnCards=filtered.map(function(b){
+    return '<div onclick="S.barnConnectFlow.selected='+JSON.stringify(b)+';rerender()" style="display:flex;align-items:center;gap:12px;padding:11px 13px;background:var(--md-surface);border-radius:12px;border:1.5px solid var(--md-outline-variant);margin-bottom:8px;cursor:pointer;">'
+      +'<div style="width:42px;height:42px;border-radius:10px;background:var(--md-surface-variant);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="'+color+'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 22V12h6v10" stroke="'+color+'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
+      +'<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+b.name+'</div>'
+      +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+b.location+' \xb7 '+b.horses+' horses \xb7 '+b.manager+'</div>'
+      +(b.bio?'<div style="font-size:10px;color:var(--md-on-surface-dim);font-style:italic;margin-top:1px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">'+b.bio+'</div>':'')
+      +'</div>'
+      +msiIcon('chevron_right',18,'var(--md-on-surface-dim)')
+      +'</div>';
+  }).join('');
+
+  // Map placeholder — pins for each barn
+  var mapArea='<div style="background:var(--md-surface-variant);border-radius:14px;border:1.5px solid var(--md-outline-variant);overflow:hidden;margin-bottom:12px;position:relative;">'
+    +'<svg viewBox="0 0 360 160" width="100%" height="140" xmlns="http://www.w3.org/2000/svg">'
+    // background grid representing map
+    +'<rect width="360" height="160" fill="#e8f0e8"/>'
+    +'<line x1="0" y1="40" x2="360" y2="40" stroke="#cdd8cd" stroke-width="0.5"/>'
+    +'<line x1="0" y1="80" x2="360" y2="80" stroke="#cdd8cd" stroke-width="0.5"/>'
+    +'<line x1="0" y1="120" x2="360" y2="120" stroke="#cdd8cd" stroke-width="0.5"/>'
+    +'<line x1="90" y1="0" x2="90" y2="160" stroke="#cdd8cd" stroke-width="0.5"/>'
+    +'<line x1="180" y1="0" x2="180" y2="160" stroke="#cdd8cd" stroke-width="0.5"/>'
+    +'<line x1="270" y1="0" x2="270" y2="160" stroke="#cdd8cd" stroke-width="0.5"/>'
+    // Barn map pins
+    +'<circle cx="180" cy="72" r="10" fill="'+color+'" opacity="0.9"/>'
+    +'<text x="180" y="76" text-anchor="middle" font-size="10" fill="#fff" font-family="sans-serif">S</text>'
+    +'<circle cx="85" cy="100" r="9" fill="'+color+'" opacity="0.75"/>'
+    +'<text x="85" y="104" text-anchor="middle" font-size="9" fill="#fff" font-family="sans-serif">R</text>'
+    +'<circle cx="136" cy="116" r="9" fill="'+color+'" opacity="0.75"/>'
+    +'<text x="136" y="120" text-anchor="middle" font-size="9" fill="#fff" font-family="sans-serif">B</text>'
+    +'<circle cx="258" cy="48" r="9" fill="'+color+'" opacity="0.75"/>'
+    +'<text x="258" y="52" text-anchor="middle" font-size="9" fill="#fff" font-family="sans-serif">O</text>'
+    +'<text x="8" y="154" font-size="8" fill="#888" font-family="sans-serif">Westchester County, NY</text>'
+    +'</svg>'
+    +'<div style="position:absolute;top:8px;right:8px;background:rgba(255,255,255,0.9);border-radius:6px;padding:3px 7px;font-size:10px;font-weight:600;color:var(--md-on-surface);">'+filtered.length+' barns nearby</div>'
+    +'</div>';
+
+  return backBtn
+    +'<div style="font-size:20px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Connect to a barn</div>'
+    +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:14px;">Search by barn name or location. Request a connection to start collaborating on equine care.</div>'
+    +'<div style="position:relative;margin-bottom:12px;">'+msiIcon('search',18,'var(--md-on-surface-dim)')
+    +'<input type="text" value="'+(bcf.query||'')+'" oninput="S.barnConnectFlow.query=this.value;rerender()" placeholder="Search barns, locations…" style="'+inpStyle+'"/></div>'
+    +mapArea
+    +(filtered.length?barnCards:'<div style="text-align:center;padding:20px;color:var(--md-on-surface-dim);font-size:13px;">No barns found for that search.</div>');
+}
+
+
 function rTrainerSetupBarns(){
+  if(S.barnConnectFlow&&S.barnConnectFlow.role==='trainer') return rBarnConnectFlow('trainer');
   const barns=trainerSetup.connectedBarns;
   const info='<div style="background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:12px;font-weight:600;color:var(--md-on-primary-container);margin-bottom:12px;">'+barns.filter(function(b){return b.active;}).length+' active barn connections.</div>';
-  const cards=barns.map(function(b){return '<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);padding:12px 14px;margin-bottom:9px;display:flex;align-items:center;gap:10px;"><div style="flex:1;"><div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">'+b.name+'</div><div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:2px;">'+b.horses+' horses \u00b7 Since '+b.since+'</div></div><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:'+(b.active?'var(--md-secondary-container)':'var(--md-surface-variant)')+';color:'+(b.active?'var(--md-secondary)':'var(--md-on-surface-dim)')+';">'+(b.active?'Active':'Inactive')+'</span></div>';}).join('');
-  return info+cards+'<button style="width:100%;background:var(--md-surface);border:2px dashed var(--md-outline);border-radius:10px;padding:11px;color:var(--md-primary);font-size:13px;font-family:\'DM Sans\',sans-serif;cursor:pointer;font-weight:700;">+ Connect a barn</button>';
+  const cards=barns.map(function(b){
+    var thread=MESSAGE_THREADS.find(function(th){return th.roles.includes('Trainer');});
+    return '<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);margin-bottom:9px;overflow:hidden;">'
+      +'<div style="padding:12px 14px;display:flex;align-items:center;gap:10px;">'
+      +'<div style="width:38px;height:38px;border-radius:10px;background:var(--md-surface-variant);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="var(--md-tertiary)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 22V12h6v10" stroke="var(--md-tertiary)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
+      +'<div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">'+b.name+'</div>'
+      +'<div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:2px;">'+b.horses+' horses \xb7 Since '+b.since+'</div></div>'
+      +'<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:'+(b.active?'var(--md-secondary-container)':'var(--md-surface-variant)')+';color:'+(b.active?'var(--md-secondary)':'var(--md-on-surface-dim)')+';">'+(b.active?'Active':'Inactive')+'</span>'
+      +'</div>'
+      +'<div style="border-top:1px solid var(--md-outline-variant);padding:8px 14px;display:flex;gap:8px;">'
+      +'<button onclick="S.activeTab=\'messages\';S.selectedThread=\''+(thread?thread.id:'t4')+'\';rerender()" style="flex:1;background:none;border:1.5px solid var(--md-tertiary)33;padding:7px;border-radius:8px;font-size:12px;font-weight:600;color:var(--md-tertiary);font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;">'+msiIcon('chat',13,'var(--md-tertiary)')+' Send message</button>'
+      +'<button style="flex:1;background:none;border:1.5px solid var(--md-outline-variant);padding:7px;border-radius:8px;font-size:12px;font-weight:600;color:var(--md-on-surface-variant);font-family:\'DM Sans\',sans-serif;cursor:pointer;">'+(b.active?'Disconnect':'Reconnect')+'</button>'
+      +'</div></div>';
+  }).join('');
+  var fab='<button onclick="S.barnConnectFlow={role:\'trainer\',step:\'search\',query:\'\',selected:null,sent:false};rerender()" style="position:fixed;bottom:80px;right:20px;z-index:200;width:56px;height:56px;border-radius:50%;background:var(--md-tertiary);border:none;box-shadow:0 4px 14px rgba(0,0,0,0.28);display:flex;align-items:center;justify-content:center;cursor:pointer;">'
+    +msiIcon('home_work',22,'#fff')
+    +'<span class="msi" style="position:absolute;bottom:8px;right:8px;font-size:14px;color:#fff;background:var(--md-tertiary);border-radius:50%;line-height:1;font-weight:900;">add</span>'
+    +'</button>';
+  return info+cards+fab;
 }
 
 function rTrainerSetupCalendar(){
@@ -2199,17 +2625,88 @@ let mgrSetup={
   calendar:{googleConnected:false,iCalConnected:false,syncTasks:true,syncVisits:true,syncReminders:true},
 };
 
+
+function rMgrSetupConnections(){
+  var t=TH;
+  var pros=BARN_PROFESSIONALS;
+  var pendingBarnReqs=(BARN_JOIN_REQUESTS||[]).filter(function(r){return r.status==='pending';});
+
+  // Type icon map
+  function typeIcon(type){
+    return type==='Vet'?'medical_services':type==='Trainer'?'fitness_center':type==='Farrier'?'construction':type==='Dentist'?'dentistry':type==='Masseuse'?'self_improvement':'person';
+  }
+  function typeColor(type){
+    return type==='Vet'?'var(--md-primary)':type==='Trainer'?'var(--md-tertiary)':type==='Farrier'?'var(--md-warning)':type==='Dentist'?'var(--md-error)':'var(--md-secondary)';
+  }
+
+  // Pending connection requests banner
+  var pendingBanner=pendingBarnReqs.length
+    ?'<div style="background:var(--md-primary-container);border:1.5px solid var(--md-primary)33;border-radius:12px;padding:11px 14px;margin-bottom:14px;">'
+      +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;">'+msiIcon('pending',15,'var(--md-primary)')
+      +'<span style="font-size:12px;font-weight:700;color:var(--md-primary);">'+pendingBarnReqs.length+' pending connection request'+(pendingBarnReqs.length>1?'s':'')+'</span></div>'
+      +pendingBarnReqs.map(function(r){
+        return '<div style="background:var(--md-surface);border-radius:9px;padding:9px 11px;margin-bottom:7px;display:flex;align-items:center;gap:9px;">'
+          +'<div style="width:32px;height:32px;border-radius:50%;background:var(--md-secondary-container);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon(r.role==='Veterinarian'?'medical_services':'fitness_center',16,'var(--md-secondary)')+'</div>'
+          +'<div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:var(--md-on-surface);">'+r.name+'</div>'
+          +'<div style="font-size:10px;color:var(--md-on-surface-dim);">'+r.role+' \xb7 '+r.time+'</div></div>'
+          +'<div style="display:flex;gap:5px;">'
+          +'<button onclick="(function(){var br=(BARN_JOIN_REQUESTS||[]).find(function(x){return x.id===\''+r.id+'\';});if(br)br.status=\'approved\';showToast(\''+r.name.split(' ')[0]+' connected!\',\'check_circle\',\'success\');rerender();})()" style="padding:5px 11px;background:var(--md-primary);color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Approve</button>'
+          +'<button onclick="(function(){var br=(BARN_JOIN_REQUESTS||[]).find(function(x){return x.id===\''+r.id+'\';});if(br)br.status=\'declined\';showToast(\'Declined\',\'close\',\'info\');rerender();})()" style="padding:5px 9px;background:var(--md-surface-variant);color:var(--md-on-surface-dim);border:1px solid var(--md-outline);border-radius:8px;font-size:11px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Decline</button>'
+          +'</div></div>';
+      }).join('')+'</div>'
+    :'';
+
+  // Connected professionals list
+  var connectedSection='<div style="margin-bottom:16px;">'
+    +'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Connected professionals</div>'
+    +pros.map(function(p){
+      var ic=typeIcon(p.type);var col=typeColor(p.type);
+      var thread=MESSAGE_THREADS.find(function(th){return th.participants.some(function(x){return x.includes(p.name.split(' ')[0]);});});
+      return '<div style="background:var(--md-surface);border-radius:12px;border:1px solid var(--md-outline-variant);padding:12px 13px;margin-bottom:8px;">'
+        +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">'
+        +'<div style="width:40px;height:40px;border-radius:50%;background:'+p.bg+';display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="font-size:14px;font-weight:700;color:'+p.color+';">'+p.initials+'</span></div>'
+        +'<div style="flex:1;min-width:0;">'
+        +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+p.name+'</div>'
+        +'<div style="display:flex;align-items:center;gap:5px;margin-top:2px;">'+msiIcon(ic,12,col)+'<span style="font-size:11px;color:var(--md-on-surface-dim);">'+p.type+'</span>'
+        +(p.nayNay?'<span style="font-size:9px;font-weight:700;background:var(--md-primary-container);color:var(--md-primary);padding:1px 6px;border-radius:8px;margin-left:4px;">on NayNay</span>':'<span style="font-size:9px;color:var(--md-on-surface-dim);margin-left:4px;">\xb7 not on NayNay</span>')
+        +'</div></div></div>'
+        +'<div style="display:flex;gap:7px;">'
+        +(p.nayNay&&thread
+          ?'<button onclick="S.activeTab=\'messages\';S.selectedThread=\''+thread.id+'\';rerender()" style="flex:1;background:none;border:1.5px solid var(--md-primary)33;padding:7px 10px;border-radius:9px;font-size:12px;font-weight:600;color:var(--md-primary);font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;">'+msiIcon('chat',13,'var(--md-primary)')+' Message</button>'
+          :'<button onclick="showToast(\'Invite sent to '+p.name.split(' ')[0]+'!\',\'send\',\'success\')" style="flex:1;background:none;border:1.5px solid var(--md-outline-variant);padding:7px 10px;border-radius:9px;font-size:12px;font-weight:600;color:var(--md-on-surface-dim);font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;">'+msiIcon('send',13,'var(--md-on-surface-dim)')+' Send NayNay invite</button>')
+        +'<button onclick="showToast(\'Visit scheduled with '+p.name.split(' ')[0]+'!\',\'calendar_month\',\'success\')" style="background:none;border:1.5px solid var(--md-outline-variant);padding:7px 10px;border-radius:9px;font-size:12px;font-weight:600;color:var(--md-on-surface-dim);font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;">'+msiIcon('calendar_month',13,'var(--md-on-surface-dim)')+' Schedule visit</button>'
+        +'</div></div>';
+    }).join('')
+    +'</div>';
+
+  // Invite new professional panel
+  var inviteSection='<div style="background:var(--md-surface-variant);border-radius:12px;padding:12px 14px;margin-bottom:14px;">'
+    +'<div style="font-size:12px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Invite a professional</div>'
+    +'<div style="font-size:12px;color:var(--md-on-surface-dim);margin-bottom:12px;line-height:1.5;">Invite a vet, trainer, farrier, or other specialist to connect with your barn. They\'ll be able to message you, request visits, and collaborate on equine care.</div>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:7px;">'
+    +['Veterinarian','Trainer','Farrier','Dentist','Other'].map(function(role){
+      var icon=role==='Veterinarian'?'medical_services':role==='Trainer'?'fitness_center':role==='Farrier'?'construction':role==='Dentist'?'dentistry':'person';
+      return '<button onclick="showToast(\'Invite link copied for '+role+'!\',\'link\',\'success\')" style="display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:20px;background:var(--md-surface);border:1.5px solid var(--md-outline-variant);font-size:12px;font-weight:600;color:var(--md-on-surface-dim);font-family:\'DM Sans\',sans-serif;cursor:pointer;">'+msiIcon(icon,13,'var(--md-on-surface-dim)')+' '+role+'</button>';
+    }).join('')
+    +'</div></div>';
+
+  return pendingBanner+connectedSection+inviteSection;
+}
+
+
 function rMgrSetup(){
   const t=TH;
-  const tabs=[{key:'account',label:'Account'},{key:'tasks',label:'Tasks'},{key:'services',label:'Services'},{key:'calendar',label:'Calendar'},{key:'notifications',label:'Notifications'}];
+  const tabs=[{key:'account',label:'Account'},{key:'tasks',label:'Tasks'},{key:'services',label:'Services'},{key:'connections',label:'Connections'},{key:'payments',label:'Payments'},{key:'calendar',label:'Calendar'},{key:'notifications',label:'Notifications'}];
   S.mgrSetupTab=S.mgrSetupTab||'tasks';
   const tabRow='<div style="display:flex;border-bottom:2px solid '+TH.mdOutlineVar+';margin:-12px -14px 14px;background:'+TH.mdSurf+';overflow-x:auto;">'+tabs.map(function(tab){return '<button onclick="S.mgrSetupTab=\''+tab.key+'\';rerender()" style="font-family:\'DM Sans\',sans-serif;flex:1;font-size:12px;font-weight:700;cursor:pointer;padding:11px 5px;white-space:nowrap;background:transparent;color:'+(S.mgrSetupTab===tab.key?t.T:t.TX3)+';border:none;border-bottom:'+(S.mgrSetupTab===tab.key?'3px solid var(--md-primary)':'3px solid transparent')+';margin-bottom:-2px;white-space:nowrap;">'+tab.label+'</button>';}).join('')+'</div>';
   let body='';
   if(S.mgrSetupTab==='account') body=rMgrSetupAccount();
   else if(S.mgrSetupTab==='tasks') body=rMgrSetupTasks();
   else if(S.mgrSetupTab==='services') body=rServicesTab();
+  else if(S.mgrSetupTab==='connections') body=rMgrSetupConnections();
   
   else if(S.mgrSetupTab==='calendar') body=rMgrSetupCalendar();
+  else if(S.mgrSetupTab==='payments') body=rPaymentsTab('manager');
   else body=rMgrSetupNotifs();
   return tabRow+body;
 }
@@ -2253,7 +2750,7 @@ function rMgrSetupNotifs(){
 
 function rVetSetup(){
   const t=TH;
-  const tabs=[{key:'account',label:'Account'},{key:'services',label:'Services'},{key:'barns',label:'Barns'},{key:'calendar',label:'Calendar'},{key:'notifications',label:'Notifications'}];
+  const tabs=[{key:'account',label:'Account'},{key:'services',label:'Services'},{key:'barns',label:'Barns'},{key:'payments',label:'Payments'},{key:'calendar',label:'Calendar'},{key:'notifications',label:'Notifications'}];
   S.vetSetupTab=S.vetSetupTab||'account';
   // If we're in service edit/create and NOT on services tab, force it
   if(svcEditId!==null)S.vetSetupTab='services';
@@ -2264,6 +2761,7 @@ function rVetSetup(){
   else if(S.vetSetupTab==='barns') body=rVetSetupBarns();
   
   else if(S.vetSetupTab==='calendar') body=rVetSetupCalendar();
+  else if(S.vetSetupTab==='payments') body=rPaymentsTab('vet');
   else body=rVetSetupNotifs();
   return tabRow+body;
 }
@@ -2295,6 +2793,34 @@ function rStripeConnect(pay,store){
   return stripeBlock;
 }
 
+
+function rPaymentsTab(role){
+  var pay=role==='vet'?vetSetup.payment:role==='trainer'?trainerSetup.payment:mgrSetup.payment;
+  var store=role==='vet'?'vetSetup.payment':role==='trainer'?'trainerSetup.payment':'mgrSetup.payment';
+  var stripe=rStripeConnect(pay,store);
+  // Billing preferences
+  var prefs='<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);overflow:hidden;margin-bottom:14px;">'
+    +'<div style="padding:11px 14px;border-bottom:1px solid var(--md-outline-variant);font-size:13px;font-weight:700;color:var(--md-on-surface);">Billing preferences</div>'
+    +settingToggle('Auto-charge on approval','Charge the card on file when a service is approved',pay.autoCharge,store+'.autoCharge')
+    +settingToggle('Email receipts','Send payment receipts to clients by email',pay.receiptEmail,store+'.receiptEmail')
+    +'</div>';
+  var invoiceRow=(pay.invoicePrefix||pay.taxId)
+    ?'<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);overflow:hidden;margin-bottom:14px;">'
+      +'<div style="padding:11px 14px;border-bottom:1px solid var(--md-outline-variant);font-size:13px;font-weight:700;color:var(--md-on-surface);">Invoice settings</div>'
+      +(pay.invoicePrefix?'<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--md-outline-variant);"><span style="font-size:13px;color:var(--md-on-surface);">Invoice prefix</span><span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+pay.invoicePrefix+'</span></div>':'')
+      +(pay.taxId?'<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;"><span style="font-size:13px;color:var(--md-on-surface);">Tax ID</span><span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+pay.taxId+'</span></div>':'')
+      +'</div>'
+    :'';
+  var payMethod=pay.method
+    ?'<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);overflow:hidden;margin-bottom:14px;">'
+      +'<div style="padding:11px 14px;border-bottom:1px solid var(--md-outline-variant);font-size:13px;font-weight:700;color:var(--md-on-surface);">Payout account</div>'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;"><span style="font-size:13px;color:var(--md-on-surface);">'+pay.method+'</span><span style="font-size:13px;color:var(--md-on-surface-dim);">'+pay.account+'</span></div>'
+      +'</div>'
+    :'';
+  return stripe+prefs+invoiceRow+payMethod;
+}
+
+
 function rServicesTab(){
   if(svcEditId!==null)return rServiceForm(svcEditId);
   const t=TH;
@@ -2323,13 +2849,13 @@ function rServicesTab(){
     </div>`;
   }).join('');
 
-  return searchBar+`<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);overflow:hidden;margin-bottom:12px;">${rows}</div>
-  <button onclick="svcEditId='new';rerender()" style="width:100%;background:var(--md-primary);color:#fff;border:none;padding:12px;border-radius:var(--md-shape-md);font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>Add service</button>
-  `
-  +rStripeConnect(anyRole('vet')?vetSetup.payment:anyRole('trainer')?trainerSetup.payment:mgrSetup.payment, anyRole('vet')?'vetSetup.payment':anyRole('trainer')?'trainerSetup.payment':'mgrSetup.payment');
+  var svcsWrap='<div style="position:relative;">'
+    +'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);overflow:hidden;margin-bottom:12px;">'+rows+'</div>'
+    +'</div>';
+  // FAB — fixed to bottom-right of the setup content area
+  var fab='<button onclick="svcEditId=\'new\';rerender()" style="position:fixed;bottom:80px;right:20px;z-index:200;width:52px;height:52px;border-radius:50%;background:var(--md-primary);color:#fff;border:none;box-shadow:0 4px 12px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:26px;line-height:1;">'+msiIcon('add',26,'#fff')+'</button>';
+  return searchBar+svcsWrap+fab;
 }
-
-// --- SERVICE FORM (create/edit) -------------------------------
 function rServiceForm(id){
   const t=TH;
   const isNew=id==='new';
@@ -2401,7 +2927,33 @@ function rVetSetupAccount(){
   return rPersonCard(p,'vetSetup.profile',['DVM','VMD','PhD','MS','DVM PhD',''])+rPracticeCard(p,'vetSetup.profile','Practice')+creds;
 }
 
-function rVetSetupBarns(){const t=TH;const barns=vetSetup.connectedBarns;const info=`<div style="background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:12px;font-weight:600;color:var(--md-on-primary-container);margin-bottom:12px;">${barns.filter(b=>b.active).length} active barn connections.</div>`;const cards=barns.map(b=>`<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);margin-bottom:10px;overflow:hidden;opacity:${b.active?1:0.65};"><div style="padding:12px 14px;display:flex;align-items:center;gap:10px;"><div style="width:38px;height:38px;border-radius:10px;background:var(--md-surface-variant);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="var(--md-primary)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 22V12h6v10" stroke="var(--md-primary)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">${b.name}</div><div style="font-size:11px;color:var(--md-on-surface-dim);">${b.manager} · ${b.horses} horses · Since ${b.since}</div></div><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:${b.active?t.SUCBG:t.SUB};color:${b.active?t.SUC:t.TX3};border:1px solid ${b.active?TH.mdSec+'44':t.BRD};">${b.active?'Active':'Inactive'}</span></div><div style="border-top:1px solid var(--md-outline-variant);padding:8px 14px;display:flex;gap:8px;"><button style="flex:1;background:none;border:1.5px solid var(--md-outline-variant);padding:7px;border-radius:8px;font-size:12px;font-weight:600;color:var(--md-on-surface-variant);font-family:'DM Sans',sans-serif;cursor:pointer;">View horses</button><button style="flex:1;background:none;border:1.5px solid ${b.active?t.DNG:t.T};padding:7px;border-radius:8px;font-size:12px;font-weight:600;color:${b.active?t.DNG:t.T};font-family:'DM Sans',sans-serif;cursor:pointer;">${b.active?'Disconnect':'Reconnect'}</button></div></div>`).join('');return info+cards+`<button style="width:100%;background:var(--md-surface);border:2px dashed var(--md-outline);border-radius:10px;padding:11px;color:var(--md-primary);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:700;">+ Connect a new barn</button>`;}
+function rVetSetupBarns(){
+  const t=TH;
+  const barns=vetSetup.connectedBarns;
+  // Barn connect flow overlay
+  if(S.barnConnectFlow&&S.barnConnectFlow.role==='vet') return rBarnConnectFlow('vet');
+  const info='<div style="background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:12px;font-weight:600;color:var(--md-on-primary-container);margin-bottom:12px;">'+barns.filter(function(b){return b.active;}).length+' active barn connections. You can message managers, arrange visits, and document care.</div>';
+  const cards=barns.map(function(b){
+    var thread=MESSAGE_THREADS.find(function(th){return th.participants.some(function(p){return p.includes('Charlene')||p.includes('Jordan')||p.includes('Dana');})&&th.roles.includes('Vet');});
+    return '<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);margin-bottom:10px;overflow:hidden;opacity:'+(b.active?1:0.65)+';">'
+      +'<div style="padding:12px 14px;display:flex;align-items:center;gap:10px;">'
+      +'<div style="width:38px;height:38px;border-radius:10px;background:var(--md-surface-variant);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="var(--md-primary)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 22V12h6v10" stroke="var(--md-primary)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
+      +'<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+b.name+'</div>'
+      +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+b.manager+' \xb7 '+b.horses+' horses \xb7 Since '+b.since+'</div></div>'
+      +'<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:'+(b.active?t.SUCBG:t.SUB)+';color:'+(b.active?t.SUC:t.TX3)+';border:1px solid '+(b.active?TH.mdSec+'44':t.BRD)+';">'+(b.active?'Active':'Inactive')+'</span>'
+      +'</div>'
+      +'<div style="border-top:1px solid var(--md-outline-variant);padding:8px 14px;display:flex;gap:8px;">'
+      +'<button onclick="S.activeTab=\'messages\';S.selectedThread=\''+(thread?thread.id:'t2')+'\';rerender()" style="flex:1;background:none;border:1.5px solid var(--md-primary)33;padding:7px;border-radius:8px;font-size:12px;font-weight:600;color:var(--md-primary);font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;">'+msiIcon('chat',13,'var(--md-primary)')+' Send message</button>'
+      +'<button style="flex:1;background:none;border:1.5px solid '+(b.active?t.DNG:t.T)+';padding:7px;border-radius:8px;font-size:12px;font-weight:600;color:'+(b.active?t.DNG:t.T)+';font-family:\'DM Sans\',sans-serif;cursor:pointer;">'+(b.active?'Disconnect':'Reconnect')+'</button>'
+      +'</div></div>';
+  }).join('');
+  var fab='<button onclick="S.barnConnectFlow={role:\'vet\',step:\'search\',query:\'\',selected:null,sent:false};rerender()" style="position:fixed;bottom:80px;right:20px;z-index:200;width:56px;height:56px;border-radius:50%;background:var(--md-primary);border:none;box-shadow:0 4px 14px rgba(0,0,0,0.28);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-direction:column;gap:0;">'
+    +'<span style="font-size:10px;line-height:1;margin-bottom:-2px;color:#fff;">'+msiIcon('home_work',20,'#fff')+'</span>'
+    +'<span class="msi" style="font-size:14px;color:#fff;line-height:1;font-weight:900;">add</span>'
+    +'</button>';
+  return info+cards+fab;
+}
+
 function rVetSetupPayments(){
   const t=TH;const pay=vetSetup.payment;
   const connected=pay.stripeConnected||false;
@@ -2421,7 +2973,41 @@ function rVetUnauth(){const t=TH;const v=vetVaxData;const isEdit=S.vetEditMode;c
     :'<div style="font-size:14px;font-weight:700;color:var(--md-on-surface);margin-bottom:3px;">'+(v.vetPrefix?v.vetPrefix+' ':'')+v.vetFirst+' '+v.vetLast+(v.vetSuffix?', '+v.vetSuffix:'')+'</div><div style="font-size:12px;color:var(--md-on-surface-dim);">'+v.vetPhone+'</div>'
   )
   +'</div></div></div>';const sig=`<div style="margin-bottom:14px;"><div style="font-size:11px;font-weight:700;color:var(--md-on-surface-variant);text-transform:uppercase;margin-bottom:7px;">Signature</div><div style="background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:12px;height:70px;display:flex;align-items:center;justify-content:center;"><span style="font-size:12px;color:var(--md-on-surface-dim);font-style:italic;">Sign here</span></div></div>`;const ctas=`<div style="padding-bottom:8px;"><button onclick="S.vetConfirmPage='confirmed';showToast('Vaccination confirmed','vaccines','success')" style="width:100%;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer;border:none;padding:14px;border-radius:14px;background:var(--md-primary);color:#fff;margin-bottom:10px;">Confirm vaccination</button><div style="text-align:center;"><button onclick="S.vetConfirmPage='declined';rerender()" style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:var(--md-on-surface-dim);background:none;border:none;cursor:pointer;text-decoration:underline;">I cannot confirm these details</button></div></div>`;return banner+vaccineCard+vetCard+sig+ctas;}
-function rVetConfirmedPage(){const t=TH;const benefits=[{title:'Records, always ready',body:'Every visit, vaccination, and treatment stored securely.'},{title:'Connected care team',body:'Barn managers and owners see your updates in real time.'},{title:'Auto due-date reminders',body:"NayNay tracks next-due dates and notifies barns."},{title:'Payments handled in chat',body:'Invoice and collect inside the care team conversation.'}];const success=`<div style="text-align:center;padding:18px 0 14px;"><div style="width:56px;height:56px;border-radius:50%;background:var(--md-secondary-container);border:2px solid var(--md-secondary)44;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;"><svg width="26" height="26" viewBox="0 0 28 28" fill="none"><path d="M5 14l6.5 6.5L23 8" stroke="var(--md-secondary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="font-size:17px;font-weight:700;color:var(--md-on-surface);margin-bottom:3px;">Vaccination confirmed</div><div style="font-size:12px;color:var(--md-on-surface-dim);">Rivendell's records have been updated.</div></div>`;const cards=benefits.map(b=>`<div style="background:var(--md-surface);border-radius:10px;border:1.5px solid var(--md-outline-variant);padding:10px 12px;margin-bottom:7px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:2px;">${b.title}</div><div style="font-size:12px;color:var(--md-on-surface-dim);line-height:1.5;">${b.body}</div></div>`).join('');const cta=`<div style="background:linear-gradient(135deg,#0E1E2E,#1A3A4A);border-radius:14px;padding:16px;margin-top:4px;"><div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:10px;">Create your free vet account</div>${googleBtn('vetSignIn()')}</div>`;return success+`<div style="height:1px;background:var(--md-outline-variant);margin:4px 0 14px;"></div>`+cards+cta;}
+function rVetConfirmedPage(){
+  var t=TH;
+  var v=vetVaxData;
+  var horseName=v.horseId?(HORSES_ALL.find(function(h){return h.id===v.horseId;})||{name:'Rivendell'}).name:'Rivendell';
+  var ownerName='Sarah K.';
+  var barnName='Sunrise Stables';
+  var step=S._postVaxStep||'confirmed'; // 'confirmed'|'join_prompt'
+  
+  if(step==='confirmed'){
+    // Success card + brief delay then show join prompt
+    return '<div style="padding:20px 16px;">'
+      +'<div style="text-align:center;padding:16px 0 14px;">'
+      +'<div style="width:56px;height:56px;border-radius:50%;background:var(--md-secondary-container);border:2px solid var(--md-secondary)44;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;">'
+      +'<svg width="26" height="26" viewBox="0 0 28 28" fill="none"><path d="M5 14l6.5 6.5L23 8" stroke="var(--md-secondary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
+      +'<div style="font-size:17px;font-weight:700;color:var(--md-on-surface);margin-bottom:3px;">Vaccination confirmed</div>'
+      +'<div style="font-size:12px;color:var(--md-on-surface-dim);">'+horseName+'\'s records have been updated.</div>'
+      +'</div>'
+      +'<div style="height:1px;background:var(--md-outline-variant);margin:0 0 14px;"></div>'
+      // Warm join prompt
+      +'<div style="background:linear-gradient(135deg,#0E1E2E,#1A3A4A);border-radius:16px;padding:18px;margin-bottom:0;">'
+      +'<div style="font-size:11px;font-weight:700;color:#ffffff88;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;">Stay connected with your patients</div>'
+      +'<div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:6px;line-height:1.4;">'+ownerName+' and '+barnName+' would love to stay in touch.</div>'
+      +'<div style="font-size:12px;color:#ffffff99;margin-bottom:14px;line-height:1.5;">You just vaccinated '+horseName+'. Join NayNay to receive future care requests, track records, and invoice directly in the conversation.</div>'
+      // Context chips
+      +'<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px;">'
+      +'<div style="background:#ffffff22;border-radius:20px;padding:5px 11px;font-size:11px;font-weight:700;color:#fff;display:flex;align-items:center;gap:5px;">'+msiIcon('pets',12,'#fff')+horseName+'</div>'
+      +'<div style="background:#ffffff22;border-radius:20px;padding:5px 11px;font-size:11px;font-weight:700;color:#fff;display:flex;align-items:center;gap:5px;">'+msiIcon('home',12,'#fff')+barnName+'</div>'
+      +'<div style="background:#ffffff22;border-radius:20px;padding:5px 11px;font-size:11px;font-weight:700;color:#fff;display:flex;align-items:center;gap:5px;">'+msiIcon('person',12,'#fff')+ownerName+'</div>'
+      +'</div>'
+      +'<button onclick="(function(){var inv={from:\''+ownerName+'\',fromRole:\'Owner\',horseName:\''+horseName+'\',barnName:\''+barnName+'\',role:\'Veterinarian\'};obStart(\'post_vax\',inv);S.vetConfirmPage=false;})()" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;">'+msiIcon('person_add',16,'#fff')+'Create my NayNay account</button>'
+      +'<button onclick="vetSignIn()" style="width:100%;background:transparent;color:#ffffff88;border:1px solid #ffffff33;border-radius:12px;padding:12px;font-size:13px;font-weight:600;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Continue without account</button>'
+      +'</div></div>';
+  }
+  return '<div></div>';
+}
 function rVetDeclinedPage(){const t=TH;return `<div style="text-align:center;padding:20px 0 16px;"><div style="width:56px;height:56px;border-radius:50%;background:var(--md-error-container);border:2px solid var(--md-error)44;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;"><svg width="24" height="24" viewBox="0 0 26 26" fill="none"><path d="M4 4l18 18M22 4L4 22" stroke="var(--md-error)" stroke-width="2.2" stroke-linecap="round"/></svg></div><div style="font-size:17px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Details not confirmed</div><div style="font-size:12px;color:var(--md-on-surface-dim);">${CURRENT_USER_NAME} has been notified and will follow up.</div></div><div style="text-align:center;margin:8px 0 16px;"><button onclick="S.vetConfirmPage=false;rerender()" style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;color:var(--md-primary);background:var(--md-surface-variant);border:1.5px solid var(--md-outline);padding:8px 22px;border-radius:12px;cursor:pointer;">Review details again</button></div><div style="background:linear-gradient(135deg,#0E1E2E,#1A3A4A);border-radius:14px;padding:16px;"><div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:3px;">Fewer callbacks with NayNay</div><div style="font-size:12px;color:rgba(255,255,255,0.65);margin-bottom:12px;">Barns enter details as you administer — reducing errors before they happen.</div>${googleBtn('vetSignIn()')}</div>`;}
 function vetSignIn(){S.vetSignedIn=true;S.vetView='home';rerender();}
 // --- ROLE-AWARE QUICK ACTIONS ---------------------------------
@@ -3832,7 +4418,7 @@ function rVaxForm(){
     +'<textarea placeholder="Clinical notes, reactions, observations…" oninput="vetVaxData.notes=this.value" style="width:100%;background:transparent;border:none;outline:none;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);resize:none;min-height:72px;box-sizing:border-box;display:block;">'+( v.notes||'')+'</textarea>'
     +'</div></div>';
 
-  const saveBtn='<button onclick="S.vetView=S.prevVetView||\'home\';rerender()" style="width:100%;padding:14px;background:var(--md-primary);color:#fff;border:none;border-radius:var(--md-shape-md);font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-bottom:14px;">Save &amp; send confirmation request</button>';
+  const saveBtn='<button onclick="obStartPostVax()" style="width:100%;padding:14px;background:var(--md-primary);color:#fff;border:none;border-radius:var(--md-shape-md);font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-bottom:14px;">Save &amp; send confirmation request</button>';
 
   return banner+horseCard+vaccineCard+adminCard+byCard+notesCard+saveBtn;
 }
@@ -4519,6 +5105,20 @@ const OWNER_NOTIFICATIONS=[
   {id:'n4',type:'feed',icon:msiIcon('grass',18,'var(--md-tertiary)'),title:'Feed change — Rivendell',body:'Soaked hay protocol started per vet instructions. Continues through Mar 18.',time:'Yesterday',horse:'Rivendell',urgent:false,read:true},
 ];
 
+// Staff barn join requests — populated when staff request association
+var STAFF_JOIN_REQUESTS=[
+  {id:'sjr1',name:'Alex K.',phone:'(914) 555-0182',requestedBarn:'sunrise',barnName:'Sunrise Stables',status:'pending',time:'Today 9:14 AM',message:'Looking to join as barn staff.'},
+];
+
+// Barn join requests from professionals wanting to connect
+var BARN_JOIN_REQUESTS=[
+  {id:'bjr1',name:'Dr. Konstantine Goudz',role:'Veterinarian',phone:'(914) 555-0144',barnId:'sunrise',barnName:'Sunrise Stables',status:'pending',time:'Today 11:22 AM',
+   message:'Requesting barn connection to coordinate care for existing patients, arrange visits, and stay in the loop on equine health at your facility.'},
+];
+
+
+
+
 const OWNER_APPOINTMENTS=[
   {id:'apt1',horse:'Rivendell',type:'Follow-up — post colic',vet:'Dr. Konstantine Goudz',date:'Mar 22',time:'10:00 AM',barn:'Sunrise Stables',urgent:false},
   {id:'apt2',horse:'Luna',type:'Dental float',vet:'Dr. Konstantine Goudz',date:'Apr 8',time:'1:00 PM',barn:'Sunrise Stables',urgent:false},
@@ -4894,7 +5494,24 @@ function rMultiRoleHome(){
   // -- 9. Barn visits (staff/manager) — exact from rMgrHome -----
   var visitsBlock='';
   if(anyRole('staff','manager')){
-    const pendingVisits=BARN_VISITS.filter(v=>v.status==='pending_barn_confirm');
+    var pendingStaffReqs=(STAFF_JOIN_REQUESTS||[]).filter(function(r){return r.status==='pending';});
+  var staffReqBanner=pendingStaffReqs.length
+    ?'<div style="background:var(--md-primary-container);border:1.5px solid var(--md-primary)33;border-radius:12px;padding:11px 14px;margin-bottom:12px;">'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'+msiIcon('person_add',16,'var(--md-primary)')+'<span style="font-size:13px;font-weight:700;color:var(--md-primary);">'+pendingStaffReqs.length+' staff join request'+(pendingStaffReqs.length>1?'s':'')+'</span></div>'
+      +pendingStaffReqs.map(function(r){
+        return '<div style="background:var(--md-surface);border-radius:10px;padding:10px 12px;margin-bottom:7px;display:flex;align-items:center;gap:10px;">'
+          +'<div style="width:36px;height:36px;border-radius:50%;background:var(--md-primary-container);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon('person',18,'var(--md-primary)')+'</div>'
+          +'<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+r.name+'</div>'
+          +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+r.message+' · '+r.time+'</div></div>'
+          +'<div style="display:flex;gap:6px;flex-shrink:0;">'
+          +'<button onclick="(function(){var sr=(STAFF_JOIN_REQUESTS||[]).find(function(x){return x.id===\''+r.id+'\';});if(sr)sr.status=\'approved\';showToast(\'Approved\',\'check_circle\',\'success\');rerender();})()" style="padding:6px 12px;background:var(--md-primary);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Approve</button>'
+          +'<button onclick="(function(){var sr=(STAFF_JOIN_REQUESTS||[]).find(function(x){return x.id===\''+r.id+'\';});if(sr)sr.status=\'declined\';showToast(\'Declined\',\'close\',\'info\');rerender();})()" style="padding:6px 12px;background:var(--md-surface-variant);color:var(--md-on-surface-dim);border:1px solid var(--md-outline);border-radius:8px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Decline</button>'
+          +'</div></div>';
+      }).join('')
+      +'</div>'
+    :'';
+
+  const pendingVisits=BARN_VISITS.filter(v=>v.status==='pending_barn_confirm');
     const confirmedVisits=BARN_VISITS.filter(v=>v.status==='confirmed');
     const pendingVisitSection=pendingVisits.length?'<div style="margin-bottom:14px;"><div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="'+TH.WARN+'" stroke-width="1.3"/><path d="M8 5v3.5L10 10" stroke="'+TH.WARN+'" stroke-width="1.3" stroke-linecap="round"/></svg><span style="font-size:12px;font-weight:700;color:'+TH.WARN+';">Visit requests pending your approval</span></div>'+pendingVisits.map(v=>visitCard(v,'manager')).join('')+'</div>':'';
     const confirmedVisitsSection=confirmedVisits.length?'<div style="margin-bottom:14px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Upcoming visits</div>'+confirmedVisits.map(v=>visitCard(v,'manager')).join('')+'</div>':'';
