@@ -60,6 +60,106 @@ body{background:var(--nn-bg-page);display:flex;flex-direction:column;font-family
 
 
 // --- THEME ----------------------------------------------------
+
+// ── Unified barn task definitions ─────────────────────────────────────────
+var BARN_TASKS_DEFAULT=[
+  {id:'am_feed',     label:'AM feed',            desc:'Standard AM feeding routine',         icon:'grass',            defOn:true,  defReq:true},
+  {id:'pm_feed',     label:'PM feed',             desc:'Evening feeding routine',             icon:'grass',            defOn:true,  defReq:true},
+  {id:'stall',       label:'Stall cleaning',      desc:'Full reset with shavings',            icon:'cleaning_services',defOn:true,  defReq:true},
+  {id:'am_turnout',  label:'AM turnout',          desc:'Morning pasture rotation',            icon:'wb_sunny',         defOn:true,  defReq:true},
+  {id:'pm_turnout',  label:'PM turnout',          desc:'Evening pasture rotation',            icon:'nights_stay',      defOn:true,  defReq:true},
+  {id:'water',       label:'Water check',         desc:'Buckets & troughs inspection',        icon:'water_drop',       defOn:true,  defReq:true},
+  {id:'blow_aisles', label:'Blow aisles',         desc:'Morning and afternoon',               icon:'air',              defOn:true,  defReq:true},
+  {id:'blanket_check',label:'Blanket check',      desc:'Apply SWAT, fly spray & inspect blankets',icon:'dry_cleaning', defOn:true,  defReq:true},
+  {id:'drag_arena',  label:'Drag arena',          desc:'Drag footing after use',              icon:'layers',           defOn:false, defReq:false},
+  {id:'laundry',     label:'Laundry',             desc:'Wash, fold, put away',               icon:'local_laundry_service',defOn:false,defReq:false},
+  {id:'pick_paddocks',label:'Pick paddocks',      desc:'Remove manure from paddocks',         icon:'yard',             defOn:false, defReq:false},
+  {id:'clean_tack',  label:'Clean tack',          desc:'Wipe down & put away used tack',      icon:'construction',     defOn:false, defReq:false},
+  {id:'meds',        label:'Medications',         desc:'Administer scheduled medications',    icon:'medication',       defOn:false, defReq:false},
+];
+
+// Build default task state from BARN_TASKS_DEFAULT
+function buildDefaultTasks(){
+  var t={};
+  BARN_TASKS_DEFAULT.forEach(function(d){t[d.id]={on:d.defOn,req:d.defReq,label:d.label,desc:d.desc};});
+  return t;
+}
+
+// rTaskRow — shared component used in both Setup > Tasks and Onboarding setup_tasks
+// ctx: 'mgr' (uses S.editingTaskId, mgrSetup.tasks) | 'ob' (uses ob.editingTaskId, ob.tasks)
+function rTaskRow(def, taskState, ctx){
+  var tk=taskState||{on:def.defOn,req:def.defReq,label:def.label,desc:def.desc};
+  var label=tk.label||def.label;
+  var desc=tk.desc||def.desc||'';
+  var isOn=tk.on;
+  var isReq=tk.req;
+  var editId=ctx==='ob'?(window._ob&&window._ob.editingTaskId||null):S.editingTaskId;
+  var isEditing=editId===def.id;
+  var storeGet=ctx==='ob'
+    ?'(window._ob.tasks.'+def.id+'||(window._ob.tasks.'+def.id+'={on:false,req:false,label:\''+def.label+'\',desc:\'\'}))'
+    :'(mgrSetup.tasks.'+def.id+'||(mgrSetup.tasks.'+def.id+'={on:false,req:false,label:\''+def.label+'\',desc:\'\'}))';
+  var editIdSet=ctx==='ob'
+    ?'window._ob.editingTaskId'
+    :'S.editingTaskId';
+  var toggleOnclick=ctx==='ob'
+    ?'var t='+storeGet+';t.on=!t.on;rerender()'
+    :'var t='+storeGet+';t.on=!t.on;rerender()';
+  var reqOnclick='var t='+storeGet+';t.req=(this.value===\'required\');';
+
+  var labelPart=isEditing
+    ?'<div style="flex:1;min-width:0;padding-right:8px;">'
+      +'<input id="edit-label-'+def.id+'" type="text" value="'+label.replace(/'/g,"&#39;")+'" oninput="var t='+storeGet+';t.label=this.value" placeholder="Task name" style="width:100%;background:var(--md-outline-variant);border:none;border-radius:6px;padding:5px 8px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;margin-bottom:4px;"/>'
+      +'<input type="text" value="'+desc.replace(/'/g,"&#39;")+'" oninput="var t='+storeGet+';t.desc=this.value" placeholder="Description" style="width:100%;background:var(--md-outline-variant);border:none;border-radius:6px;padding:4px 8px;font-size:11px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface-dim);outline:none;box-sizing:border-box;"/>'
+      +'</div>'
+      +'<button onclick="event.stopPropagation();'+editIdSet+'=null;rerender()" style="width:28px;height:28px;border-radius:50%;background:var(--md-secondary);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:8px;">'+msiIcon('check',15,'#fff')+'</button>'
+    :'<div onclick="event.stopPropagation();'+editIdSet+'=\''+def.id+'\';rerender()" style="flex:1;min-width:0;cursor:pointer;padding-right:8px;">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+label+'</div>'
+      +(desc?'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:1px;">'+desc+'</div>':'')
+      +'</div>';
+
+  return '<div style="display:flex;align-items:center;gap:10px;padding:11px 13px;background:var(--md-surface);border-radius:12px;border:1.5px solid '+(isOn?'var(--md-primary)33':'var(--md-outline-variant)')+';margin-bottom:8px;">'
+    +'<div style="width:34px;height:34px;border-radius:9px;background:'+(isOn?'var(--md-primary-container)':'var(--md-surface-variant)')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon(def.icon,18,isOn?'var(--md-primary)':'var(--md-on-surface-dim)')+'</div>'
+    +labelPart
+    +(isOn?'<select onclick="event.stopPropagation()" oninput="'+reqOnclick+'rerender()" style="font-size:11px;font-weight:700;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:8px;padding:5px 8px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface-dim);flex-shrink:0;"><option value="required"'+(isReq?' selected':'')+'>Required</option><option value="optional"'+(!isReq?' selected':'')+'>Optional</option></select>':'')
+    +'<div onclick="event.stopPropagation();'+toggleOnclick+'" style="flex-shrink:0;">'+mdToggle(isOn,'')+'</div>'
+    +'</div>';
+}
+
+
+const OWNER_NOTIFICATIONS=[
+  {id:'n1',type:'med',icon:msiIcon('medication',18,'var(--md-primary)'),title:'Medication update — Luna',body:'Magnesium increased to 3 scoops per vet recommendation. Effective today.',time:'Today, 7:00 AM',horse:'Luna',urgent:false,read:false},
+  {id:'n2',type:'observation',icon:msiIcon('visibility',18,'var(--md-secondary)'),title:'Barn observation — Rivendell',body:'Charlene noted Rivendell is eating well and gut sounds are normal. Recovery on track.',time:'Today, 8:15 AM',horse:'Rivendell',urgent:false,read:false},
+  {id:'n3',type:'alert',icon:msiIcon('warning',18,'var(--md-error)'),title:'Vet follow-up — Rivendell',body:'Post-colic follow-up appointment confirmed for Mar 22 at 10:00 AM with Dr. Konstantine Goudz.',time:'Yesterday',horse:'Rivendell',urgent:false,read:true},
+  {id:'n4',type:'feed',icon:msiIcon('grass',18,'var(--md-tertiary)'),title:'Feed change — Rivendell',body:'Soaked hay protocol started per vet instructions. Continues through Mar 18.',time:'Yesterday',horse:'Rivendell',urgent:false,read:true},
+];
+
+// Staff barn join requests — populated when staff request association
+var STAFF_JOIN_REQUESTS=[
+  {id:'sjr1',name:'Alex K.',phone:'(914) 555-0182',requestedBarn:'sunrise',barnName:'Sunrise Stables',status:'pending',time:'Today 9:14 AM',message:'Looking to join as barn staff.'},
+];
+
+// Barn join requests from professionals wanting to connect
+var BARN_JOIN_REQUESTS=[
+  {id:'bjr1',name:'Dr. Konstantine Goudz',role:'Veterinarian',phone:'(914) 555-0144',barnId:'sunrise',barnName:'Sunrise Stables',status:'pending',time:'Today 11:22 AM',
+   message:'Requesting barn connection to coordinate care for existing patients, arrange visits, and stay in the loop on equine health at your facility.'},
+];
+
+
+
+
+const OWNER_APPOINTMENTS=[
+  {id:'apt1',horse:'Rivendell',type:'Follow-up — post colic',vet:'Dr. Konstantine Goudz',date:'Mar 22',time:'10:00 AM',barn:'Sunrise Stables',urgent:false},
+  {id:'apt2',horse:'Luna',type:'Dental float',vet:'Dr. Konstantine Goudz',date:'Apr 8',time:'1:00 PM',barn:'Sunrise Stables',urgent:false},
+];
+
+const OWNER_EVENTS=[
+  {id:'ev1',name:'Tri-State Spring Classic',date:'Mar 28–30',venue:'Stonegate Equestrian Park, NY',horse:'Luna',    passId:'ep1',passStatus:'valid',daysOut:12},
+  {id:'ev2',name:'Tri-State Spring Classic',date:'Mar 28–30',venue:'Stonegate Equestrian Park, NY',horse:'Rivendell',passId:'ep2',passStatus:'valid',daysOut:12},
+  // Scenario B (different weekends): change ev2 date to 'Apr 5-6' and name to 'Capital Region Dressage Classic'
+];
+
+
+
 function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
 const TH={
   get T(){return css('--nn-teal');},get TD(){return css('--nn-teal-dark');},get TDP(){return css('--nn-teal-deeper');},
@@ -765,7 +865,7 @@ let S={
   mgrView:'home',assignDate:TODAY,expandedAssign:null,expandedTrainingAssign:null,
   mgrAssignTab:'tasks',
   selectedHorse:null,taskFilter:'all',
-  vetSignedIn:false,vetView:'confirmation',vetSetupTab:'account',trainerSetupTab:'account',mgrSetupTab:'tasks',staffSetupTab:'account',ownerSetupTab:'account',taskScheduleExpanded:false,aiScheduleDismissed:{},aiScheduleAdded:{},
+  vetSignedIn:false,vetView:'confirmation',vetSetupTab:'account',trainerSetupTab:'account',mgrSetupTab:'tasks',staffSetupTab:'account',ownerSetupTab:'account',taskScheduleExpanded:false,editingTaskId:null,aiScheduleDismissed:{},aiScheduleAdded:{},
   vetConfirmPage:false,vetEditMode:false,prevVetView:null,
   feedCardExpanded:false,feedCardHorse:null,
   expandedTraining:null,loggingTraining:null,
@@ -1038,7 +1138,7 @@ if(!window._ob) window._ob={
   // manager setup
   barnName:'',barnAddress:'',barnCity:'',barnState:'',barnStalls:'',
   services:{board_full:true,board_partial:false,board_pasture:false,training:true,lessons_private:true,lessons_group:false,show_prep:false,breeding:false,haul_in:false,trailer:false},
-  tasks:{am_feed:{on:true,req:true},pm_feed:{on:true,req:true},am_turnout:{on:true,req:false},pm_turnout:{on:true,req:false},stall:{on:true,req:true},water:{on:true,req:false},blanket:{on:false,req:false},meds:{on:false,req:false}},
+  tasks:buildDefaultTasks(),
   teamInvites:{staff:{name:'',contact:'',sent:false},vet:{name:'',contact:'',sent:false},trainer:{name:'',contact:'',sent:false},farrier:{name:'',contact:'',sent:false}},
   // vet setup
   practiceName:'',practiceCity:'',practiceState:'',vetServices:{wellness:true,coggins:true,vaccines:true,dental:false,lameness:false,prepurchase:false,emergency:false,imaging:false,surgery:false},
@@ -1065,7 +1165,7 @@ function obStart(entryPoint,inviteCtx){
     vetServices:{wellness:true,coggins:true,vaccines:true,dental:false,lameness:false,prepurchase:false,emergency:false,imaging:false,surgery:false},
     trainerDisciplines:[],trainerServices:{flat:true,jump:false,ground:false,hack:true,lunge:false,show_prep:false,lessons_private:true,lessons_group:false,young_horse:false,rehab:false},
     trainerCerts:'',staffTasks:{feed:true,turnout:true,stalls:true,blankets:false,water:true,meds:false,obs:true,tack:false},
-    roleQueue:[],currentSetupRole:null,_completedRoles:[],_doneRole:null,_nextRole:null
+    barnMapState:{locating:false,locateDone:false,search:'',searching:false},roleQueue:[],currentSetupRole:null,_completedRoles:[],_doneRole:null,_nextRole:null
   };
   if(entryPoint==='post_vax'){
     fresh.roles=['vet'];fresh.proType='Veterinarian';
@@ -1222,17 +1322,36 @@ function obNextMultiRole(justCompletedRole){
 }
 
 
+function obUpdateNewTaskToggle(){
+  // Toggle req state without rerender — preserves input focus
+  S.newTask.req=!S.newTask.req;
+  // Patch the toggle visual directly
+  var el=document.getElementById('new-task-req-toggle');
+  if(el){
+    var on=S.newTask.req;
+    el.style.background=on?'var(--md-primary)':'var(--md-surface-variant)';
+    var knob=el.querySelector('.toggle-knob');
+    if(knob) knob.style.transform=on?'translateX(18px)':'translateX(2px)';
+  }
+}
+
 function obUpdateSendBtn(){
   var ob=window._ob;
   if(!ob||ob.step!=='account')return;
   var phoneRaw=ob.phone?ob.phone.replace(/\D/g,''):'';
-  var canSend=ob.name.trim().length>1&&phoneRaw.length===10&&(!ob.verify||ob.verify.state!=='sending');
+  var emailOk=ob.email&&ob.email.indexOf('@')>0&&ob.email.indexOf('.')>ob.email.indexOf('@');
+  var canSend=(phoneRaw.length===10||emailOk)&&(!ob.verify||ob.verify.state!=='sending');
   var btn=document.getElementById('ob-send-btn');
   if(!btn)return;
   btn.disabled=!canSend;
   btn.style.background=canSend?'var(--md-primary)':'var(--md-outline-variant)';
   btn.style.color=canSend?'#fff':'var(--md-on-surface-dim)';
   btn.style.cursor=canSend?'pointer':'not-allowed';
+  var hint=document.getElementById('ob-acct-hint');
+  if(hint){
+    var hasPhone=phoneRaw.length===10;
+    hint.textContent=canSend?(hasPhone?'A verification code will be sent to '+(ob.phoneFormatted||'your number')+'.':'A verification code will be sent to '+(ob.email||'your email')+'.'):'Enter your mobile number or email to continue.';
+  }
 }
 function obUpdateVerifyBtn(){
   var ob=window._ob;
@@ -1363,24 +1482,38 @@ function rOnboarding(){
   if(ob.step==='account'){
     var inpStyle='width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:12px;padding:12px 14px;font-size:15px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
     var phoneRaw=ob.phone?ob.phone.replace(/\D/g,''):'';
-    var canSend=phoneRaw.length===10&&(!ob.verify||ob.verify.state!=='sending');
+    var emailOk=ob.email&&ob.email.indexOf('@')>0&&ob.email.indexOf('.')>ob.email.indexOf('@');
+    var canSend=(phoneRaw.length===10||emailOk)&&(!ob.verify||ob.verify.state!=='sending');
     var isSending=ob.verify&&ob.verify.state==='sending';
+    // Determine what channel we'll use
+    var hasPhone=phoneRaw.length===10;
+    var channelLabel=hasPhone?'A verification code will be sent to '+(ob.phoneFormatted||'your number')+'.':'A verification code will be sent to '+(ob.email||'your email')+'.';
     var inner=(ob.entryPoint==='post_vax'&&ob.inviteCtx
-        ?'<div style="background:var(--md-surface);border-radius:14px;border:1.5px solid var(--md-primary)33;padding:13px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">'+msiIcon('vaccines',18,'var(--md-primary)')+'<div><div style="font-size:12px;font-weight:700;color:var(--md-primary);">Connecting you with '+ob.inviteCtx.barnName+'</div><div style="font-size:12px;color:var(--md-on-surface-dim);">You vaccinated '+ob.inviteCtx.horseName+' for '+ob.inviteCtx.from+'. Create your account to stay connected.</div></div></div>'
+        ?'<div style="background:var(--md-surface);border-radius:14px;border:1.5px solid var(--md-primary)33;padding:13px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">'+msiIcon('check_circle',18,'var(--md-secondary)')+'<div><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Vaccination recorded for '+(ob.inviteCtx.horseName||'your patient')+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+ob.inviteCtx.barnName+' · '+(ob.inviteCtx.from||'')+'</div></div></div>'
         :'')
       +'<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Create your account</div>'
-      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:24px;">We use your mobile number as your unique identity and to verify you.</div>'
-      +'<div style="margin-bottom:6px;"><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Mobile number</label>'
-      +'<input type="tel" value="'+(ob.phoneFormatted||'')+'" oninput="var r2=this.value.replace(/\\D/g,\'\');window._ob.phone=r2.substring(0,10);window._ob.phoneFormatted=obFormatPhone(this.value);this.value=window._ob.phoneFormatted;obUpdateSendBtn()" placeholder="(555) 000-0000" style="'+inpStyle+'"/>'
-      +'</div>'
-      +'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:5px;margin-bottom:20px;">A verification code will be sent to this number.</div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:22px;">Enter your mobile number or email — you\'ll use this to log in.</div>'
+      // Phone field
+      +'<div style="margin-bottom:14px;"><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Mobile number</label>'
+      +'<input type="tel" value="'+(ob.phoneFormatted||'')+'" oninput="var r2=this.value.replace(/\\D/g,\'\');window._ob.phone=r2.substring(0,10);window._ob.phoneFormatted=obFormatPhone(this.value);this.value=window._ob.phoneFormatted;obUpdateSendBtn()" placeholder="(555) 000-0000" style="'+inpStyle+'"/></div>'
+      // Divider
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div><span style="font-size:12px;color:var(--md-on-surface-dim);font-weight:600;">or</span><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div></div>'
+      // Email field
+      +'<div style="margin-bottom:6px;"><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Email address</label>'
+      +'<input type="email" value="'+(ob.email||'')+'" oninput="window._ob.email=this.value;obUpdateSendBtn()" placeholder="you@example.com" style="'+inpStyle+'"/></div>'
+      +'<div id=\"ob-acct-hint\" style="font-size:11px;color:var(--md-on-surface-dim);margin-top:5px;margin-bottom:20px;">'+(canSend?channelLabel:'Enter your mobile number or email to continue.')+'</div>'
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;margin-top:6px;"><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div><span style="font-size:12px;color:var(--md-on-surface-dim);font-weight:600;">or</span><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div></div>'
+      +'<button onclick="window._ob.googleSignIn=true;obComplete()" style="width:100%;background:#fff;color:#3c4043;border:1.5px solid #dadce0;border-radius:14px;padding:13px 16px;font-size:15px;font-weight:500;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:6px;">'
+      +'<svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>'
+      +'Continue with Google</button>'
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div><span style="font-size:12px;color:var(--md-on-surface-dim);font-weight:600;">or use a code</span><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div></div>'
       +(isSending
-        ?'<div style="width:100%;background:var(--md-outline-variant);border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface-dim);text-align:center;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;">'+msiIcon('sms',18,'var(--md-on-surface-dim)')+' Sending code…</div>'
-        :'<button id="ob-send-btn" onclick="obSendCode()" '+(canSend?'':'disabled ')+'style="width:100%;background:'+(canSend?'var(--md-primary)':'var(--md-outline-variant)')+';color:'+(canSend?'#fff':'var(--md-on-surface-dim)')+';border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(canSend?'pointer':'not-allowed')+';margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;">'+msiIcon('sms',18,canSend?'#fff':'var(--md-on-surface-dim)')+' Send verification code</button>')
+        ?'<div style="width:100%;background:var(--md-outline-variant);border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface-dim);text-align:center;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;">'+msiIcon('sms',18,'var(--md-on-surface-dim)')+' Sending code\u2026</div>'
+        :'<button id="ob-send-btn" onclick="obSendCode()" '+(canSend?'':'disabled ')+'style="width:100%;background:'+(canSend?'var(--md-primary)':'var(--md-outline-variant)')+';color:'+(canSend?'#fff':'var(--md-on-surface-dim)')+';border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(canSend?'pointer':'not-allowed')+';margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;">'+msiIcon('send',18,canSend?'#fff':'var(--md-on-surface-dim)')+' Send verification code</button>')
       +'<div style="font-size:12px;color:var(--md-on-surface-dim);text-align:center;margin-bottom:16px;">By continuing you agree to NayNay\'s <span style="color:var(--md-primary);">Terms</span> and <span style="color:var(--md-primary);">Privacy Policy</span>.</div>'
       +'<div style="background:var(--md-surface-variant);border-radius:10px;padding:10px 12px;">'
-      +'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);margin-bottom:4px;">Demo numbers to try:</div>'
-      +'<div style="font-size:11px;color:var(--md-on-surface-dim);line-height:2;">Any number → new account or invite claim<br><span style="color:var(--md-error);font-weight:600;">(555) 867-5309</span> → already registered<br>SMS code is always <span style="font-family:monospace;font-weight:700;color:var(--md-primary);">847291</span></div></div>';
+      +'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);margin-bottom:4px;">Demo:</div>'
+      +'<div style="font-size:11px;color:var(--md-on-surface-dim);line-height:2;">Any phone or email \u2192 new account<br><span style="color:var(--md-error);font-weight:600;">(555) 867-5309</span> \u2192 already registered<br>Code is always <span style="font-family:monospace;font-weight:700;color:var(--md-primary);">847291</span></div></div>';
     return wrap(inner,true,'role',false,1,4);
   }
 
@@ -1594,24 +1727,98 @@ function rOnboarding(){
   if(ob.step==='setup_barn'){
     var inpStyle='width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:12px;padding:11px 13px;font-size:14px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
     var canGo2=ob.barnName.trim().length>0;
+    if(!ob.barnMapState) ob.barnMapState={locating:false,locateDone:false,search:'',searching:false};
+    var bms=ob.barnMapState;
+
+    // Demo barn places (simulated Places API results)
+    var BARN_PLACES=[
+      {name:'Sunrise Stables',address:'14 Old Farm Rd',city:'Bedford',state:'NY',zip:'10506',lat:41.198,lng:-73.618},
+      {name:'Ridgeline Farm',address:'77 High Ridge Rd',city:'Pleasantville',state:'NY',zip:'10570',lat:41.134,lng:-73.788},
+      {name:'Blue Ridge Equestrian Center',address:'230 Armonk Rd',city:'Armonk',state:'NY',zip:'10504',lat:41.112,lng:-73.710},
+      {name:'Oakwood Farm',address:'5 Barker Rd',city:'North Salem',state:'NY',zip:'10560',lat:41.335,lng:-73.558},
+      {name:'Valley View Stables',address:'88 Valley Rd',city:'Katonah',state:'NY',zip:'10536',lat:41.260,lng:-73.682},
+    ];
+    var bPlaces=bms.search.length>1
+      ?BARN_PLACES.filter(function(p){return p.name.toLowerCase().includes(bms.search.toLowerCase())||p.city.toLowerCase().includes(bms.search.toLowerCase());})
+      :BARN_PLACES;
+
+    // Map SVG — pins for each matching barn
+    var mapSvg='<div style="position:relative;background:var(--md-surface-variant);border-radius:14px;border:1.5px solid var(--md-outline-variant);overflow:hidden;margin-bottom:14px;">'
+      +'<svg viewBox="0 0 360 180" width="100%" height="160" xmlns="http://www.w3.org/2000/svg">'
+      +'<rect width="360" height="180" fill="#dde8d8"/>'
+      +'<rect x="0" y="75" width="360" height="18" fill="#c8d8c4" opacity="0.5"/>'
+      +'<rect x="155" y="0" width="14" height="180" fill="#c8d8c4" opacity="0.5"/>'
+      +'<line x1="0" y1="38" x2="360" y2="38" stroke="#b8c8b4" stroke-width="0.5"/>'
+      +'<line x1="0" y1="115" x2="360" y2="115" stroke="#b8c8b4" stroke-width="0.5"/>'
+      +'<line x1="0" y1="152" x2="360" y2="152" stroke="#b8c8b4" stroke-width="0.5"/>'
+      +'<line x1="72" y1="0" x2="72" y2="180" stroke="#b8c8b4" stroke-width="0.5"/>'
+      +'<line x1="252" y1="0" x2="252" y2="180" stroke="#b8c8b4" stroke-width="0.5"/>'
+      +'<line x1="310" y1="0" x2="310" y2="180" stroke="#b8c8b4" stroke-width="0.5"/>'
+      // Pin positions mapped to SVG coords from lat/lng
+      +bPlaces.map(function(p,idx){
+        // Map lat 41.10–41.35 → y 155–10, lng -73.80–-73.52 → x 20–340
+        var x=Math.round(20+((-73.52-p.lng)/(73.52-73.80))*320);
+        var y=Math.round(10+((41.35-p.lat)/(41.35-41.10))*145);
+        var isSelected=ob.barnName===p.name;
+        var col=isSelected?'#1565C0':'var(--md-primary)';
+        var r=isSelected?12:9;
+        return '<g onclick="window._ob.barnName=\''+p.name+'\';window._ob.barnAddress=\''+p.address+'\';window._ob.barnCity=\''+p.city+'\';window._ob.barnState=\''+p.state+'\';rerender()" style="cursor:pointer;">'
+          +'<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="'+col+'" stroke="#fff" stroke-width="1.5" opacity="0.92"/>'
+          +'<text x="'+x+'" y="'+(y+4)+'" text-anchor="middle" font-size="8" fill="#fff" font-family="sans-serif" font-weight="700">'+(idx+1)+'</text>'
+          +'</g>';
+      }).join('')
+      +(bms.locateDone?'<circle cx="162" cy="88" r="7" fill="#E53935" stroke="#fff" stroke-width="2"/><circle cx="162" cy="88" r="3" fill="#fff"/>':'')
+      +'<text x="8" y="173" font-size="8" fill="#6d8a6d" font-family="sans-serif">Westchester County, NY \u2022 NayNay barn map</text>'
+      +'</svg>'
+      +'<div style="position:absolute;top:8px;right:8px;background:rgba(255,255,255,0.92);border-radius:8px;padding:3px 8px;font-size:10px;font-weight:700;color:var(--md-on-surface);">'+bPlaces.length+' barns</div>'
+      +(bms.locating?'<div style="position:absolute;top:8px;left:8px;background:var(--md-primary);border-radius:8px;padding:4px 9px;font-size:10px;font-weight:700;color:#fff;display:flex;align-items:center;gap:4px;">'+msiIcon('my_location',12,'#fff')+' Locating\u2026</div>':'')
+      +(bms.locateDone?'<div style="position:absolute;top:8px;left:8px;background:var(--md-secondary);border-radius:8px;padding:4px 9px;font-size:10px;font-weight:700;color:#fff;display:flex;align-items:center;gap:4px;">'+msiIcon('my_location',12,'#fff')+' Location found</div>':'')
+      +'</div>';
+
+    // Place results list
+    var placeList=bms.search.length>1||bms.locateDone
+      ?bPlaces.map(function(p,idx){
+          var isSel=ob.barnName===p.name;
+          return '<div onclick="window._ob.barnName=\''+p.name+'\';window._ob.barnAddress=\''+p.address+'\';window._ob.barnCity=\''+p.city+'\';window._ob.barnState=\''+p.state+'\';rerender()" '
+            +'style="display:flex;align-items:center;gap:10px;padding:10px 13px;background:var(--md-surface);border-radius:11px;border:1.5px solid '+(isSel?'var(--md-primary)':'var(--md-outline-variant)')+';margin-bottom:7px;cursor:pointer;">'
+            +'<div style="width:26px;height:26px;border-radius:50%;background:'+(isSel?'var(--md-primary)':'var(--md-surface-variant)')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:700;color:'+(isSel?'#fff':'var(--md-on-surface-dim)')+';font-family:\'DM Sans\',sans-serif;">'+(idx+1)+'</div>'
+            +'<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+p.name+'</div>'
+            +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+p.address+', '+p.city+', '+p.state+'</div></div>'
+            +(isSel?msiIcon('check_circle',18,'var(--md-primary)'):'')
+            +'</div>';
+        }).join('')
+      :'';
+
     var inner='<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Set up your barn</div>'
-      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:20px;">This is how owners and professionals will find you on NayNay.</div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:16px;">Search for your barn on the map, use your location, or enter details manually.</div>'
+      // Map
+      +mapSvg
+      // Search + geolocation row
+      +'<div style="display:flex;gap:8px;margin-bottom:12px;">'
+      +'<div style="flex:1;position:relative;">'+msiIcon('search',16,'var(--md-on-surface-dim)')
+      +'<input type="text" value="'+bms.search+'" oninput="if(!window._ob.barnMapState)window._ob.barnMapState={locating:false,locateDone:false,search:\'\',searching:false};window._ob.barnMapState.search=this.value;rerender()" placeholder="Search by barn name or city\u2026" style="'+inpStyle.replace('padding:11px 13px','padding:10px 13px 10px 34px')+'"/></div>'
+      +'<button onclick="(function(){if(!window._ob.barnMapState)window._ob.barnMapState={locating:false,locateDone:false,search:\'\',searching:false};window._ob.barnMapState.locating=true;rerender();setTimeout(function(){window._ob.barnMapState.locating=false;window._ob.barnMapState.locateDone=true;window._ob.barnName=\'Sunrise Stables\';window._ob.barnAddress=\'14 Old Farm Rd\';window._ob.barnCity=\'Bedford\';window._ob.barnState=\'NY\';rerender();},1500);})()" title="Use my location" style="width:44px;height:44px;border-radius:12px;background:'+(bms.locateDone?'var(--md-secondary)':'var(--md-primary-container)')+';border:1.5px solid '+(bms.locateDone?'var(--md-secondary)':'var(--md-primary)33')+';display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">'+msiIcon('my_location',20,bms.locateDone?'#fff':'var(--md-primary)')+'</button>'
+      +'</div>'
+      // Place list (when searching or located)
+      +(placeList?placeList:'')
+      // Divider before manual
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;margin-top:'+(placeList?'4':'0')+'px;"><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div><span style="font-size:11px;color:var(--md-on-surface-dim);font-weight:600;">or enter manually</span><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div></div>'
       // Barn photo
-      +'<div style="width:100%;height:120px;border-radius:14px;background:var(--md-surface-variant);border:2px dashed var(--md-outline);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;margin-bottom:16px;cursor:pointer;">'
-      +msiIcon('add_photo_alternate',28,'var(--md-on-surface-dim)')
-      +'<div style="font-size:12px;color:var(--md-on-surface-dim);">Add barn photo <span style="color:var(--md-primary);">· optional</span></div>'
+      +'<div style="width:100%;height:90px;border-radius:12px;background:var(--md-surface-variant);border:2px dashed var(--md-outline);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;margin-bottom:12px;cursor:pointer;">'
+      +msiIcon('add_photo_alternate',24,'var(--md-on-surface-dim)')
+      +'<div style="font-size:11px;color:var(--md-on-surface-dim);">Add barn photo <span style="color:var(--md-primary);">· optional</span></div>'
       +'</div>'
-      +'<div style="margin-bottom:12px;"><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Barn name *</label>'
+      // Manual fields
+      +'<div style="margin-bottom:10px;"><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Barn name *</label>'
       +'<input type="text" value="'+ob.barnName+'" oninput="window._ob.barnName=this.value" placeholder="e.g. Sunrise Stables" style="'+inpStyle+'"/></div>'
-      +'<div style="margin-bottom:12px;"><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Street address</label>'
+      +'<div style="margin-bottom:10px;"><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Street address</label>'
       +'<input type="text" value="'+ob.barnAddress+'" oninput="window._ob.barnAddress=this.value" placeholder="Street address" style="'+inpStyle+'"/></div>'
-      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">'
-      +'<div><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">City</label>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">'
+      +'<div><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">City</label>'
       +'<input type="text" value="'+ob.barnCity+'" oninput="window._ob.barnCity=this.value" placeholder="City" style="'+inpStyle+'"/></div>'
-      +'<div><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">State</label>'
-      +'<input type="text" value="'+ob.barnState+'" oninput="window._ob.barnState=this.value" placeholder="NY" style="'+inpStyle+'"/></div>'
-      +'</div>'
-      +'<div style="margin-bottom:20px;"><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Number of stalls <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--md-on-surface-dim);">(optional)</span></label>'
+      +'<div><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">State</label>'
+      +'<input type="text" value="'+ob.barnState+'" oninput="window._ob.barnState=this.value" placeholder="NY" style="'+inpStyle+'"/></div></div>'
+      +'<div style="margin-bottom:20px;"><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Stalls <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--md-on-surface-dim);">· optional</span></label>'
       +'<input type="number" value="'+ob.barnStalls+'" oninput="window._ob.barnStalls=this.value" placeholder="e.g. 24" style="'+inpStyle+'"/></div>'
       +'<button onclick="obNext(\'setup_services\')" '+(canGo2?'':'disabled ')+'style="width:100%;background:'+(canGo2?'var(--md-primary)':'var(--md-outline-variant)')+';color:'+(canGo2?'#fff':'var(--md-on-surface-dim)')+';border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(canGo2?'pointer':'not-allowed')+';">Continue</button>';
     return wrap(inner,true,'account',false,2,4);
@@ -1647,29 +1854,18 @@ function rOnboarding(){
 
   // ── BARN MANAGER: TASKS ────────────────────────────────────────────────
   if(ob.step==='setup_tasks'){
-    var TASK_DEFS=[
-      {id:'am_feed',   label:'AM feed',      icon:'grass'},
-      {id:'pm_feed',   label:'PM feed',      icon:'grass'},
-      {id:'am_turnout',label:'AM turnout',   icon:'wb_sunny'},
-      {id:'pm_turnout',label:'PM turnout',   icon:'nights_stay'},
-      {id:'stall',     label:'Stall cleaning',icon:'cleaning_services'},
-      {id:'water',     label:'Water check',  icon:'water_drop'},
-      {id:'blanket',   label:'Blanket check',icon:'dry_cleaning'},
-      {id:'meds',      label:'Medications',  icon:'medication'},
-    ];
+    // Ensure ob.tasks has all canonical tasks
+    BARN_TASKS_DEFAULT.forEach(function(d){
+      if(!ob.tasks[d.id]) ob.tasks[d.id]={on:d.defOn,req:d.defReq,label:d.label,desc:d.desc};
+    });
+    var taskRows=BARN_TASKS_DEFAULT.map(function(d){
+      return rTaskRow(d, ob.tasks[d.id], 'ob');
+    }).join('');
     var inner='<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Daily care routine</div>'
-      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:20px;">Set up your barn\'s daily tasks. Staff will see these in their task list each day.</div>'
-      +TASK_DEFS.map(function(td){
-        var tk=ob.tasks[td.id]||{on:false,req:false};
-        return '<div style="display:flex;align-items:center;gap:10px;padding:10px 13px;background:var(--md-surface);border-radius:12px;border:1.5px solid '+(tk.on?'var(--md-primary)33':'var(--md-outline-variant)')+';margin-bottom:8px;">'
-          +'<div style="width:32px;height:32px;border-radius:8px;background:'+(tk.on?'var(--md-primary-container)':'var(--md-surface-variant)')+';display:flex;align-items:center;justify-content:center;">'+msiIcon(td.icon,17,tk.on?'var(--md-primary)':'var(--md-on-surface-dim)')+'</div>'
-          +'<div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+td.label+'</div></div>'
-          +(tk.on?'<select onclick="event.stopPropagation()" oninput="window._ob.tasks.'+td.id+'.req=(this.value===\'required\');rerender()" style="font-size:11px;font-weight:700;background:var(--md-surface-variant);border:1px solid var(--md-outline);border-radius:8px;padding:4px 7px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface-dim);"><option value="required"'+(tk.req?' selected':'')+'>Required</option><option value="optional"'+(!tk.req?' selected':'')+'>Optional</option></select>':'')
-          +'<div onclick="window._ob.tasks.'+td.id+'.on=!window._ob.tasks.'+td.id+'.on;rerender()">'+mdToggle(tk.on,'')+'</div>'
-          +'</div>';
-      }).join('')
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:16px;">Set up your barn\'s daily tasks. Staff will see these in their task list each day.</div>'
+      +taskRows
       +'<button onclick="obNext(\'setup_team\')" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-top:8px;">Continue</button>';
-    return wrap(inner,true,'setup_services',false,4,4); // Note: removed 5th step by combining
+    return wrap(inner,true,'setup_services',false,4,4);
   }
 
   // ── BARN MANAGER: TEAM INVITES ─────────────────────────────────────────
@@ -2623,6 +2819,7 @@ let mgrSetup={
   notifs:{visitRequests:true,staffUpdates:true,vetAlerts:true,paymentReceipts:true,chatMessages:true},
   payment:{method:'Bank account',account:'Chase \u00b7\u00b7\u00b7\u00b7 5591',invoicePrefix:'SSB',autoCharge:false,receiptEmail:true},
   calendar:{googleConnected:false,iCalConnected:false,syncTasks:true,syncVisits:true,syncReminders:true},
+  get tasks(){ if(!this._tasks) this._tasks=buildDefaultTasks(); return this._tasks; },
 };
 
 
@@ -2723,13 +2920,46 @@ function rMgrSetupAccount(){
   return rPersonCard(p,'mgrSetup.profile',['',''])+barn;
 }
 
+
 function rMgrSetupTasks(){
-  const t=TH;
-  const tasksSection=rTasksTab();
-  const isExp=S.taskScheduleExpanded;
-  const schedHeader='<div onclick="S.taskScheduleExpanded=!S.taskScheduleExpanded;rerender()" style="display:flex;align-items:center;justify-content:space-between;background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:'+(isExp?'12px 12px 0 0':'12px')+';padding:12px 14px;margin-top:12px;cursor:pointer;"><div><div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">Task schedule</div><div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:1px;">Configure seasons and active days per task</div></div>'+chevron(isExp)+'</div>';
-  const schedBody=isExp?('<div style="background:var(--md-surface-variant);border:1.5px solid var(--md-outline-variant);border-top:none;border-radius:0 0 12px 12px;padding:12px 14px;">'+rScheduleTab()+'</div>'):'';
-  return tasksSection+schedHeader+schedBody;
+  // Ensure mgrSetup.tasks has all canonical tasks
+  BARN_TASKS_DEFAULT.forEach(function(d){
+    if(!mgrSetup.tasks[d.id]) mgrSetup.tasks[d.id]={on:d.defOn,req:d.defReq,label:d.label,desc:d.desc};
+  });
+  var enabled=BARN_TASKS_DEFAULT.filter(function(d){return (mgrSetup.tasks[d.id]||{}).on;}).length;
+  var taskRows=BARN_TASKS_DEFAULT.map(function(d){
+    return rTaskRow(d, mgrSetup.tasks[d.id], 'mgr');
+  }).join('');
+  var addBtn='<button onclick="S.showAdd=true;rerender()" style="position:fixed;bottom:80px;right:20px;z-index:200;width:54px;height:54px;border-radius:50%;background:var(--md-primary);border:none;box-shadow:0 4px 14px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;cursor:pointer;">'+msiIcon('add_task',24,'#fff')+'</button>';
+  var summary='<div style="background:var(--md-surface-variant);border-radius:10px;padding:8px 12px;font-size:12px;font-weight:700;color:var(--md-on-surface-dim);margin-bottom:12px;">'+enabled+' task'+(enabled===1?'':'s')+' enabled.</div>';
+  var isExp=S.taskScheduleExpanded;
+  var schedHeader='<div onclick="S.taskScheduleExpanded=!S.taskScheduleExpanded;rerender()" style="display:flex;align-items:center;justify-content:space-between;background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:'+(isExp?'12px 12px 0 0':'12px')+';padding:12px 14px;margin-top:4px;cursor:pointer;"><div><div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">Task schedule</div><div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:1px;">Configure seasons and active days per task</div></div>'+chevron(isExp)+'</div>';
+  var schedBody=isExp?('<div style="background:var(--md-surface-variant);border:1.5px solid var(--md-outline-variant);border-top:none;border-radius:0 0 12px 12px;padding:12px 14px;">'+rScheduleTab()+'</div>'):'';
+  var _nt=S.newTask||{name:'',desc:'',req:false};
+  var _togBg=_nt.req?'var(--md-primary)':'var(--md-surface-variant)';
+  var _togBorder=_nt.req?'var(--md-primary)':'var(--md-outline)';
+  var _togTx=_nt.req?'translateX(18px)':'translateX(0)';
+  var _inpStyle='width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:10px;padding:10px 12px;font-size:14px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
+  var addForm=S.showAdd
+    ?'<div style="background:var(--md-surface-variant);border-radius:14px;padding:14px;margin-bottom:12px;border:1.5px solid var(--md-primary)33;">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:12px;display:flex;align-items:center;gap:8px;">'+msiIcon('add_task',16,'var(--md-primary)')+' New custom task</div>'
+      +'<label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Task name</label>'
+      +'<input id="atn" type="text" value="'+_nt.name+'" oninput="S.newTask.name=this.value" placeholder="e.g. Sweep barn entrance" style="'+_inpStyle+'margin-bottom:10px;"/>'
+      +'<label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Description <span style="font-weight:400;text-transform:none;color:var(--md-on-surface-dim);">· optional</span></label>'
+      +'<input id="atd" type="text" value="'+_nt.desc+'" oninput="S.newTask.desc=this.value" placeholder="Short description" style="'+_inpStyle+'margin-bottom:12px;"/>'
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;cursor:pointer;" onclick="obUpdateNewTaskToggle()">'
+        +'<div id="new-task-req-toggle" style="width:44px;height:26px;border-radius:13px;background:'+_togBg+';border:1.5px solid '+_togBorder+';position:relative;flex-shrink:0;">'
+          +'<div style="position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transform:'+_togTx+';box-shadow:0 1px 3px rgba(0,0,0,0.3);transition:transform 0.15s;"></div>'
+        +'</div>'
+        +'<span style="font-size:13px;font-weight:600;color:var(--md-on-surface);">Required task</span>'
+      +'</div>'
+      +'<div style="display:flex;gap:9px;">'
+        +'<button onclick="addTask()" style="flex:1;background:var(--md-primary);color:#fff;border:none;border-radius:11px;padding:11px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">'+msiIcon('check',16,'#fff')+' Add task</button>'
+        +'<button onclick="S.showAdd=false;S.newTask={name:\'\',desc:\'\',req:false};rerender()" style="padding:11px 16px;background:var(--md-surface-variant);color:var(--md-on-surface-dim);border:1.5px solid var(--md-outline);border-radius:11px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Cancel</button>'
+      +'</div>'
+    +'</div>'
+    :'';
+  return summary+taskRows+addForm+addBtn+schedHeader+schedBody;
 }
 
 function rMgrSetupCalendar(){
@@ -4804,7 +5034,7 @@ function rHorseList(){
 function rHorses(){const t=TH;function sc(sex){if(sex==='Mare'||sex==='Filly')return{bg:'var(--md-error-container)',color:'var(--md-error)'};if(sex==='Stallion'||sex==='Colt')return{bg:'var(--md-tertiary-container)',color:'var(--md-tertiary)'};return{bg:'var(--md-secondary-container)',color:'var(--md-secondary)'};}return `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><div><div style="font-size:16px;font-weight:700;color:var(--md-on-surface);">Horses</div><div style="font-size:11px;color:var(--md-on-surface-dim);">Sunrise Stables · ${HORSES.length} horses</div></div><button style="background:var(--md-primary);color:#fff;border:none;padding:6px 12px;border-radius:var(--md-shape-sm);font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;">+ Add</button></div>`+HORSES.map(h=>{const s=sc(h.sex);return `<div onclick="S.selectedHorse='${h.id}';S.horseTab='overview';rerender()" style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);margin-bottom:9px;overflow:hidden;cursor:pointer;display:flex;align-items:stretch;"><div style="width:74px;background:${h.avatar.bg}22;display:flex;align-items:center;justify-content:center;padding:10px 7px;flex-shrink:0;border-right:1.5px solid var(--md-outline-variant);">${horseAvatar(h,56)}</div><div style="flex:1;padding:11px 13px;min-width:0;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><div style="font-size:15px;font-weight:700;color:var(--md-on-surface);">${h.name}</div><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:${s.bg};color:${s.color};">${h.sex}</span></div><div style="font-size:11px;color:var(--md-on-surface-variant);margin-bottom:4px;">${h.breed} · ${h.color} · ${h.age}</div><div style="font-size:11px;color:var(--md-on-surface-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-style:italic;">${h.note}</div></div></div>`;}).join('');}
 
 function rSetup(){const t=TH;const tabs=['schedule','tasks'],labels=['Schedule','Tasks'];const tabRow=`<div style="display:flex;border-bottom:2px solid var(--md-outline-variant);margin:-12px -14px 14px;background:var(--md-surface);">${tabs.map((tab,i)=>`<button onclick="setSetupTab('${tab}')" style="flex:1;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;padding:11px 8px;background:transparent;color:${S.setupTab===tab?t.T:t.TX3};border:none;border-bottom:${S.setupTab===tab?`3px solid var(--md-primary)`:'3px solid transparent'};margin-bottom:-2px;">${labels[i]}</button>`).join('')}</div>`;return tabRow+(S.setupTab==='schedule'?rScheduleTab():rTasksTab());}
-function rScheduleTab(){const t=TH;const activeTasks=S.mt.filter(d=>d.on);const seasonNames=['Spring','Summer','Fall','Winter'];const DL=['Su','Mo','Tu','We','Th','Fr','Sa'];const taskRows=activeTasks.map(d=>{const cfg=S.taskSched[d.id]||{seasons:[...seasonNames],days:[0,1,2,3,4,5,6]};const isExp=S.expandedSchedTask===d.id;const activeDays=cfg.days||[];const wdOn=[1,2,3,4,5].every(x=>activeDays.includes(x))&&![0,6].some(x=>activeDays.includes(x));const weOn=[0,6].every(x=>activeDays.includes(x))&&![1,2,3,4,5].some(x=>activeDays.includes(x));const allOn=activeDays.length===7;const ssum=cfg.seasons.length===4?'All seasons':cfg.seasons.length===0?'No seasons':cfg.seasons.join(', ');const dsum=allOn?'Every day':wdOn?'Weekdays':weOn?'Weekends':activeDays.map(x=>DL[x]).join(', ')||'No days';return `<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid ${isExp?t.T:t.BRD};margin-bottom:7px;overflow:hidden;"><div onclick="toggleSchedTask('${d.id}')" style="display:flex;align-items:center;gap:9px;padding:10px 13px;cursor:pointer;"><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:var(--md-on-surface);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.name}</div><div style="display:flex;gap:7px;margin-top:3px;"><span style="font-size:11px;color:var(--md-primary);font-weight:600;">${ssum}</span><span style="font-size:11px;color:var(--md-on-surface-dim);">·</span><span style="font-size:11px;color:var(--md-on-surface-dim);">${dsum}</span></div></div>${chevron(isExp)}</div>${isExp?`<div style="border-top:1.5px solid var(--md-outline-variant);padding:11px 13px;background:var(--md-surface-variant);"><div style="margin-bottom:11px;"><div style="font-size:10px;font-weight:700;color:var(--md-on-surface-variant);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:7px;">Active seasons</div><div style="display:flex;gap:5px;flex-wrap:wrap;">${seasonNames.map(sn=>{const on=cfg.seasons.includes(sn);const sc2=S.seasonDates[sn];return `<button onclick="toggleTaskSeason('${d.id}','${sn}')" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:5px 12px;border-radius:20px;background:${on?sc2.color:t.CARD};color:${on?'#fff':sc2.color};border:2px solid ${sc2.color};">${sn}</button>`;}).join('')}</div></div><div><div style="font-size:10px;font-weight:700;color:var(--md-on-surface-variant);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:7px;">Active days</div><div style="display:flex;gap:5px;margin-bottom:7px;"><button onclick="setTaskDayPreset('${d.id}','all')" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:5px 10px;border-radius:20px;background:${allOn?t.T:t.CARD};color:${allOn?'#fff':t.T};border:1.5px solid var(--md-primary);">Every day</button><button onclick="setTaskDayPreset('${d.id}','weekdays')" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:5px 10px;border-radius:20px;background:${wdOn?t.T:t.CARD};color:${wdOn?'#fff':t.T};border:1.5px solid var(--md-primary);">Weekdays</button><button onclick="setTaskDayPreset('${d.id}','weekends')" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:5px 10px;border-radius:20px;background:${weOn?t.T:t.CARD};color:${weOn?'#fff':t.T};border:1.5px solid var(--md-primary);">Weekends</button></div><div style="display:flex;gap:4px;">${[0,1,2,3,4,5,6].map(i=>{const on=activeDays.includes(i);return `<button onclick="toggleTaskDay('${d.id}',${i})" style="width:34px;height:34px;border-radius:50%;border:1.5px solid var(--md-primary);background:${on?t.T:t.CARD};color:${on?'#fff':t.T};font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">${DL[i]}</button>`;}).join('')}</div></div></div>`:''}</div>`;}).join('');return `<div style="font-size:12px;font-weight:600;color:var(--md-on-primary-container);background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:8px 12px;margin-bottom:11px;">Tap any task to set seasons and active days.</div>`+taskRows+`<div style="margin-top:14px;"><div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:9px;">Season date ranges</div>${Object.entries(S.seasonDates).map(([sn,sd])=>`<div style="background:var(--md-surface);border-radius:9px;border:1.5px solid var(--md-outline-variant);padding:9px 13px;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:7px;margin-bottom:7px;"><div style="width:9px;height:9px;border-radius:50%;background:${sd.color};"></div><span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">${sn}</span></div><div style="display:flex;gap:8px;"><input type="date" value="${sd.start}" oninput="S.seasonDates['${sn}'].start=this.value" style="flex:1;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:7px;padding:6px 8px;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;"/><input type="date" value="${sd.end}" oninput="S.seasonDates['${sn}'].end=this.value" style="flex:1;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:7px;padding:6px 8px;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;"/></div></div>`).join('')}</div>`;}
+function rScheduleTab(){const t=TH;const activeTasks=BARN_TASKS_DEFAULT.filter(function(d){return (mgrSetup.tasks[d.id]||{}).on;}).map(function(d){var t=mgrSetup.tasks[d.id]||{};return Object.assign({},d,{name:t.label||d.label,id:d.id});});const seasonNames=['Spring','Summer','Fall','Winter'];const DL=['Su','Mo','Tu','We','Th','Fr','Sa'];const taskRows=activeTasks.map(d=>{const cfg=S.taskSched[d.id]||{seasons:[...seasonNames],days:[0,1,2,3,4,5,6]};const isExp=S.expandedSchedTask===d.id;const activeDays=cfg.days||[];const wdOn=[1,2,3,4,5].every(x=>activeDays.includes(x))&&![0,6].some(x=>activeDays.includes(x));const weOn=[0,6].every(x=>activeDays.includes(x))&&![1,2,3,4,5].some(x=>activeDays.includes(x));const allOn=activeDays.length===7;const ssum=cfg.seasons.length===4?'All seasons':cfg.seasons.length===0?'No seasons':cfg.seasons.join(', ');const dsum=allOn?'Every day':wdOn?'Weekdays':weOn?'Weekends':activeDays.map(x=>DL[x]).join(', ')||'No days';return `<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid ${isExp?t.T:t.BRD};margin-bottom:7px;overflow:hidden;"><div onclick="toggleSchedTask('${d.id}')" style="display:flex;align-items:center;gap:9px;padding:10px 13px;cursor:pointer;"><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:var(--md-on-surface);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.name}</div><div style="display:flex;gap:7px;margin-top:3px;"><span style="font-size:11px;color:var(--md-primary);font-weight:600;">${ssum}</span><span style="font-size:11px;color:var(--md-on-surface-dim);">·</span><span style="font-size:11px;color:var(--md-on-surface-dim);">${dsum}</span></div></div>${chevron(isExp)}</div>${isExp?`<div style="border-top:1.5px solid var(--md-outline-variant);padding:11px 13px;background:var(--md-surface-variant);"><div style="margin-bottom:11px;"><div style="font-size:10px;font-weight:700;color:var(--md-on-surface-variant);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:7px;">Active seasons</div><div style="display:flex;gap:5px;flex-wrap:wrap;">${seasonNames.map(sn=>{const on=cfg.seasons.includes(sn);const sc2=S.seasonDates[sn];return `<button onclick="toggleTaskSeason('${d.id}','${sn}')" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:5px 12px;border-radius:20px;background:${on?sc2.color:t.CARD};color:${on?'#fff':sc2.color};border:2px solid ${sc2.color};">${sn}</button>`;}).join('')}</div></div><div><div style="font-size:10px;font-weight:700;color:var(--md-on-surface-variant);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:7px;">Active days</div><div style="display:flex;gap:5px;margin-bottom:7px;"><button onclick="setTaskDayPreset('${d.id}','all')" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:5px 10px;border-radius:20px;background:${allOn?t.T:t.CARD};color:${allOn?'#fff':t.T};border:1.5px solid var(--md-primary);">Every day</button><button onclick="setTaskDayPreset('${d.id}','weekdays')" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:5px 10px;border-radius:20px;background:${wdOn?t.T:t.CARD};color:${wdOn?'#fff':t.T};border:1.5px solid var(--md-primary);">Weekdays</button><button onclick="setTaskDayPreset('${d.id}','weekends')" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:5px 10px;border-radius:20px;background:${weOn?t.T:t.CARD};color:${weOn?'#fff':t.T};border:1.5px solid var(--md-primary);">Weekends</button></div><div style="display:flex;gap:4px;">${[0,1,2,3,4,5,6].map(i=>{const on=activeDays.includes(i);return `<button onclick="toggleTaskDay('${d.id}',${i})" style="width:34px;height:34px;border-radius:50%;border:1.5px solid var(--md-primary);background:${on?t.T:t.CARD};color:${on?'#fff':t.T};font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">${DL[i]}</button>`;}).join('')}</div></div></div>`:''}</div>`;}).join('');return `<div style="font-size:12px;font-weight:600;color:var(--md-on-primary-container);background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:8px 12px;margin-bottom:11px;">Tap any task to set seasons and active days.</div>`+taskRows+`<div style="margin-top:14px;"><div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:9px;">Season date ranges</div>${Object.entries(S.seasonDates).map(([sn,sd])=>`<div style="background:var(--md-surface);border-radius:9px;border:1.5px solid var(--md-outline-variant);padding:9px 13px;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:7px;margin-bottom:7px;"><div style="width:9px;height:9px;border-radius:50%;background:${sd.color};"></div><span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">${sn}</span></div><div style="display:flex;gap:8px;"><input type="date" value="${sd.start}" oninput="S.seasonDates['${sn}'].start=this.value" style="flex:1;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:7px;padding:6px 8px;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;"/><input type="date" value="${sd.end}" oninput="S.seasonDates['${sn}'].end=this.value" style="flex:1;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:7px;padding:6px 8px;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;"/></div></div>`).join('')}</div>`;}
 function rTasksTab(){const t=TH;const en=S.mt.filter(d=>d.on).length;const addForm=S.showAdd?`<div style="background:var(--md-surface-variant);border-radius:11px;padding:13px;margin-top:7px;border:1.5px solid var(--md-outline);"><div style="font-size:12px;font-weight:700;color:var(--md-on-primary-container);margin-bottom:11px;">New custom task</div><label style="font-size:11px;font-weight:700;color:var(--md-on-surface-variant);text-transform:uppercase;display:block;margin-bottom:4px;">Task name</label><input id="atn" type="text" value="${S.newTask.name}" oninput="S.newTask.name=this.value" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:8px;padding:8px 11px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;margin-bottom:9px;box-sizing:border-box;"/><label style="font-size:11px;font-weight:700;color:var(--md-on-surface-variant);text-transform:uppercase;display:block;margin-bottom:4px;">Instructions</label><input id="atd" type="text" value="${S.newTask.desc}" oninput="S.newTask.desc=this.value" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:8px;padding:8px 11px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;margin-bottom:11px;box-sizing:border-box;"/><div style="margin-bottom:13px;"><label style="font-size:11px;font-weight:700;color:var(--md-on-surface-variant);text-transform:uppercase;display:block;margin-bottom:7px;">Required?</label><div style="display:flex;gap:7px;"><button onclick="S.newTask.req=true;rerender()" style="flex:1;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;padding:8px;border-radius:10px;background:${S.newTask.req?t.DNG:t.CARD};color:${S.newTask.req?'#fff':t.DNG};border:1.5px solid var(--md-error);">Required</button><button onclick="S.newTask.req=false;rerender()" style="flex:1;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;padding:8px;border-radius:10px;background:${!S.newTask.req?t.TX3:t.CARD};color:${!S.newTask.req?'#fff':t.TX3};border:1.5px solid var(--md-on-surface-dim);">Optional</button></div></div><div style="display:flex;gap:7px;"><button onclick="addTask()" style="flex:1;background:var(--md-primary);color:#fff;border:none;padding:10px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:700;">Add</button><button onclick="S.showAdd=false;S.newTask={name:'',desc:'',req:false};rerender()" style="background:var(--md-surface);color:var(--md-primary);border:1.5px solid var(--md-primary);padding:10px 13px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:600;">Cancel</button></div></div>`:`<button onclick="S.showAdd=true;rerender()" style="width:100%;background:var(--md-surface);border:2px dashed var(--md-outline);border-radius:10px;padding:11px;color:var(--md-primary);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:4px;font-weight:700;">+ Add custom task</button>`;return `<div style="background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;color:var(--md-on-primary-container);margin-bottom:11px;">${en} tasks enabled.</div>${S.mt.map(d=>`<div style="background:var(--md-surface);border-radius:10px;border:1.5px solid var(--md-outline-variant);border-left:3px solid ${d.on?t.DNG:t.BRD};padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:9px;">${toggle(d.on,`toggleMgr('${d.id}')`)}<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:${d.on?600:400};color:${d.on?t.TX:t.TX3};${!d.on?'text-decoration:line-through;':''}">${d.name}</div><div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:1px;">${d.desc}</div></div>${reqPill(d.req)}</div>`).join('')}${addForm}`;}
 
 // --- TRAINER HOME ---------------------------------------------
@@ -5097,39 +5327,6 @@ const EVENT_PASSES=[
     passId:'NNY-2026-R9T2P',issued:'March 16, 2026',status:'valid',
   },
 ];
-
-const OWNER_NOTIFICATIONS=[
-  {id:'n1',type:'med',icon:msiIcon('medication',18,'var(--md-primary)'),title:'Medication update — Luna',body:'Magnesium increased to 3 scoops per vet recommendation. Effective today.',time:'Today, 7:00 AM',horse:'Luna',urgent:false,read:false},
-  {id:'n2',type:'observation',icon:msiIcon('visibility',18,'var(--md-secondary)'),title:'Barn observation — Rivendell',body:'Charlene noted Rivendell is eating well and gut sounds are normal. Recovery on track.',time:'Today, 8:15 AM',horse:'Rivendell',urgent:false,read:false},
-  {id:'n3',type:'alert',icon:msiIcon('warning',18,'var(--md-error)'),title:'Vet follow-up — Rivendell',body:'Post-colic follow-up appointment confirmed for Mar 22 at 10:00 AM with Dr. Konstantine Goudz.',time:'Yesterday',horse:'Rivendell',urgent:false,read:true},
-  {id:'n4',type:'feed',icon:msiIcon('grass',18,'var(--md-tertiary)'),title:'Feed change — Rivendell',body:'Soaked hay protocol started per vet instructions. Continues through Mar 18.',time:'Yesterday',horse:'Rivendell',urgent:false,read:true},
-];
-
-// Staff barn join requests — populated when staff request association
-var STAFF_JOIN_REQUESTS=[
-  {id:'sjr1',name:'Alex K.',phone:'(914) 555-0182',requestedBarn:'sunrise',barnName:'Sunrise Stables',status:'pending',time:'Today 9:14 AM',message:'Looking to join as barn staff.'},
-];
-
-// Barn join requests from professionals wanting to connect
-var BARN_JOIN_REQUESTS=[
-  {id:'bjr1',name:'Dr. Konstantine Goudz',role:'Veterinarian',phone:'(914) 555-0144',barnId:'sunrise',barnName:'Sunrise Stables',status:'pending',time:'Today 11:22 AM',
-   message:'Requesting barn connection to coordinate care for existing patients, arrange visits, and stay in the loop on equine health at your facility.'},
-];
-
-
-
-
-const OWNER_APPOINTMENTS=[
-  {id:'apt1',horse:'Rivendell',type:'Follow-up — post colic',vet:'Dr. Konstantine Goudz',date:'Mar 22',time:'10:00 AM',barn:'Sunrise Stables',urgent:false},
-  {id:'apt2',horse:'Luna',type:'Dental float',vet:'Dr. Konstantine Goudz',date:'Apr 8',time:'1:00 PM',barn:'Sunrise Stables',urgent:false},
-];
-
-const OWNER_EVENTS=[
-  {id:'ev1',name:'Tri-State Spring Classic',date:'Mar 28–30',venue:'Stonegate Equestrian Park, NY',horse:'Luna',    passId:'ep1',passStatus:'valid',daysOut:12},
-  {id:'ev2',name:'Tri-State Spring Classic',date:'Mar 28–30',venue:'Stonegate Equestrian Park, NY',horse:'Rivendell',passId:'ep2',passStatus:'valid',daysOut:12},
-  // Scenario B (different weekends): change ev2 date to 'Apr 5-6' and name to 'Capital Region Dressage Classic'
-];
-
 
 function rRolePickerSheet(){
   const t=TH;
@@ -7771,7 +7968,7 @@ function setTrainingAssignee(tid,name){const a=getTrainingAssign(S.assignDate);i
 function setTrainingStatus(tid,status){const a=getTrainingAssign(S.assignDate);if(a[tid])a[tid].status=status;rerender();}
 function setSetupTab(tab){S.setupTab=tab;rerender();}
 function toggleMgr(id){const d=S.mt.find(d=>d.id===id);if(d){d.on=!d.on;rerender();}}
-function addTask(){const name=S.newTask.name.trim()||document.getElementById('atn')?.value.trim();const desc=S.newTask.desc.trim()||document.getElementById('atd')?.value.trim();if(!name)return;S.mt.push({id:'c'+Date.now(),name,desc:desc||'Custom task',on:true,req:S.newTask.req});S.showAdd=false;S.newTask={name:'',desc:'',req:false};rerender();}
+function addTask(){var nameEl=document.getElementById('atn');var descEl=document.getElementById('atd');var name=(nameEl?nameEl.value.trim():S.newTask.name.trim())||S.newTask.name.trim();var desc=(descEl?descEl.value.trim():S.newTask.desc.trim())||S.newTask.desc.trim();if(!name)return;var id='custom_'+Date.now();BARN_TASKS_DEFAULT.push({id:id,label:name,desc:desc||'Custom task',icon:'check_circle',defOn:true,defReq:S.newTask.req});mgrSetup.tasks[id]={on:true,req:S.newTask.req,label:name,desc:desc||'Custom task'};S.showAdd=false;S.newTask={name:'',desc:'',req:false};rerender();}
 function toggleSchedTask(id){S.expandedSchedTask=S.expandedSchedTask===id?null:id;rerender();}
 function toggleTaskSeason(tid,sn){if(!S.taskSched[tid])S.taskSched[tid]={seasons:['Spring','Summer','Fall','Winter'],days:[0,1,2,3,4,5,6]};const idx=S.taskSched[tid].seasons.indexOf(sn);if(idx>=0)S.taskSched[tid].seasons.splice(idx,1);else S.taskSched[tid].seasons.push(sn);rerender();}
 function toggleTaskDay(tid,d){if(!S.taskSched[tid])S.taskSched[tid]={seasons:['Spring','Summer','Fall','Winter'],days:[0,1,2,3,4,5,6]};const idx=S.taskSched[tid].days.indexOf(d);if(idx>=0)S.taskSched[tid].days.splice(idx,1);else S.taskSched[tid].days.push(d);rerender();}
@@ -7795,6 +7992,11 @@ render();
 
 
 
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div><span style="font-size:12px;color:var(--md-on-surface-dim);font-weight:600;">or use a code</span><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div></div>'
+      +'<button onclick="window._ob.googleSignIn=true;obNext(\'verify\')" style="width:100%;background:var(--md-surface);color:var(--md-on-surface);border:1.5px solid var(--md-outline-variant);border-radius:14px;padding:14px 16px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;">'
+      +'<svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>'
+      +'Continue with Google</button>'
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div><span style="font-size:12px;color:var(--md-on-surface-dim);font-weight:600;">or</span><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div></div>'
 </script>
 </body>
 </html>
