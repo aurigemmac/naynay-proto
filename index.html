@@ -381,15 +381,18 @@ const INTENSITY_LABELS={1:'Low',2:'Easy',3:'Medium',4:'Strong',5:'High'};
 const INTENSITY_COLORS={1:'#2A8A4A',2:'#5A8A2A',3:'#8A7A00',4:'#8A5000',5:'#8A2020'};
 
 // --- SERVICES DATA --------------------------------------------
-const SERVICE_CATEGORIES=['Exam','Procedure','Regimens','Vaccination','Board','Care','Facility'];
+const SERVICE_CATEGORIES=['Exam','Procedure','Regimens','Vaccination','Board','Training','Care','Medical','Facility','Handling'];
 const SERVICE_SUBCATEGORIES={
-  Exam:['Well','Sick','Emergency'],
-  Procedure:['Hospital','Surgical','In-field'],
-  Regimens:['Training','Feeding','Supplements'],
-  Vaccination:['Core','Risk-based'],
-  Board:['Full Care','Partial'],
-  Care:['Grooming','Feeding','Exercise'],
-  Facility:['Storage'],
+  Exam:['Wellness','Lameness','Pre-purchase','Emergency','Dental','Imaging'],
+  Procedure:['Surgical','Dental','Injection','Wound Care'],
+  Regimens:['Daily Meds','IV/IM','Supplements'],
+  Vaccination:['Core','Elective','Coggins'],
+  Board:['Full Care','Partial','Pasture','Medical','Day Care'],
+  Training:['Training Ride','Lunging','Hand-walking','Lesson','Show Prep'],
+  Care:['Grooming','Bathing','Clipping','Tacking','Blanketing','Hoof Care'],
+  Medical:['Wound Care','IV/IM Admin','Nursing Care'],
+  Facility:['Stall','Trailer','Laundry','Storage'],
+  Handling:['Personnel','Hauling','Holding'],
 };
 const ROLES_LIST=['Manager','Trainer','Veterinarian'];
 
@@ -421,19 +424,39 @@ let trainerServices=[
 ];
 
 let mgrServices=[
-  {id:'ms1', name:'Full Board',             category:'Board',    subCategory:'Full Care',  duration:null, price:1500, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:false, roles:['Manager']},
-  {id:'ms2', name:'Pasture Board',          category:'Board',    subCategory:'Full Care',  duration:null, price:800,  addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:false, roles:['Manager']},
-  {id:'ms3', name:'Training Board',         category:'Board',    subCategory:'Full Care',  duration:null, price:2200, addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Manager']},
-  {id:'ms4', name:'Daily Stall Cleaning',   category:'Care',     subCategory:'Grooming',   duration:null, price:25,   addonPrice:null, canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:true,  roles:['Manager']},
-  {id:'ms5', name:'Blanketing Service',     category:'Care',     subCategory:'Grooming',   duration:null, price:10,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
-  {id:'ms6', name:'Turnout',               category:'Care',     subCategory:'Exercise',   duration:null, price:15,   addonPrice:null, canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:true,  roles:['Manager']},
-  {id:'ms7', name:'Grain & Supplement Feed',category:'Care',     subCategory:'Feeding',    duration:null, price:50,   addonPrice:null, canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:true,  roles:['Manager']},
-  {id:'ms8', name:'Hay Only Board',         category:'Board',    subCategory:'Partial',    duration:null, price:400,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Manager']},
-  {id:'ms9', name:'Show Prep & Hauling',    category:'Care',     subCategory:'Exercise',   duration:null, price:200,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
-  {id:'ms10',name:'Tack Storage',           category:'Facility', subCategory:'Storage',    duration:null, price:75,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_board_full',    name:'Full Board',              category:'Board',    subCategory:'Full Care',    duration:null, price:1500, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:false, roles:['Manager']},
+  {id:'ms_board_partial', name:'Partial Board',           category:'Board',    subCategory:'Partial',      duration:null, price:900,  addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:false, roles:['Manager']},
+  {id:'ms_board_pasture', name:'Pasture Board',           category:'Board',    subCategory:'Pasture',      duration:null, price:650,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Manager']},
+  {id:'ms_board_train',   name:'Full Training Board',     category:'Board',    subCategory:'Full Care',    duration:null, price:2400, addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Manager']},
+  {id:'ms_board_medical', name:'Medical Board',           category:'Board',    subCategory:'Medical',      duration:null, price:2000, addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_board_daycare', name:'Show Day Care',           category:'Board',    subCategory:'Day Care',     duration:null, price:75,   addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_train_ride',    name:'Training Ride',           category:'Training', subCategory:'Training Ride',duration:45,   price:75,   addonPrice:null, canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_lunge',         name:'Lunging',                 category:'Training', subCategory:'Lunging',      duration:30,   price:40,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_handwalk',      name:'Hand-walking',            category:'Training', subCategory:'Hand-walking', duration:30,   price:25,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_lesson_private',name:'Private Lesson',          category:'Training', subCategory:'Lesson',       duration:60,   price:95,   addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_lesson_group',  name:'Group Lesson',            category:'Training', subCategory:'Lesson',       duration:60,   price:55,   addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_show_prep',     name:'Show Preparation',        category:'Training', subCategory:'Show Prep',    duration:90,   price:150,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_trailerin',     name:'Trailer-in Lesson',       category:'Training', subCategory:'Lesson',       duration:60,   price:85,   addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_groom',         name:'Grooming',                category:'Care',     subCategory:'Grooming',     duration:30,   price:35,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_bath',          name:'Bathing',                 category:'Care',     subCategory:'Bathing',      duration:45,   price:45,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_clip',          name:'Clipping',                category:'Care',     subCategory:'Clipping',     duration:120,  price:125,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_tack',          name:'Tacking Up / Untacking',  category:'Care',     subCategory:'Tacking',      duration:20,   price:20,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_blanket',       name:'Blanketing',              category:'Care',     subCategory:'Blanketing',   duration:null, price:10,   addonPrice:null, canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_hoof',          name:'Hoof Care',               category:'Care',     subCategory:'Hoof Care',    duration:30,   price:30,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_hold_farrier',  name:'Holding for Farrier',     category:'Handling', subCategory:'Holding',      duration:60,   price:35,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_hold_vet',      name:'Holding for Vet',         category:'Handling', subCategory:'Holding',      duration:60,   price:35,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_haul',          name:'Hauling',                 category:'Handling', subCategory:'Hauling',      duration:null, price:150,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_breeding',      name:'Breeding Services',       category:'Handling', subCategory:'Personnel',    duration:null, price:0,    addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Manager']},
+  {id:'ms_wound',         name:'Wound Care',              category:'Medical',  subCategory:'Wound Care',   duration:30,   price:40,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_ivim',          name:'IV/IM Medication Admin',  category:'Medical',  subCategory:'IV/IM Admin',  duration:30,   price:65,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_stall_extra',   name:'Additional Stall Cleaning',category:'Facility',subCategory:'Stall',        duration:null, price:20,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_laundry',       name:'Laundry',                 category:'Facility', subCategory:'Laundry',      duration:null, price:15,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_trailer_park',  name:'Trailer Parking',         category:'Facility', subCategory:'Trailer',      duration:null, price:75,   addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Manager']},
 ];
 
 let svcEditId=null; // null=list, 'new'=new form, id=edit existing
+let svcSearch=''; // search text for services list
+let svcCatFilter=''; // active category filter chip
 
 // --- STATIC DATA ----------------------------------------------
 const TODAY='2026-03-16';
@@ -1137,7 +1160,7 @@ if(!window._ob) window._ob={
   careTeam:{vet:{name:'',contact:'',sent:false},trainer:{name:'',contact:'',sent:false},farrier:{name:'',contact:'',sent:false}},
   // manager setup
   barnName:'',barnAddress:'',barnCity:'',barnState:'',barnStalls:'',
-  services:{board_full:true,board_partial:false,board_pasture:false,training:true,lessons_private:true,lessons_group:false,show_prep:false,breeding:false,haul_in:false,trailer:false},
+  services:(function(){var sv={};mgrServices.forEach(function(s){sv[s.id]=s.isDefault;});return sv;}()),
   tasks:buildDefaultTasks(),
   teamInvites:{staff:{name:'',contact:'',sent:false},vet:{name:'',contact:'',sent:false},trainer:{name:'',contact:'',sent:false},farrier:{name:'',contact:'',sent:false}},
   // vet setup
@@ -1826,29 +1849,36 @@ function rOnboarding(){
 
   // ── BARN MANAGER: SERVICES ─────────────────────────────────────────────
   if(ob.step==='setup_services'){
-    var SVCS=[
-      {id:'board_full',label:'Full board',sub:'Stall, feed, turnout, daily care'},
-      {id:'board_partial',label:'Partial board',sub:'Stall with owner participation'},
-      {id:'board_pasture',label:'Pasture board',sub:'Outdoor turnout with shelter'},
-      {id:'training',label:'Training',sub:'Professional training program'},
-      {id:'lessons_private',label:'Private lessons',sub:'One-on-one instruction'},
-      {id:'lessons_group',label:'Group lessons',sub:'Group instruction'},
-      {id:'show_prep',label:'Show preparation',sub:'Competition readiness coaching'},
-      {id:'breeding',label:'Breeding services',sub:'Mare/stallion breeding program'},
-      {id:'haul_in',label:'Haul-in lessons',sub:'Lessons for off-property horses'},
-      {id:'trailer',label:'Trailer parking',sub:'On-site trailer storage'},
-    ];
-    var inner='<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">What do you offer?</div>'
-      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:20px;">Toggle the services your barn provides. You can add pricing and details later.</div>'
-      +SVCS.map(function(sv){
-        var on=ob.services[sv.id];
-        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 13px;background:var(--md-surface);border-radius:12px;border:1.5px solid '+(on?'var(--md-primary)33':'var(--md-outline-variant)')+';margin-bottom:8px;cursor:pointer;" onclick="window._ob.services.'+sv.id+'=!window._ob.services.'+sv.id+';rerender()">'
-          +'<div><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+sv.label+'</div>'
-          +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+sv.sub+'</div></div>'
-          +mdToggle(on,'window._ob.services.'+sv.id+'=!window._ob.services.'+sv.id+';rerender()')
+    mgrServices.forEach(function(sv){if(ob.services[sv.id]===undefined)ob.services[sv.id]=sv.isDefault;});
+    var catOrder=['Board','Training','Care','Handling','Medical','Facility'];
+    var catColor={'Board':'var(--md-primary)','Training':'var(--md-tertiary)','Care':'var(--md-secondary)','Medical':'var(--md-error)','Handling':'var(--md-on-surface-dim)','Facility':'var(--md-on-surface-dim)'};
+    var catBg={'Board':'var(--md-primary-container)','Training':'var(--md-tertiary-container)','Care':'var(--md-secondary-container)','Medical':'var(--md-error-container)','Handling':'var(--md-surface-variant)','Facility':'var(--md-surface-variant)'};
+    var grouped={};mgrServices.forEach(function(sv){if(!grouped[sv.category])grouped[sv.category]=[];grouped[sv.category].push(sv);});
+    var svcRows=catOrder.map(function(cat){
+      var svcs=grouped[cat]||[];if(!svcs.length)return '';
+      var cc=catColor[cat]||'var(--md-on-surface-dim)';var cb=catBg[cat]||'var(--md-surface-variant)';
+      var hdr='<div style="display:flex;align-items:center;gap:7px;margin:14px 0 6px;">'
+        +'<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;background:'+cb+';color:'+cc+';">'+cat+'</span>'
+        +'<div style="flex:1;height:1px;background:var(--md-outline-variant);"></div></div>';
+      var rows=svcs.map(function(sv){
+        var on=!!ob.services[sv.id];
+        var priceHint=sv.price?(' \xb7 $'+sv.price+(sv.duration?' / session':' / mo')):'';
+        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 13px;background:var(--md-surface);border-radius:12px;border:1.5px solid '+(on?'var(--md-primary)33':'var(--md-outline-variant)')+';margin-bottom:7px;" onclick="window._ob.services[\''+sv.id+'\']=!window._ob.services[\''+sv.id+'\'];rerender()">'
+          +'<div style="min-width:0;flex:1;">'
+          +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+sv.name+'</div>'
+          +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+sv.subCategory+priceHint+'</div>'
+          +'</div>'
+          +mdToggle(on,'window._ob.services[\''+sv.id+'\']=!window._ob.services[\''+sv.id+'\'];rerender()')
           +'</div>';
-      }).join('')
-      +'<button onclick="obNext(\'setup_tasks\')" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-top:8px;">Continue</button>';
+      }).join('');
+      return hdr+rows;
+    }).join('');
+    var enabledCount=mgrServices.filter(function(sv){return ob.services[sv.id];}).length;
+    var inner='<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">What do you offer?</div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:6px;">Toggle the services your barn provides. Pricing can be adjusted in Setup.</div>'
+      +'<div style="background:var(--md-surface-variant);border-radius:10px;padding:8px 12px;font-size:12px;font-weight:700;color:var(--md-on-surface-dim);margin-bottom:12px;">'+enabledCount+' service'+(enabledCount===1?'':'s')+' enabled</div>'
+      +svcRows
+      +'<button onclick="obNext(\'setup_tasks\')" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-top:16px;">Continue</button>';
     return wrap(inner,true,'setup_barn',false,3,4);
   }
 
@@ -3054,42 +3084,96 @@ function rPaymentsTab(role){
 function rServicesTab(){
   if(svcEditId!==null)return rServiceForm(svcEditId);
   const t=TH;
-  const catColors={Exam:{color:'var(--md-tertiary)',bg:'var(--md-tertiary-container)'},Procedure:{color:'var(--md-error)',bg:'var(--md-error-container)'},Regimens:{color:'var(--md-secondary)',bg:'var(--md-secondary-container)'},Vaccination:{color:'var(--md-primary)',bg:'var(--md-primary-container)'},Board:{color:'var(--md-primary)',bg:'var(--md-primary-container)'},Care:{color:'var(--md-secondary)',bg:'var(--md-secondary-container)'},Facility:{color:'var(--md-tertiary)',bg:'var(--md-tertiary-container)'}};
-  const cats=SERVICE_CATEGORIES;
-  // Search bar
-  const searchBar=`<div style="position:relative;margin-bottom:12px;"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);"><circle cx="6.5" cy="6.5" r="5" stroke="var(--md-on-surface-dim)" stroke-width="1.4"/><path d="M11 11l3 3" stroke="var(--md-on-surface-dim)" stroke-width="1.4" stroke-linecap="round"/></svg><input type="text" placeholder="Search services…" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:10px;padding:9px 12px 9px 32px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>`;
+  const catColors={
+    Exam:{color:'var(--md-tertiary)',bg:'var(--md-tertiary-container)'},
+    Procedure:{color:'var(--md-error)',bg:'var(--md-error-container)'},
+    Regimens:{color:'var(--md-secondary)',bg:'var(--md-secondary-container)'},
+    Vaccination:{color:'var(--md-primary)',bg:'var(--md-primary-container)'},
+    Board:{color:'var(--md-primary)',bg:'var(--md-primary-container)'},
+    Training:{color:'var(--md-tertiary)',bg:'var(--md-tertiary-container)'},
+    Care:{color:'var(--md-secondary)',bg:'var(--md-secondary-container)'},
+    Medical:{color:'var(--md-error)',bg:'var(--md-error-container)'},
+    Facility:{color:'var(--md-on-surface-dim)',bg:'var(--md-surface-variant)'},
+    Handling:{color:'var(--md-on-surface-dim)',bg:'var(--md-surface-variant)'},
+  };
 
-  var activeServices=anyRole('trainer')&&!anyRole('vet')?trainerServices:anyRole('manager')&&!anyRole('vet')&&!anyRole('trainer')?mgrServices:vetServices;
-  const rows=activeServices.map(svc=>{
-    const cc=catColors[svc.category]||{color:t.TX2,bg:t.SUB};
-    return `<div onclick="svcEditId='${svc.id}';rerender()" style="display:flex;align-items:center;padding:11px 14px;border-bottom:1px solid var(--md-outline-variant);cursor:pointer;gap:10px;">
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:3px;">${svc.name}</div>
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-          <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;background:${cc.bg};color:${cc.color};">${svc.category}</span>
-          <span style="font-size:11px;color:var(--md-on-surface-dim);">${svc.subCategory}</span>
-          ${svc.canBeAddon?`<span style="font-size:10px;color:var(--md-on-surface-dim);background:var(--md-surface-variant);padding:1px 6px;border-radius:6px;">Add-on</span>`:''}
-        </div>
-      </div>
-      <div style="text-align:right;flex-shrink:0;">
-        <div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">$${svc.price.toFixed(2)}</div>
-        <div style="font-size:11px;color:var(--md-on-surface-dim);">${svc.duration} min</div>
-      </div>
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="var(--md-on-surface-dim)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </div>`;
-  }).join('');
+  var activeServices=anyRole('trainer')&&!anyRole('vet')?trainerServices
+    :anyRole('manager')&&!anyRole('vet')&&!anyRole('trainer')?mgrServices
+    :vetServices;
 
-  var svcsWrap='<div style="position:relative;">'
-    +'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);overflow:hidden;margin-bottom:12px;">'+rows+'</div>'
+  // Derive categories present in this service set
+  var presentCats=[...new Set(activeServices.map(function(sv){return sv.category;}))];
+
+  // Filter: search + category chip
+  var q=(svcSearch||'').toLowerCase().trim();
+  var activeCat=svcCatFilter||'';
+  var filtered=activeServices.filter(function(svc){
+    var matchQ=!q||(svc.name.toLowerCase().includes(q))||
+      (svc.subCategory&&svc.subCategory.toLowerCase().includes(q))||
+      (svc.category&&svc.category.toLowerCase().includes(q));
+    var matchCat=!activeCat||svc.category===activeCat;
+    return matchQ&&matchCat;
+  });
+
+  // ── Search bar ──────────────────────────────────────────────────────────
+  var searchBar='<div style="position:relative;margin-bottom:8px;">'
+    +'<svg width="15" height="15" viewBox="0 0 16 16" fill="none" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;"><circle cx="6.5" cy="6.5" r="5" stroke="var(--md-on-surface-dim)" stroke-width="1.4"/><path d="M11 11l3 3" stroke="var(--md-on-surface-dim)" stroke-width="1.4" stroke-linecap="round"/></svg>'
+    +'<input type="text" value="'+q+'" oninput="svcSearch=this.value;rerender()" placeholder="Search services\u2026" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:10px;padding:9px 12px 9px 32px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/>'
+    +(q?'<button onclick="svcSearch=\'\';rerender()" style="position:absolute;right:9px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:2px;display:flex;align-items:center;">'+msiIcon('close',14,'var(--md-on-surface-dim)')+'</button>':'')
     +'</div>';
-  // FAB — fixed to bottom-right of the setup content area
-  var fab='<button onclick="svcEditId=\'new\';rerender()" style="position:fixed;bottom:80px;right:20px;z-index:200;width:52px;height:52px;border-radius:50%;background:var(--md-primary);color:#fff;border:none;box-shadow:0 4px 12px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:26px;line-height:1;">'+msiIcon('add',26,'#fff')+'</button>';
-  return searchBar+svcsWrap+fab;
+
+  // ── Category filter chips ───────────────────────────────────────────────
+  var chips='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;padding-bottom:2px;">';
+  // "All" chip
+  var allActive=!activeCat;
+  chips+='<button onclick="svcCatFilter=\'\';rerender()" style="padding:5px 12px;border-radius:20px;border:1.5px solid '+(allActive?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(allActive?'var(--md-primary-container)':'var(--md-surface)')+';color:'+(allActive?'var(--md-primary)':'var(--md-on-surface-dim)')+';font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;white-space:nowrap;">All</button>';
+  presentCats.forEach(function(cat){
+    var cc=catColors[cat]||{color:'var(--md-on-surface-dim)',bg:'var(--md-surface-variant)'};
+    var isActive=activeCat===cat;
+    chips+='<button onclick="svcCatFilter=svcCatFilter===\''+cat+'\'?\'\':\''+cat+'\';rerender()" style="padding:5px 12px;border-radius:20px;border:1.5px solid '+(isActive?cc.color:'var(--md-outline-variant)')+';background:'+(isActive?cc.bg:'var(--md-surface)')+';color:'+(isActive?cc.color:'var(--md-on-surface-dim)')+';font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;white-space:nowrap;">'+cat+'</button>';
+  });
+  chips+='</div>';
+
+  // ── Service rows ───────────────────────────────────────────────────────
+  var rows=filtered.length?filtered.map(function(svc){
+    var cc=catColors[svc.category]||{color:t.TX2,bg:t.SUB};
+    var priceStr=svc.price>0?'$'+svc.price.toFixed(2):'—';
+    var durStr=svc.duration?svc.duration+' min':'';
+    return '<div onclick="svcEditId=\''+svc.id+'\';rerender()" style="display:flex;align-items:center;padding:11px 14px;border-bottom:1px solid var(--md-outline-variant);cursor:pointer;gap:10px;">'
+      +'<div style="flex:1;min-width:0;">'
+        +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:3px;">'+svc.name+'</div>'
+        +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">'
+          +(activeCat?'':'<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;background:'+cc.bg+';color:'+cc.color+';">'+svc.category+'</span>')
+          +'<span style="font-size:11px;color:var(--md-on-surface-dim);">'+svc.subCategory+'</span>'
+          +(svc.canBeAddon?'<span style="font-size:10px;color:var(--md-on-surface-dim);background:var(--md-surface-variant);padding:1px 6px;border-radius:6px;">Add-on</span>':'')
+        +'</div>'
+      +'</div>'
+      +'<div style="text-align:right;flex-shrink:0;">'
+        +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+priceStr+'</div>'
+        +(durStr?'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+durStr+'</div>':'')
+      +'</div>'
+      +'<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="var(--md-on-surface-dim)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      +'</div>';
+  }).join('')
+  :'<div style="padding:20px;text-align:center;font-size:13px;color:var(--md-on-surface-dim);">'
+    +(q||activeCat?'No services match your filter. <button onclick="svcSearch=\'\';svcCatFilter=\'\';rerender()" style="background:none;border:none;color:var(--md-primary);font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;font-size:13px;padding:0;">Clear filters</button>':'No services yet.')
+    +'</div>';
+
+  // ── Result count hint ─────────────────────────────────────────────────
+  var countHint=(q||activeCat)&&filtered.length<activeServices.length
+    ?'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-bottom:8px;">'+filtered.length+' of '+activeServices.length+' services</div>'
+    :'';
+
+  var svcsWrap='<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);overflow:hidden;margin-bottom:12px;">'+rows+'</div>';
+  var fab='<button onclick="svcEditId=\'new\';rerender()" style="position:fixed;bottom:80px;right:20px;z-index:200;width:52px;height:52px;border-radius:50%;background:var(--md-primary);color:#fff;border:none;box-shadow:0 4px 12px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;cursor:pointer;">'+msiIcon('add',26,'#fff')+'</button>';
+  return searchBar+chips+countHint+svcsWrap+fab;
 }
+
 function rServiceForm(id){
   const t=TH;
   const isNew=id==='new';
-  const svc=isNew?{id:'new',name:'',category:'Exam',subCategory:'Well',canBeAddon:false,isDefault:false,canBeRequestedByOwner:false,price:0,addonPrice:null,duration:30,roles:[]}:vetServices.find(s=>s.id===id)||{};
+  const _allSvcs=anyRole('manager')&&!anyRole('vet')&&!anyRole('trainer')?mgrServices:anyRole('trainer')&&!anyRole('vet')?trainerServices:vetServices;
+  const svc=isNew?{id:'new',name:'',category:anyRole('manager')?'Board':'Exam',subCategory:anyRole('manager')?'Full Care':'Well',canBeAddon:false,isDefault:false,canBeRequestedByOwner:false,price:0,addonPrice:null,duration:30,roles:[]}:_allSvcs.find(function(s){return s.id===id;})||vetServices.find(s=>s.id===id)||{};
   // Store working copy in a global scratch object
   if(!window._svcScratch||window._svcScratch._editId!==id)window._svcScratch={...svc,_editId:id};
   const sc=window._svcScratch;
@@ -3099,7 +3183,7 @@ function rServiceForm(id){
   function tog(label,sub,key,val){return `<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--md-outline-variant);"><div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--md-on-surface);">${label}</div>${sub?`<div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:1px;">${sub}</div>`:''}</div>${toggle(val,`_svcScratch['${key}']=!_svcScratch['${key}'];rerender()`)}</div>`;}
 
   const subcats=SERVICE_SUBCATEGORIES[sc.category]||[];
-  const catColors={Exam:{color:'var(--md-tertiary)',bg:'var(--md-tertiary-container)'},Procedure:{color:'var(--md-error)',bg:'var(--md-error-container)'},Regimens:{color:'var(--md-tertiary)',bg:'var(--md-tertiary-container)'},Vaccination:{color:'#2A7A3A',bg:'var(--md-secondary-container)'}};
+  const catColors={Exam:{color:'var(--md-tertiary)',bg:'var(--md-tertiary-container)'},Procedure:{color:'var(--md-error)',bg:'var(--md-error-container)'},Regimens:{color:'var(--md-secondary)',bg:'var(--md-secondary-container)'},Vaccination:{color:'var(--md-primary)',bg:'var(--md-primary-container)'},Board:{color:'var(--md-primary)',bg:'var(--md-primary-container)'},Training:{color:'var(--md-tertiary)',bg:'var(--md-tertiary-container)'},Care:{color:'var(--md-secondary)',bg:'var(--md-secondary-container)'},Medical:{color:'var(--md-error)',bg:'var(--md-error-container)'},Facility:{color:'var(--md-on-surface-dim)',bg:'var(--md-surface-variant)'},Handling:{color:'var(--md-on-surface-dim)',bg:'var(--md-surface-variant)'}};
   const cc=catColors[sc.category]||{color:t.TX2,bg:t.SUB};
 
   const rolePills=ROLES_LIST.map(r=>{const on=(sc.roles||[]).includes(r);return `<button onclick="toggleSvcRole('${r}')" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:7px 14px;border-radius:20px;background:${on?t.T:t.CARD};color:${on?'#fff':t.TX2};border:1.5px solid ${on?t.T:t.BRD};display:flex;align-items:center;gap:5px;">${on?`<svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`:''} ${r}</button>`;}).join('');
