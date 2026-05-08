@@ -381,16 +381,15 @@ const INTENSITY_LABELS={1:'Low',2:'Easy',3:'Medium',4:'Strong',5:'High'};
 const INTENSITY_COLORS={1:'#2A8A4A',2:'#5A8A2A',3:'#8A7A00',4:'#8A5000',5:'#8A2020'};
 
 // --- SERVICES DATA --------------------------------------------
-const SERVICE_CATEGORIES=['Exam','Procedure','Regimens','Vaccination','Board','Training','Care','Medical','Facility','Handling'];
+const SERVICE_CATEGORIES={vet:['Exam','Procedure','Regimens','Vaccination'],manager:['Board','Training','Care','Procedure','Facility','Handling'],trainer:['Training'],staff:[],owner:[]};
 const SERVICE_SUBCATEGORIES={
-  Exam:['Wellness','Lameness','Pre-purchase','Emergency','Dental','Imaging'],
-  Procedure:['Surgical','Dental','Injection','Wound Care'],
+  Exam:['Wellness','Lameness','Pre-purchase','Emergency','Dental','Imaging','Reproductive','Chiropractic','Ophthalmology'],
+  Procedure:['Surgical','In-field','Hospital','Injection','Wound Care','IV/IM','Deworming','Acupuncture','Laser','Reproductive'],
   Regimens:['Daily Meds','IV/IM','Supplements'],
   Vaccination:['Core','Elective','Coggins'],
-  Board:['Full Care','Partial','Pasture','Medical','Day Care'],
+  Board:['Full Care','Partial','Pasture','Med Recovery','Day Care'],
   Training:['Training Ride','Lunging','Hand-walking','Lesson','Show Prep'],
   Care:['Grooming','Bathing','Clipping','Tacking','Blanketing','Hoof Care'],
-  Medical:['Wound Care','IV/IM Admin','Nursing Care'],
   Facility:['Stall','Trailer','Laundry','Storage'],
   Handling:['Personnel','Hauling','Holding'],
 };
@@ -417,6 +416,8 @@ let vetServices=[
   {id:'svc18',name:'Castration',              category:'Procedure', subCategory:'Surgical', duration:60,  price:1000, addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Veterinarian']},
   {id:'svc19',name:'Hernia Repair',           category:'Procedure', subCategory:'Surgical', duration:90,  price:600,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Veterinarian']},
   {id:'svc20',name:'Laceration Repair',       category:'Procedure', subCategory:'Surgical', duration:90,  price:400,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Veterinarian']},
+  {id:'svc_reg1',name:'Daily Medication Admin',  category:'Regimens',  subCategory:'Daily Meds', duration:15,  price:25,   addonPrice:null, canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:false, roles:['Vet']},
+  {id:'svc_vac1',name:'Core Vaccination',        category:'Vaccination',subCategory:'Core',       duration:20,  price:40,   addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:false, roles:['Vet']},
 ];
 
 let trainerServices=[
@@ -428,7 +429,7 @@ let mgrServices=[
   {id:'ms_board_partial', name:'Partial Board',           category:'Board',    subCategory:'Partial',      duration:null, price:900,  addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:false, roles:['Manager']},
   {id:'ms_board_pasture', name:'Pasture Board',           category:'Board',    subCategory:'Pasture',      duration:null, price:650,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Manager']},
   {id:'ms_board_train',   name:'Full Training Board',     category:'Board',    subCategory:'Full Care',    duration:null, price:2400, addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Manager']},
-  {id:'ms_board_medical', name:'Medical Board',           category:'Board',    subCategory:'Medical',      duration:null, price:2000, addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_board_medical', name:'Medical Board',           category:'Board',    subCategory:'Med Recovery',      duration:null, price:2000, addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
   {id:'ms_board_daycare', name:'Show Day Care',           category:'Board',    subCategory:'Day Care',     duration:null, price:75,   addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
   {id:'ms_train_ride',    name:'Training Ride',           category:'Training', subCategory:'Training Ride',duration:45,   price:75,   addonPrice:null, canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:true,  roles:['Manager']},
   {id:'ms_lunge',         name:'Lunging',                 category:'Training', subCategory:'Lunging',      duration:30,   price:40,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
@@ -447,8 +448,8 @@ let mgrServices=[
   {id:'ms_hold_vet',      name:'Holding for Vet',         category:'Handling', subCategory:'Holding',      duration:60,   price:35,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
   {id:'ms_haul',          name:'Hauling',                 category:'Handling', subCategory:'Hauling',      duration:null, price:150,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
   {id:'ms_breeding',      name:'Breeding Services',       category:'Handling', subCategory:'Personnel',    duration:null, price:0,    addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Manager']},
-  {id:'ms_wound',         name:'Wound Care',              category:'Medical',  subCategory:'Wound Care',   duration:30,   price:40,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
-  {id:'ms_ivim',          name:'IV/IM Medication Admin',  category:'Medical',  subCategory:'IV/IM Admin',  duration:30,   price:65,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_wound',         name:'Wound Care',              category:'Procedure',  subCategory:'Wound Care',   duration:30,   price:40,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_ivim',          name:'IV/IM Medication Admin',  category:'Procedure',  subCategory:'IV/IM Admin',  duration:30,   price:65,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
   {id:'ms_stall_extra',   name:'Additional Stall Cleaning',category:'Facility',subCategory:'Stall',        duration:null, price:20,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
   {id:'ms_laundry',       name:'Laundry',                 category:'Facility', subCategory:'Laundry',      duration:null, price:15,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
   {id:'ms_trailer_park',  name:'Trailer Parking',         category:'Facility', subCategory:'Trailer',      duration:null, price:75,   addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Manager']},
@@ -1251,6 +1252,26 @@ function obFormatPhone(raw){
 }
 
 // Simulate sending SMS code
+
+function obCreateAccount(){
+  var ob=window._ob;
+  if(!ob) return;
+  var email=(ob.email||'').toLowerCase().trim();
+  if(email==='taken@demo.com'){
+    ob._acctError='An account with this email already exists. Try signing in.';
+    rerender();return;
+  }
+  ob._acctError=null;
+  var nextStep=ob.roles.includes('owner')?'setup_horse'
+    :ob.roles.includes('manager')?'setup_barn'
+    :ob.roles.includes('vet')?'setup_vet'
+    :ob.roles.includes('trainer')?'setup_trainer'
+    :ob.roles.includes('staff')?'setup_staff'
+    :'done';
+  ob.step=nextStep;
+  rerender();
+}
+
 function obSendCode(){
   var ob=window._ob;
   if(!ob) return;
@@ -1358,24 +1379,8 @@ function obUpdateNewTaskToggle(){
   }
 }
 
-function obUpdateSendBtn(){
-  var ob=window._ob;
-  if(!ob||ob.step!=='account')return;
-  var phoneRaw=ob.phone?ob.phone.replace(/\D/g,''):'';
-  var emailOk=ob.email&&ob.email.indexOf('@')>0&&ob.email.indexOf('.')>ob.email.indexOf('@');
-  var canSend=(phoneRaw.length===10||emailOk)&&(!ob.verify||ob.verify.state!=='sending');
-  var btn=document.getElementById('ob-send-btn');
-  if(!btn)return;
-  btn.disabled=!canSend;
-  btn.style.background=canSend?'var(--md-primary)':'var(--md-outline-variant)';
-  btn.style.color=canSend?'#fff':'var(--md-on-surface-dim)';
-  btn.style.cursor=canSend?'pointer':'not-allowed';
-  var hint=document.getElementById('ob-acct-hint');
-  if(hint){
-    var hasPhone=phoneRaw.length===10;
-    hint.textContent=canSend?(hasPhone?'A verification code will be sent to '+(ob.phoneFormatted||'your number')+'.':'A verification code will be sent to '+(ob.email||'your email')+'.'):'Enter your mobile number or email to continue.';
-  }
-}
+function obUpdateSendBtn(){ /* no-op */ }
+
 function obUpdateVerifyBtn(){
   var ob=window._ob;
   if(!ob||ob.step!=='verify')return;
@@ -1504,39 +1509,36 @@ function rOnboarding(){
   // ── ACCOUNT: NAME + PHONE ─────────────────────────────────────────────────
   if(ob.step==='account'){
     var inpStyle='width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:12px;padding:12px 14px;font-size:15px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
-    var phoneRaw=ob.phone?ob.phone.replace(/\D/g,''):'';
     var emailOk=ob.email&&ob.email.indexOf('@')>0&&ob.email.indexOf('.')>ob.email.indexOf('@');
-    var canSend=(phoneRaw.length===10||emailOk)&&(!ob.verify||ob.verify.state!=='sending');
-    var isSending=ob.verify&&ob.verify.state==='sending';
-    // Determine what channel we'll use
-    var hasPhone=phoneRaw.length===10;
-    var channelLabel=hasPhone?'A verification code will be sent to '+(ob.phoneFormatted||'your number')+'.':'A verification code will be sent to '+(ob.email||'your email')+'.';
+    var pwOk=ob.password&&ob.password.length>=8;
+    var canCreate=emailOk&&pwOk;
+    var emailBorder=emailOk?'border-color:var(--md-primary)33;':'';
+    var pwBorder=pwOk?'border-color:var(--md-primary)33;':'';
     var inner=(ob.entryPoint==='post_vax'&&ob.inviteCtx
-        ?'<div style="background:var(--md-surface);border-radius:14px;border:1.5px solid var(--md-primary)33;padding:13px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">'+msiIcon('check_circle',18,'var(--md-secondary)')+'<div><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Vaccination recorded for '+(ob.inviteCtx.horseName||'your patient')+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+ob.inviteCtx.barnName+' · '+(ob.inviteCtx.from||'')+'</div></div></div>'
+        ?'<div style="background:var(--md-surface);border-radius:14px;border:1.5px solid var(--md-primary)33;padding:13px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">'+msiIcon('check_circle',18,'var(--md-secondary)')+'<div><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Vaccination recorded for '+(ob.inviteCtx.horseName||'your patient')+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+ob.inviteCtx.barnName+' \xb7 '+(ob.inviteCtx.from||'')+'</div></div></div>'
         :'')
       +'<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Create your account</div>'
-      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:22px;">Enter your mobile number or email — you\'ll use this to log in.</div>'
-      // Phone field
-      +'<div style="margin-bottom:14px;"><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Mobile number</label>'
-      +'<input type="tel" value="'+(ob.phoneFormatted||'')+'" oninput="var r2=this.value.replace(/\\D/g,\'\');window._ob.phone=r2.substring(0,10);window._ob.phoneFormatted=obFormatPhone(this.value);this.value=window._ob.phoneFormatted;obUpdateSendBtn()" placeholder="(555) 000-0000" style="'+inpStyle+'"/></div>'
-      // Divider
-      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div><span style="font-size:12px;color:var(--md-on-surface-dim);font-weight:600;">or</span><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div></div>'
-      // Email field
-      +'<div style="margin-bottom:6px;"><label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Email address</label>'
-      +'<input type="email" value="'+(ob.email||'')+'" oninput="window._ob.email=this.value;obUpdateSendBtn()" placeholder="you@example.com" style="'+inpStyle+'"/></div>'
-      +'<div id=\"ob-acct-hint\" style="font-size:11px;color:var(--md-on-surface-dim);margin-top:5px;margin-bottom:20px;">'+(canSend?channelLabel:'Enter your mobile number or email to continue.')+'</div>'
-      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;margin-top:6px;"><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div><span style="font-size:12px;color:var(--md-on-surface-dim);font-weight:600;">or</span><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div></div>'
-      +'<button onclick="window._ob.googleSignIn=true;obComplete()" style="width:100%;background:#fff;color:#3c4043;border:1.5px solid #dadce0;border-radius:14px;padding:13px 16px;font-size:15px;font-weight:500;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:6px;">'
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:18px;">Create your account.</div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:18px;">Create your account.</div>'
       +'<svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>'
       +'Continue with Google</button>'
-      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div><span style="font-size:12px;color:var(--md-on-surface-dim);font-weight:600;">or use a code</span><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div></div>'
-      +(isSending
-        ?'<div style="width:100%;background:var(--md-outline-variant);border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface-dim);text-align:center;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;">'+msiIcon('sms',18,'var(--md-on-surface-dim)')+' Sending code\u2026</div>'
-        :'<button id="ob-send-btn" onclick="obSendCode()" '+(canSend?'':'disabled ')+'style="width:100%;background:'+(canSend?'var(--md-primary)':'var(--md-outline-variant)')+';color:'+(canSend?'#fff':'var(--md-on-surface-dim)')+';border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(canSend?'pointer':'not-allowed')+';margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;">'+msiIcon('send',18,canSend?'#fff':'var(--md-on-surface-dim)')+' Send verification code</button>')
-      +'<div style="font-size:12px;color:var(--md-on-surface-dim);text-align:center;margin-bottom:16px;">By continuing you agree to NayNay\'s <span style="color:var(--md-primary);">Terms</span> and <span style="color:var(--md-primary);">Privacy Policy</span>.</div>'
-      +'<div style="background:var(--md-surface-variant);border-radius:10px;padding:10px 12px;">'
       +'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);margin-bottom:4px;">Demo:</div>'
-      +'<div style="font-size:11px;color:var(--md-on-surface-dim);line-height:2;">Any phone or email \u2192 new account<br><span style="color:var(--md-error);font-weight:600;">(555) 867-5309</span> \u2192 already registered<br>Code is always <span style="font-family:monospace;font-weight:700;color:var(--md-primary);">847291</span></div></div>';
+      +'<button onclick="window._ob.googleSignIn=true;obComplete()" style="width:100%;background:#fff;color:#3c4043;border:1.5px solid #dadce0;border-radius:14px;padding:13px 16px;font-size:15px;font-weight:500;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;">'
+      +'<div style="margin-bottom:'+(emailOk?'12':'20')+'px;">'
+      +'<input type="email" id="ob-email-inp" value="'+(ob.email||'')+'" oninput="window._ob.email=this.value;window._ob._acctError=null;obUpdateAcctForm()" placeholder="you@example.com" style="'+inpStyle+emailBorder+'" autocomplete="email"/>'
+      +'</div>'
+      +'<div id="ob-pw-wrap" style="margin-bottom:20px;display:'+(emailOk?'block':'none')+';">'
+      +'<label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Password</label>'
+      +'<div style="text-align:right;margin-top:6px;margin-bottom:0px;"><button onclick="obNext(\'forgot_password\')" style="background:none;border:none;color:var(--md-primary);font-size:12px;font-weight:600;font-family:\'DM Sans\',sans-serif;cursor:pointer;padding:0;">Forgot password?</button></div>'
+      +'<input type="password" id="ob-pw-inp" value="'+(ob.password||'')+'" oninput="window._ob.password=this.value;obUpdatePwField()" placeholder="At least 8 characters" style="'+inpStyle+pwBorder+'" autocomplete="new-password"/>'
+      +'<div id="ob-pw-hint" style="font-size:11px;margin-top:5px;display:'+(ob.password&&ob.password.length>0?'flex':'none')+';align-items:center;gap:4px;color:'+(pwOk?'var(--md-secondary)':'var(--md-error)')+'">'+(pwOk?'<span class="msi" style="font-size:13px;">check_circle</span> Looks good!':'Password must be at least 8 characters.')+'</div>'
+      +'</div>'
+      +'<button id="ob-create-btn" onclick="obCreateAccount()" '+(canCreate?'':'disabled ')+'style="width:100%;background:'+(canCreate?'var(--md-primary)':'var(--md-outline-variant)')+';color:'+(canCreate?'var(--md-on-primary)':'var(--md-on-surface-dim)')+';border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(canCreate?'pointer':'not-allowed')+';margin-bottom:12px;">Create account</button>'
+      +'<div style="font-size:12px;color:var(--md-on-surface-dim);text-align:center;margin-bottom:16px;">By creating an account you agree to NayNay\'s <span style="color:var(--md-primary);">Terms</span> and <span style="color:var(--md-primary);">Privacy Policy</span>.</div>'
+      +'<div style="background:var(--md-surface-variant);border-radius:10px;padding:10px 12px;">'
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;margin-top:4px;"><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div><span style="font-size:12px;color:var(--md-on-surface-dim);font-weight:600;">or</span><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div></div>'
+      +'<div style="font-size:11px;color:var(--md-on-surface-dim);line-height:2;">Any email + 8-char password \u2192 new account<br><span style="color:var(--md-error);font-weight:600;">taken@demo.com</span> \u2192 already registered</div>'
+      +'</div>';
     return wrap(inner,true,'role',false,1,4);
   }
 
@@ -2180,6 +2182,33 @@ function rOnboarding(){
       +'<button onclick="obNext(\'done\')" style="width:100%;background:transparent;color:var(--md-on-surface-dim);border:none;padding:11px;font-size:13px;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Skip for now</button>'
       +'</div>';
     return wrap(inner,false,null,true);
+  }
+
+
+
+  // ── FORGOT PASSWORD ─────────────────────────────────────────────────────
+  if(ob.step==='forgot_password'){
+    var fpEmail=ob.email||'';
+    var fpEmailOk=fpEmail.indexOf('@')>0&&fpEmail.indexOf('.')>fpEmail.indexOf('@');
+    var fpSent=ob._fpSent||false;
+    var inpStyleFP='width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:12px;padding:12px 14px;font-size:15px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
+    var inner=fpSent
+      ?'<div style="text-align:center;padding-top:8px;">'
+        +'<div style="width:56px;height:56px;border-radius:50%;background:var(--md-secondary-container);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">'+msiIcon('mark_email_read',26,'var(--md-secondary)')+'</div>'
+        +'<div style="font-size:20px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Check your email</div>'
+        +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:28px;line-height:1.6;">We sent a password reset link to<br><strong style="color:var(--md-on-surface);">'+fpEmail+'</strong></div>'
+        +'<button onclick="window._ob.step=\'account\';rerender()" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-bottom:12px;">Back to sign in</button>'
+        +'<button onclick="window._ob._fpSent=false;rerender()" style="width:100%;background:transparent;color:var(--md-on-surface-dim);border:none;padding:11px;font-size:13px;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Resend email</button>'
+      +'</div>'
+      :'<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:6px;">Reset your password</div>'
+        +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:22px;">Enter your email address and we\'ll send you a link to reset your password.</div>'
+        +'<div style="margin-bottom:20px;">'
+          +'<label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Email address</label>'
+          +'<input type="email" value="'+fpEmail+'" oninput="window._ob.email=this.value" placeholder="you@example.com" style="'+inpStyleFP+(fpEmailOk?'border-color:var(--md-primary)33;':'')+'" autocomplete="email"/>'
+        +'</div>'
+        +'<button onclick="(function(){if(window._ob.email&&window._ob.email.indexOf(\'@\')>0){window._ob._fpSent=true;rerender();}})()" '+(fpEmailOk?'':'disabled ')+'style="width:100%;background:'+(fpEmailOk?'var(--md-primary)':'var(--md-outline-variant)')+';color:'+(fpEmailOk?'#fff':'var(--md-on-surface-dim)')+';border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(fpEmailOk?'pointer':'not-allowed')+';margin-bottom:12px;">Send reset link</button>'
+        +'<button onclick="window._ob.step=\'account\';rerender()" style="width:100%;background:transparent;color:var(--md-on-surface-dim);border:none;padding:11px;font-size:13px;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Back to sign in</button>';
+    return wrap(inner,true,'account',false,1,4);
   }
 
 
@@ -3102,7 +3131,10 @@ function rServicesTab(){
     :vetServices;
 
   // Derive categories present in this service set
-  var presentCats=[...new Set(activeServices.map(function(sv){return sv.category;}))];
+  var roleCatMap=SERVICE_CATEGORIES;
+  var roleKey=anyRole('vet')?'vet':anyRole('manager')?'manager':anyRole('trainer')?'trainer':'owner';
+  var roleAllowedCats=roleCatMap[roleKey]||[];
+  var presentCats=roleAllowedCats.filter(function(cat){return activeServices.some(function(sv){return sv.category===cat;})});
 
   // Filter: search + category chip
   var q=(svcSearch||'').toLowerCase().trim();
@@ -3193,7 +3225,7 @@ function rServiceForm(id){
 
     ${inp('Service name','name',sc.name)}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-      ${sel('Category','category',sc.category,SERVICE_CATEGORIES)}
+      ${sel('Category','category',sc.category,(function(){var rk=anyRole('vet')?'vet':anyRole('manager')?'manager':anyRole('trainer')?'trainer':'owner';return SERVICE_CATEGORIES[rk]||SERVICE_CATEGORIES.vet||[];}()))}
       ${sel('Subcategory','subCategory',sc.subCategory||'',subcats.length?subcats:['—'])}
     </div>
 
@@ -8081,6 +8113,57 @@ render();
       +'<svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>'
       +'Continue with Google</button>'
       +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div><span style="font-size:12px;color:var(--md-on-surface-dim);font-weight:600;">or</span><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div></div>'
+function obUpdateAcctForm(){
+  var ob=window._ob;
+  if(!ob||ob.step!=='account') return;
+  var email=ob.email||'';
+  var emailOk=email.indexOf('@')>0&&email.indexOf('.')>email.indexOf('@');
+  // Show/hide password wrapper via DOM — no rerender = no focus loss
+  var pwWrap=document.getElementById('ob-pw-wrap');
+  var emailInp=document.getElementById('ob-email-inp');
+  var createBtn=document.getElementById('ob-create-btn');
+  if(pwWrap) pwWrap.style.display=emailOk?'block':'none';
+  if(emailInp) emailInp.style.borderColor=emailOk?'var(--md-primary)33':'';
+  // Update create button state
+  var pwOk=ob.password&&ob.password.length>=8;
+  var canCreate=emailOk&&pwOk;
+  if(createBtn){
+    createBtn.disabled=!canCreate;
+    createBtn.style.background=canCreate?'var(--md-primary)':'var(--md-outline-variant)';
+    createBtn.style.color=canCreate?'var(--md-on-primary)':'var(--md-on-surface-dim)';
+    createBtn.style.cursor=canCreate?'pointer':'not-allowed';
+  }
+}
+
+function obUpdatePwField(){
+  var ob=window._ob;
+  if(!ob||ob.step!=='account') return;
+  var pw=ob.password||'';
+  var pwOk=pw.length>=8;
+  var hint=document.getElementById('ob-pw-hint');
+  var pwInp=document.getElementById('ob-pw-inp');
+  var createBtn=document.getElementById('ob-create-btn');
+  if(pwInp) pwInp.style.borderColor=pwOk?'var(--md-primary)33':(pw.length>0?'var(--md-error)':'');
+  if(hint){
+    hint.style.display=pw.length>0?'flex':'none';
+    if(pwOk){
+      hint.style.color='var(--md-secondary)';
+      hint.innerHTML='<span class="msi" style="font-size:13px;">check_circle</span> Looks good!';
+    } else {
+      hint.style.color='var(--md-error)';
+      hint.textContent='Password must be at least 8 characters.';
+    }
+  }
+  var emailOk=ob.email&&ob.email.indexOf('@')>0&&ob.email.indexOf('.')>ob.email.indexOf('@');
+  var canCreate=emailOk&&pwOk;
+  if(createBtn){
+    createBtn.disabled=!canCreate;
+    createBtn.style.background=canCreate?'var(--md-primary)':'var(--md-outline-variant)';
+    createBtn.style.color=canCreate?'var(--md-on-primary)':'var(--md-on-surface-dim)';
+    createBtn.style.cursor=canCreate?'pointer':'not-allowed';
+  }
+}
+
 </script>
 </body>
 </html>
