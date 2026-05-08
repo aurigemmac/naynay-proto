@@ -1436,8 +1436,8 @@ function rOnboarding(){
       +'</div>'
       // CTAs
       +'<button onclick="obNext(\'role\')" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-bottom:12px;">Get started</button>'
-      +'<button onclick="obNext(\'invited\')" style="width:100%;background:transparent;color:var(--md-primary);border:2px solid var(--md-primary)33;border-radius:14px;padding:14px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-bottom:28px;">I was invited <span style="opacity:0.6;">›</span></button>'
-      +'<div style="font-size:11px;color:var(--md-on-surface-dim);">Already have an account? <span onclick="obComplete()" style="color:var(--md-primary);font-weight:600;cursor:pointer;">Sign in</span></div>'
+      +'<button onclick="obNext(\'invited\')" style="display:none;width:100%;background:transparent;color:var(--md-primary);border:2px solid var(--md-primary)33;border-radius:14px;padding:14px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-bottom:28px;">I was invited <span style="opacity:0.6;">›</span></button>'
+      +'<div style="font-size:11px;color:var(--md-on-surface-dim);">Already have an account? <span onclick="obNext(\'login\')" style="color:var(--md-primary);font-weight:600;cursor:pointer;">Log in</span></div>'
       +'</div>';
     return wrap(inner,false,null,true);
   }
@@ -1508,37 +1508,36 @@ function rOnboarding(){
   // ── ACCOUNT BASICS ─────────────────────────────────────────────────────
   // ── ACCOUNT: NAME + PHONE ─────────────────────────────────────────────────
   if(ob.step==='account'){
-    var inpStyle='width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:12px;padding:12px 14px;font-size:15px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
+    var INP='width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:14px;padding:14px 16px;font-size:16px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
+    var LBL='font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.6px;display:block;margin-bottom:7px;';
     var emailOk=ob.email&&ob.email.indexOf('@')>0&&ob.email.indexOf('.')>ob.email.indexOf('@');
     var pwOk=ob.password&&ob.password.length>=8;
     var canCreate=emailOk&&pwOk;
-    var emailBorder=emailOk?'border-color:var(--md-primary)33;':'';
-    var pwBorder=pwOk?'border-color:var(--md-primary)33;':'';
-    var inner=(ob.entryPoint==='post_vax'&&ob.inviteCtx
-        ?'<div style="background:var(--md-surface);border-radius:14px;border:1.5px solid var(--md-primary)33;padding:13px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">'+msiIcon('check_circle',18,'var(--md-secondary)')+'<div><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Vaccination recorded for '+(ob.inviteCtx.horseName||'your patient')+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+ob.inviteCtx.barnName+' \xb7 '+(ob.inviteCtx.from||'')+'</div></div></div>'
-        :'')
-      +'<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Create your account</div>'
-      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:18px;">Create your account.</div>'
-      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:18px;">Create your account.</div>'
-      +'<svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>'
-      +'Continue with Google</button>'
-      +'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);margin-bottom:4px;">Demo:</div>'
-      +'<button onclick="window._ob.googleSignIn=true;obComplete()" style="width:100%;background:#fff;color:#3c4043;border:1.5px solid #dadce0;border-radius:14px;padding:13px 16px;font-size:15px;font-weight:500;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;">'
-      +'<div style="margin-bottom:'+(emailOk?'12':'20')+'px;">'
-      +'<input type="email" id="ob-email-inp" value="'+(ob.email||'')+'" oninput="window._ob.email=this.value;window._ob._acctError=null;obUpdateAcctForm()" placeholder="you@example.com" style="'+inpStyle+emailBorder+'" autocomplete="email"/>'
-      +'</div>'
-      +'<div id="ob-pw-wrap" style="margin-bottom:20px;display:'+(emailOk?'block':'none')+';">'
-      +'<label style="font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Password</label>'
-      +'<div style="text-align:right;margin-top:6px;margin-bottom:0px;"><button onclick="obNext(\'forgot_password\')" style="background:none;border:none;color:var(--md-primary);font-size:12px;font-weight:600;font-family:\'DM Sans\',sans-serif;cursor:pointer;padding:0;">Forgot password?</button></div>'
-      +'<input type="password" id="ob-pw-inp" value="'+(ob.password||'')+'" oninput="window._ob.password=this.value;obUpdatePwField()" placeholder="At least 8 characters" style="'+inpStyle+pwBorder+'" autocomplete="new-password"/>'
-      +'<div id="ob-pw-hint" style="font-size:11px;margin-top:5px;display:'+(ob.password&&ob.password.length>0?'flex':'none')+';align-items:center;gap:4px;color:'+(pwOk?'var(--md-secondary)':'var(--md-error)')+'">'+(pwOk?'<span class="msi" style="font-size:13px;">check_circle</span> Looks good!':'Password must be at least 8 characters.')+'</div>'
-      +'</div>'
-      +'<button id="ob-create-btn" onclick="obCreateAccount()" '+(canCreate?'':'disabled ')+'style="width:100%;background:'+(canCreate?'var(--md-primary)':'var(--md-outline-variant)')+';color:'+(canCreate?'var(--md-on-primary)':'var(--md-on-surface-dim)')+';border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(canCreate?'pointer':'not-allowed')+';margin-bottom:12px;">Create account</button>'
-      +'<div style="font-size:12px;color:var(--md-on-surface-dim);text-align:center;margin-bottom:16px;">By creating an account you agree to NayNay\'s <span style="color:var(--md-primary);">Terms</span> and <span style="color:var(--md-primary);">Privacy Policy</span>.</div>'
-      +'<div style="background:var(--md-surface-variant);border-radius:10px;padding:10px 12px;">'
-      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;margin-top:4px;"><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div><span style="font-size:12px;color:var(--md-on-surface-dim);font-weight:600;">or</span><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div></div>'
-      +'<div style="font-size:11px;color:var(--md-on-surface-dim);line-height:2;">Any email + 8-char password \u2192 new account<br><span style="color:var(--md-error);font-weight:600;">taken@demo.com</span> \u2192 already registered</div>'
+    var pvBanner=ob.entryPoint==='post_vax'&&ob.inviteCtx
+      ?'<div style="background:var(--md-surface);border-radius:14px;border:1.5px solid var(--md-primary)33;padding:13px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">'+msiIcon('check_circle',18,'var(--md-secondary)')+'<div><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Vaccination recorded for '+(ob.inviteCtx.horseName||'your patient')+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+ob.inviteCtx.barnName+' \xb7 '+(ob.inviteCtx.from||'')+'</div></div></div>'
+      :'';
+    var errBanner=ob._acctError
+      ?'<div style="background:var(--md-error-container);border-radius:12px;padding:10px 14px;font-size:13px;color:var(--md-error);font-weight:600;margin-bottom:14px;">'+ob._acctError+'</div>'
+      :'';
+    var googleBtn='<button onclick="window._ob.googleSignIn=true;obComplete()" style="width:100%;background:#fff;color:#3c4043;border:1.5px solid #dadce0;border-radius:14px;padding:14px 16px;font-size:16px;font-weight:500;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:12px;"><svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>Continue with Google</button>';
+    var orDiv='<div style="display:flex;align-items:center;gap:10px;margin:20px 0;"><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div><span style="font-size:13px;color:var(--md-on-surface-dim);font-weight:500;">or</span><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div></div>';
+    var emailSec='<div style="margin-bottom:'+(emailOk?'16':'0')+'px;">'
+      +'<label style="'+LBL+'">Email address</label>'
+      +'<input type="email" id="ob-email-inp" value="'+(ob.email||'')+'" oninput="window._ob.email=this.value;window._ob._acctError=null;obUpdateAcctForm()" placeholder="you@example.com" style="'+INP+(emailOk?'border-color:var(--md-primary)44;':'')+'" autocomplete="email"/>'
+      +(emailOk?'':'<div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:8px;margin-bottom:4px;">Enter your email address to continue.</div>')
       +'</div>';
+    var pwBorderC=pwOk?'var(--md-primary)44':(ob.password&&ob.password.length>0?'var(--md-error)44':'');
+    var pwSec='<div id="ob-pw-wrap" style="display:'+(emailOk?'block':'none')+';">'
+      +'<div style="margin-bottom:6px;"><label style="'+LBL+'">Password</label>'
+      +'<input type="password" id="ob-pw-inp" value="'+(ob.password||'')+'" oninput="window._ob.password=this.value;obUpdatePwField()" placeholder="At least 8 characters" style="'+INP+(pwBorderC?'border-color:'+pwBorderC+';':'')+'" autocomplete="new-password"/></div>'
+      +'<div id="ob-pw-hint" style="font-size:12px;margin-bottom:10px;display:'+(ob.password&&ob.password.length>0?'flex':'none')+';align-items:center;gap:5px;color:'+(pwOk?'var(--md-secondary)':'var(--md-error)')+'"><span class="msi" style="font-size:14px;">'+(pwOk?'check_circle':'error')+'</span>'+(pwOk?' Looks good!':' Password must be at least 8 characters.')+'</div>'
+      +'<div style="text-align:right;margin-bottom:20px;"><button onclick="obNext(\'forgot_password\')" style="background:none;border:none;color:var(--md-primary);font-size:13px;font-weight:600;font-family:\'DM Sans\',sans-serif;cursor:pointer;padding:0;">Forgot password?</button></div>'
+      +'</div>';
+    var createBtn='<button id="ob-create-btn" onclick="obCreateAccount()" '+(canCreate?'':'disabled ')+'style="width:100%;background:'+(canCreate?'var(--md-primary)':'var(--md-surface-variant)')+';color:'+(canCreate?'#fff':'var(--md-on-surface-dim)')+';border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(canCreate?'pointer':'not-allowed')+';margin-bottom:14px;">Create account</button>';
+    var terms='<div style="font-size:12px;color:var(--md-on-surface-dim);text-align:center;margin-bottom:18px;">By continuing you agree to NayNay\'s <span style="color:var(--md-primary);cursor:pointer;">Terms</span> and <span style="color:var(--md-primary);cursor:pointer;">Privacy Policy</span>.</div>';
+    var demo='<div style="background:var(--md-surface-variant);border-radius:10px;padding:10px 13px;"><div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);margin-bottom:4px;">Demo:</div><div style="font-size:11px;color:var(--md-on-surface-dim);line-height:2;">Any email + 8-char password \u2192 new account<br><span style="color:var(--md-error);font-weight:600;">taken@demo.com</span> \u2192 already registered</div></div>';
+    var heading='<div style="font-size:26px;font-weight:800;color:var(--md-on-surface);margin-bottom:6px;">Create your account</div><div style="font-size:14px;color:var(--md-on-surface-dim);margin-bottom:22px;">Sign in with email and password, or continue with Google.</div>';
+    var inner=pvBanner+heading+errBanner+emailSec+pwSec+createBtn+orDiv+googleBtn+terms+demo;
     return wrap(inner,true,'role',false,1,4);
   }
 
@@ -2211,6 +2210,37 @@ function rOnboarding(){
     return wrap(inner,true,'account',false,1,4);
   }
 
+
+  // ── LOG IN ──────────────────────────────────────────────────────────────
+  if(ob.step==='login'){
+    var INP2='width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:14px;padding:14px 16px;font-size:16px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
+    var LBL2='font-size:11px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.6px;display:block;margin-bottom:7px;';
+    var emailOk2=ob.email&&ob.email.indexOf('@')>0&&ob.email.indexOf('.')>ob.email.indexOf('@');
+    var pwOk2=ob.password&&ob.password.length>=8;
+    var canLogin=emailOk2&&pwOk2;
+    var pwBorderC2=pwOk2?'var(--md-primary)44':(ob.password&&ob.password.length>0?'var(--md-error)44':'');
+    var orDiv2='<div style="display:flex;align-items:center;gap:10px;margin:20px 0;"><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div><span style="font-size:13px;color:var(--md-on-surface-dim);font-weight:500;">or</span><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div></div>';
+    var googleBtn2='<button onclick="window._ob.googleSignIn=true;obComplete()" style="width:100%;background:#fff;color:#3c4043;border:1.5px solid #dadce0;border-radius:14px;padding:14px 16px;font-size:16px;font-weight:500;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:12px;"><svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>Continue with Google</button>';
+    var loginErr=ob._acctError?'<div style="background:var(--md-error-container);border-radius:12px;padding:10px 14px;font-size:13px;color:var(--md-error);font-weight:600;margin-bottom:14px;">'+ob._acctError+'</div>':'';
+    var emailSec2='<div style="margin-bottom:'+(emailOk2?'16':'0')+'px;">'
+      +'<label style="'+LBL2+'">Email address</label>'
+      +'<input type="email" id="ob-email-inp" value="'+(ob.email||'')+'" oninput="window._ob.email=this.value;window._ob._acctError=null;obUpdateAcctForm()" placeholder="you@example.com" style="'+INP2+(emailOk2?'border-color:var(--md-primary)44;':'')+'" autocomplete="email"/>'
+      +(emailOk2?'':'<div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:8px;margin-bottom:4px;">Enter your email address to continue.</div>')
+      +'</div>';
+    var pwSec2='<div id="ob-pw-wrap" style="display:'+(emailOk2?'block':'none')+';">'
+      +'<div style="margin-bottom:6px;"><label style="'+LBL2+'">Password</label>'
+      +'<input type="password" id="ob-pw-inp" value="'+(ob.password||'')+'" oninput="window._ob.password=this.value;obUpdatePwField()" placeholder="Your password" style="'+INP2+(pwBorderC2?'border-color:'+pwBorderC2+';':'')+'" autocomplete="current-password"/></div>'
+      +'<div id="ob-pw-hint" style="font-size:12px;margin-bottom:10px;display:'+(ob.password&&ob.password.length>0?'flex':'none')+';align-items:center;gap:5px;color:'+(pwOk2?'var(--md-secondary)':'var(--md-error)')+'"><span class="msi" style="font-size:14px;">'+(pwOk2?'check_circle':'error')+'</span>'+(pwOk2?' Looks good!':' Password must be at least 8 characters.')+'</div>'
+      +'<div style="text-align:right;margin-bottom:20px;"><button onclick="obNext(\'forgot_password\')" style="background:none;border:none;color:var(--md-primary);font-size:13px;font-weight:600;font-family:\'DM Sans\',sans-serif;cursor:pointer;padding:0;">Forgot password?</button></div>'
+      +'</div>';
+    var loginBtn='<button id="ob-create-btn" onclick="obCreateAccount()" '+(canLogin?'':'disabled ')+'style="width:100%;background:'+(canLogin?'var(--md-primary)':'var(--md-surface-variant)')+';color:'+(canLogin?'#fff':'var(--md-on-surface-dim)')+';border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(canLogin?'pointer':'not-allowed')+';margin-bottom:14px;">Log in</button>';
+    var inner=loginErr
+      +'<div style="font-size:26px;font-weight:800;color:var(--md-on-surface);margin-bottom:6px;">Log in</div>'
+      +'<div style="font-size:14px;color:var(--md-on-surface-dim);margin-bottom:22px;">Log in with email and password, or continue with Google.</div>'
+      +emailSec2+pwSec2+loginBtn+orDiv2+googleBtn2
+      +'<div style="font-size:12px;color:var(--md-on-surface-dim);text-align:center;margin-top:16px;">Don\'t have an account? <span onclick="obNext(\'role\')" style="color:var(--md-primary);font-weight:600;cursor:pointer;">Sign up</span></div>';
+    return wrap(inner,true,'splash',false,1,4);
+  }
 
   return wrap('<div>Loading...</div>',false,null,true);
 }
