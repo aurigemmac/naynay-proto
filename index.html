@@ -153,6 +153,20 @@ var PRO_BARN_REQUESTS=[
    message:'We\'re looking for a skilled trainer to join our team at Sunrise Stables. We have 6 horses in active training programs across hunter/jumper and dressage.'},
 ];
 
+// ── Shared Pro (Vet/Trainer) Connections page ─────────────────────────────
+var PRO_BARN_REQUESTS_SENT={
+  'vet':[
+    {id:'pbs1',barnName:'Meadow Brook Farm',barnId:'ridgeline',managerName:'Marcus H.',location:'Pleasantville, NY',sentAt:'2026-05-24',status:'pending'},
+    {id:'pbs2',barnName:'Blue Ridge Equestrian',barnId:'blueridge',managerName:'Dana S.',location:'Armonk, NY',sentAt:'2026-05-10',status:'accepted'},
+  ],
+  'trainer':[
+    {id:'pbs3',barnName:'Oakwood Farm',barnId:'oakwood',managerName:'Patricia L.',location:'North Salem, NY',sentAt:'2026-05-22',status:'pending'},
+    {id:'pbs4',barnName:'Ridgeline Farm',barnId:'ridgeline',managerName:'Marcus H.',location:'Pleasantville, NY',sentAt:'2026-05-15',status:'accepted'},
+  ],
+};
+
+
+
 // Invitations sent BY the barn manager TO potential connections
 function generateInviteCode(){
   var chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -445,6 +459,26 @@ let vetServices=[
   {id:'svc_reg1',name:'Daily Medication Admin',  category:'Regimens',  subCategory:'Daily Meds', duration:15,  price:25,   addonPrice:null, canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:false, roles:['Vet']},
   {id:'svc_vac1',name:'Core Vaccination',        category:'Vaccination',subCategory:'Core',       duration:20,  price:40,   addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:false, roles:['Vet']},
 ];
+
+// ── OWNER PAYMENT METHODS ─────────────────────────────────────────────────
+var OWNER_PAYMENT_METHODS={
+  'owner-sarah': {brand:'Visa',       last4:'4242',expiry:'08/27',cardName:'Sarah K.'},
+  'owner-emma':  {brand:'Mastercard', last4:'8810',expiry:'03/26',cardName:'Emma S.'},
+  'owner-claire':{brand:'Amex',       last4:'3714',expiry:'11/25',cardName:'Claire B.'},
+  'owner-mike':  {brand:'Visa',       last4:'9901',expiry:'05/28',cardName:'Mike R.'},
+  'owner-lisa':  {brand:'Mastercard', last4:'5523',expiry:'09/27',cardName:'Lisa T.'},
+};
+
+// ── SCHEDULED APPOINTMENTS (session-persistent) ───────────────────────────
+var SCHEDULED_APPOINTMENTS=[
+  {id:'sa1',serviceId:'svc1',serviceName:'Well Visit',horseId:'rv',horseName:'Rivendell',
+   barnName:'Sunrise Stables',ownerName:'Sarah K.',date:'2026-03-22',dateStr:'Mar 22',
+   time:'10:00',timeStr:'10:00 AM',duration:30,price:50,
+   chargeMethod:'card',status:'confirmed',vetName:'Dr. Konstantine Goudz'},
+];
+
+// ── VET SCHEDULE APPOINTMENT FORM ─────────────────────────────────────────
+
 
 let trainerServices=[
   {id:'ts1', name:'Training Session',         category:'Regimens',  subCategory:'Training', duration:60,  price:150,  addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true,  roles:['Trainer']},
@@ -914,7 +948,7 @@ let S={
   trainingAssignments:{[TODAY]:todayTrainingAssign},
   mgrView:'home',assignDate:TODAY,expandedAssign:null,expandedTrainingAssign:null,
   mgrAssignTab:'tasks',
-  selectedHorse:null,mgrInviteSheet:null,trainingView:'list',trainingFabOpen:false,trainingCalMonth:null,trainingLogSheet:null,taskFilter:'all',
+  selectedHorse:null,mgrInviteSheet:null,scheduleVisitSheet:null,vetApptSheet:null,trainingView:'list',trainingFabOpen:false,trainingCalMonth:null,trainingLogSheet:null,taskFilter:'all',
   vetSignedIn:false,vetView:'confirmation',vetSetupTab:'account',trainerSetupTab:'account',mgrSetupTab:'tasks',staffSetupTab:'account',ownerSetupTab:'account',taskScheduleExpanded:false,editingTaskId:null,aiScheduleDismissed:{},aiScheduleAdded:{},
   vetConfirmPage:false,vetEditMode:false,prevVetView:null,
   feedCardExpanded:false,feedCardHorse:null,
@@ -1102,10 +1136,10 @@ function bottomBar(isMgr,isVet){
   const setupOn=isVet?(S.vetView==='setup'):(S.activeTab==='setup'&&!S.selectedHorse);
   function ic(p,on){return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none">${p(on?t.T:t.TX3)}</svg>`;}
   const tabs=[
-    {l:'Home',on:homeOn,nav:isVet?`S.vetView='home';rerender()`:`navTo('home')`,ic:c=>`<path d="M3 12L12 4l9 8" stroke="${c}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 10v9a1 1 0 001 1h4v-4h4v4h4a1 1 0 001-1v-9" stroke="${c}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`},
-    {l:'Horses',on:horsesOn,nav:isVet?`S.vetView='horses';rerender()`:`navTo('horses')`,ic:c=>`<ellipse cx="12" cy="9" rx="5" ry="3" stroke="${c}" stroke-width="1.5"/><path d="M7 9c0 2 2 5 5 7 3-2 5-5 5-7" stroke="${c}" stroke-width="1.5" stroke-linecap="round"/><path d="M5 14c-1.5 1-2 2.5-2 3.5C3 19 4 20 6 20h12c2 0 3-1 3-2.5 0-1-.5-2.5-2-3.5" stroke="${c}" stroke-width="1.5" stroke-linecap="round"/>`},
-    {l:'Messages',on:msgOn,nav:isVet?`S.vetView='messages';rerender()`:`navTo('messages')`,ic:c=>`<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="${c}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`},
-    {l:'Setup',on:setupOn,nav:isVet?`S.vetView='setup';S.vetSetupTab='account';svcEditId=null;rerender()`:`navTo('setup')`,ic:c=>`<circle cx="12" cy="12" r="3" stroke="${c}" stroke-width="1.5"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="${c}" stroke-width="1.5" stroke-linecap="round"/>`},
+    {l:'Home',on:homeOn,nav:isVet?`S.vetView='home';S.quickAction=null;S.vetApptSheet=null;rerender()`:`navTo('home')`,ic:c=>`<path d="M3 12L12 4l9 8" stroke="${c}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 10v9a1 1 0 001 1h4v-4h4v4h4a1 1 0 001-1v-9" stroke="${c}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`},
+    {l:'Horses',on:horsesOn,nav:isVet?`S.vetView='horses';S.quickAction=null;S.vetApptSheet=null;rerender()`:`navTo('horses')`,ic:c=>`<ellipse cx="12" cy="9" rx="5" ry="3" stroke="${c}" stroke-width="1.5"/><path d="M7 9c0 2 2 5 5 7 3-2 5-5 5-7" stroke="${c}" stroke-width="1.5" stroke-linecap="round"/><path d="M5 14c-1.5 1-2 2.5-2 3.5C3 19 4 20 6 20h12c2 0 3-1 3-2.5 0-1-.5-2.5-2-3.5" stroke="${c}" stroke-width="1.5" stroke-linecap="round"/>`},
+    {l:'Messages',on:msgOn,nav:isVet?`S.vetView='messages';S.quickAction=null;S.vetApptSheet=null;rerender()`:`navTo('messages')`,ic:c=>`<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="${c}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`},
+    {l:'Setup',on:setupOn,nav:isVet?`S.vetView='setup';S.vetSetupTab='account';svcEditId=null;S.quickAction=null;S.vetApptSheet=null;rerender()`:`navTo('setup')`,ic:c=>`<circle cx="12" cy="12" r="3" stroke="${c}" stroke-width="1.5"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="${c}" stroke-width="1.5" stroke-linecap="round"/>`},
   ];
   // Setup tab: shown for all roles
   return `<div style="background:var(--md-surface);border-top:1.5px solid var(--md-outline-variant);display:flex;padding:10px 0 14px;flex-shrink:0;">${tabs.map(tab=>`<div onclick="${tab.nav}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;opacity:${tab.on?1:0.4};">${ic(tab.ic,tab.on)}<span style="font-size:11px;font-weight:600;color:${tab.on?t.T:t.TX3};">${tab.l}</span></div>`).join('')}</div>`;
@@ -2435,7 +2469,7 @@ function getContent(isVet,isMgr,showHorse){
   if(isVet){
     if(!S.vetSignedIn){if(S.vetConfirmPage==='confirmed')return rVetConfirmedPage();if(S.vetConfirmPage==='declined')return rVetDeclinedPage();return rVetUnauth();}
     if(S.quickAction==='request-barn-visit')return rRequestVisitForm();
-    if(S.quickAction)return rQuickActionForm(S.quickAction);
+    if(S.quickAction==='schedule-appointment')return rVetScheduleAppt();if(S.quickAction)return rQuickActionForm(S.quickAction);
     if(S.vetView==='home')return rVetHome();if(S.vetView==='horses')return S.showAddHorse?rAddHorse():rHorseList();
     if(S.vetView==='messages')return rMessages('vet');if(S.vetView==='setup')return rVetSetup();
     if(S.vetView==='vaxform')return rVaxForm();return rVetHome();
@@ -3037,30 +3071,7 @@ function rBarnConnectFlow(role){
 }
 
 
-function rTrainerSetupBarns(){
-  if(S.barnConnectFlow&&S.barnConnectFlow.role==='trainer') return rBarnConnectFlow('trainer');
-  const barns=trainerSetup.connectedBarns;
-  const info='<div style="background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:12px;font-weight:600;color:var(--md-on-primary-container);margin-bottom:12px;">'+barns.filter(function(b){return b.active;}).length+' active barn connections.</div>';
-  const cards=barns.map(function(b){
-    var thread=MESSAGE_THREADS.find(function(th){return th.roles.includes('Trainer');});
-    return '<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);margin-bottom:9px;overflow:hidden;">'
-      +'<div style="padding:12px 14px;display:flex;align-items:center;gap:10px;">'
-      +'<div style="width:38px;height:38px;border-radius:10px;background:var(--md-surface-variant);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="var(--md-tertiary)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 22V12h6v10" stroke="var(--md-tertiary)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
-      +'<div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">'+b.name+'</div>'
-      +'<div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:2px;">'+b.horses+' horses \xb7 Since '+b.since+'</div></div>'
-      +'<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:'+(b.active?'var(--md-secondary-container)':'var(--md-surface-variant)')+';color:'+(b.active?'var(--md-secondary)':'var(--md-on-surface-dim)')+';">'+(b.active?'Active':'Inactive')+'</span>'
-      +'</div>'
-      +'<div style="border-top:1px solid var(--md-outline-variant);padding:8px 14px;display:flex;gap:8px;">'
-      +'<button onclick="S.activeTab=\'messages\';S.selectedThread=\''+(thread?thread.id:'t4')+'\';rerender()" style="flex:1;background:none;border:1.5px solid var(--md-tertiary)33;padding:7px;border-radius:8px;font-size:12px;font-weight:600;color:var(--md-tertiary);font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;">'+msiIcon('chat',13,'var(--md-tertiary)')+' Send message</button>'
-      +'<button style="flex:1;background:none;border:1.5px solid var(--md-outline-variant);padding:7px;border-radius:8px;font-size:12px;font-weight:600;color:var(--md-on-surface-variant);font-family:\'DM Sans\',sans-serif;cursor:pointer;">'+(b.active?'Disconnect':'Reconnect')+'</button>'
-      +'</div></div>';
-  }).join('');
-  var fab='<button onclick="S.barnConnectFlow={role:\'trainer\',step:\'search\',query:\'\',selected:null,sent:false};rerender()" style="position:fixed;bottom:80px;right:20px;z-index:200;width:56px;height:56px;border-radius:50%;background:var(--md-tertiary);border:none;box-shadow:0 4px 14px rgba(0,0,0,0.28);display:flex;align-items:center;justify-content:center;cursor:pointer;">'
-    +msiIcon('home_work',22,'#fff')
-    +'<span class="msi" style="position:absolute;bottom:8px;right:8px;font-size:14px;color:#fff;background:var(--md-tertiary);border-radius:50%;line-height:1;font-weight:900;">add</span>'
-    +'</button>';
-  return info+cards+fab;
-}
+// rTrainerSetupBarns → see rProSetupConnections below
 
 function rTrainerSetupCalendar(){
   var cal=trainerSetup.calendar;
@@ -3094,239 +3105,288 @@ function rMgrSetupConnections(){
   var pendingStaffReqs=(STAFF_JOIN_REQUESTS||[]).filter(function(r){return r.status==='pending';});
   var invites=BARN_INVITATIONS||[];
   var sheet=S.mgrInviteSheet;
+  var svSheet=S.scheduleVisitSheet;
+  var barnName=(mgrSetup&&mgrSetup.barnName)||'Sunrise Stables';
 
   // ── Role config ────────────────────────────────────────────────────────────
   var ALL_ROLES=[
-    {id:'Veterinarian', icon:'medical_services', color:'var(--md-primary)'},
-    {id:'Trainer',      icon:'fitness_center',   color:'var(--md-tertiary)'},
-    {id:'Farrier',      icon:'construction',      color:'var(--md-warning)'},
-    {id:'Dentist',      icon:'dentistry',         color:'var(--md-error)'},
-    {id:'Chiropractor', icon:'self_improvement',  color:'var(--md-secondary)'},
-    {id:'Horse Owner',  icon:'favorite',          color:'#C04A6A'},
-    {id:'Staff',        icon:'person',            color:'var(--md-on-surface-dim)'},
-    {id:'Other',        icon:'more_horiz',        color:'var(--md-on-surface-dim)'},
+    {id:'Veterinarian',icon:'medical_services',color:'var(--md-primary)'},
+    {id:'Trainer',icon:'fitness_center',color:'var(--md-tertiary)'},
+    {id:'Farrier',icon:'construction',color:'var(--md-warning)'},
+    {id:'Dentist',icon:'dentistry',color:'var(--md-error)'},
+    {id:'Chiropractor',icon:'self_improvement',color:'var(--md-secondary)'},
+    {id:'Horse Owner',icon:'favorite',color:'#C04A6A'},
+    {id:'Staff',icon:'person',color:'var(--md-on-surface-dim)'},
+    {id:'Other',icon:'more_horiz',color:'var(--md-on-surface-dim)'},
   ];
   function roleConfig(r){return ALL_ROLES.find(function(x){return x.id===r;})||ALL_ROLES[ALL_ROLES.length-1];}
-  function initials(f,l){return ((f||'').charAt(0)+(l||'').charAt(0)).toUpperCase()||'?';}
+  function initials(f,l){return((f||'').charAt(0)+(l||'').charAt(0)).toUpperCase()||'?';}
+
   function statusBadge(status,sentAt){
     if(status==='accepted')return '<span style="display:flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:var(--md-secondary);">'+msiIcon('check_circle',11,'var(--md-secondary)')+' Accepted</span>';
-    if(status==='sent'){
-      var d=sentAt?Math.round((new Date('2026-05-28')-new Date(sentAt))/(86400000)):0;
-      return '<span style="font-size:10px;color:var(--md-on-surface-dim);font-weight:600;">Sent '+(d>0?d+'d ago':'today')+'</span>';
-    }
+    if(status==='sent'){var d=sentAt?Math.round((new Date('2026-05-28')-new Date(sentAt))/(86400000)):0;return '<span style="font-size:10px;color:var(--md-on-surface-dim);font-weight:600;">Sent '+(d>0?d+'d ago':'today')+'</span>';}
     return '<span style="font-size:10px;font-weight:700;background:var(--md-warning);color:#fff;padding:2px 7px;border-radius:20px;">Pending</span>';
   }
 
-  // ── Role-specific bullet points for invite message ──────────────────────────
   function roleBullets(role){
-    var map={
-      'Veterinarian':['Access patient records and health history for all horses','Log visits, treatments, and follow-up notes','Coordinate care directly with owners and barn staff'],
-      'Trainer':['Log training sessions and track horse progress','Share session notes and updates with horse owners','Coordinate scheduling with the barn team'],
-      'Farrier':['View appointment schedules and horse hoof notes','Access relevant horse health information','Coordinate visit timing with barn staff and owners'],
-      'Dentist':['Access horse dental history and records','Schedule and log dental visits','Share treatment notes with owners and barn team'],
-      'Chiropractor':['Review horse health and training history','Log adjustment sessions and observations','Coordinate with vets and trainers on care plans'],
-      'Horse Owner':['Monitor your horse\'s health, training, and daily care','Communicate with your barn team and professionals','View farrier, vet, and training schedules'],
-      'Staff':['View your daily task schedule and assignments','Log completed tasks and report issues','Communicate with barn management and team'],
-      'Other':['Connect with your barn\'s care team','Access relevant horse records and schedules','Communicate and coordinate with barn staff'],
-    };
+    var map={'Veterinarian':['Access patient records and health history','Log visits and treatments','Coordinate care with owners and barn staff'],'Trainer':['Log training sessions and track progress','Share updates with horse owners','Coordinate scheduling with the barn team'],'Farrier':['View horse hoof notes and history','Schedule and log farrier visits','Coordinate with barn staff and owners'],'Dentist':['Access dental records for all horses','Schedule and log dental visits','Share treatment notes with owners'],'Chiropractor':['Review horse health and training history','Log adjustment sessions','Coordinate with vets and trainers'],'Horse Owner':['Monitor your horse\'s health and care','Communicate with your barn team','View farrier, vet, and training schedules'],'Staff':['View your daily task schedule','Log completed tasks and report issues','Communicate with barn management'],'Other':['Connect with the barn care team','Access relevant horse records','Communicate and coordinate with staff']};
     return (map[role]||map['Other']).map(function(b){return '\u2022 '+b;}).join('\n');
   }
-
   function inviteMessage(inv){
-    var firstName=inv.firstName||'there';
-    var role=inv.role||'team member';
-    var barnName=inv.barnName||'the barn';
-    var managerName=inv.managerName||'The barn manager';
-    var code=inv.inviteCode||'XXXXXX';
-    return 'Hi '+firstName+',\n\n'+managerName+' has invited you to join '+barnName+' on NayNay \u2014 the equine care platform connecting barn teams, professionals, and horse owners.\n\nAs '+role+', you\u2019ll be able to:\n'+roleBullets(role)+'\n\nNayNay keeps everything in one place \u2014 health records, training logs, schedules, and team communication.\n\nSign up at: https://naynay.app/join/'+code+'\nOr use invite code: '+code+'\n\n\u2014 '+managerName+', '+barnName;
+    var firstName=inv.firstName||'there';var role=inv.role||'team member';var bn=inv.barnName||barnName;var mn=inv.managerName||'The barn manager';var code=inv.inviteCode||'XXXXXX';
+    return 'Hi '+firstName+',\n\n'+mn+' has invited you to join '+bn+' on NayNay \u2014 the equine care platform connecting barn teams, professionals, and horse owners.\n\nAs '+role+', you\u2019ll be able to:\n'+roleBullets(role)+'\n\nNayNay keeps everything in one place \u2014 health records, training logs, schedules, and team communication.\n\nSign up at: https://naynay.app/join/'+code+'\nOr use invite code: '+code+'\n\n\u2014 '+mn+', '+bn;
   }
 
-  // ── Pending inbound requests banner (unchanged) ───────────────────────────
+  // ── Section 1: Inbound pro requests ───────────────────────────────────────
   var pendingBanner='';
   if(pendingBarnReqs.length){
     pendingBanner='<div style="background:var(--md-primary-container);border:1.5px solid var(--md-primary)33;border-radius:12px;padding:11px 14px;margin-bottom:12px;">'
-      +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;">'+msiIcon('pending',15,'var(--md-primary)')
-      +'<span style="font-size:12px;font-weight:700;color:var(--md-primary);">'+pendingBarnReqs.length+' pending connection request'+(pendingBarnReqs.length>1?'s':'')+'</span></div>'
+      +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;">'+msiIcon('pending',15,'var(--md-primary)')+' <span style="font-size:12px;font-weight:700;color:var(--md-primary);">'+pendingBarnReqs.length+' pending connection request'+(pendingBarnReqs.length>1?'s':'')+'</span></div>'
       +pendingBarnReqs.map(function(r){
         return '<div style="background:var(--md-surface);border-radius:9px;padding:9px 11px;margin-bottom:7px;">'
           +'<div style="display:flex;align-items:center;gap:9px;margin-bottom:8px;">'
-          +'<div style="width:32px;height:32px;border-radius:50%;background:var(--md-secondary-container);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon(r.role==='Veterinarian'?'medical_services':'person',16,'var(--md-secondary)')+'</div>'
-          +'<div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:var(--md-on-surface);">'+r.name+'</div>'
-          +'<div style="font-size:10px;color:var(--md-on-surface-dim);">'+(r.role||r.type||'Professional')+' \xb7 '+r.time+'</div></div></div>'
+            +'<div style="width:32px;height:32px;border-radius:50%;background:var(--md-secondary-container);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon(r.role==='Veterinarian'?'medical_services':'person',16,'var(--md-secondary)')+'</div>'
+            +'<div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:var(--md-on-surface);">'+r.name+'</div>'
+            +'<div style="font-size:10px;color:var(--md-on-surface-dim);">'+(r.role||'Professional')+' \xb7 '+r.time+'</div></div>'
+          +'</div>'
           +(r.message?'<div style="font-size:12px;color:var(--md-on-surface-variant);line-height:1.5;margin-bottom:9px;padding:0 2px;">'+r.message+'</div>':'')
           +'<div style="display:flex;gap:7px;">'
-          +'<button onclick="(function(){var br=(BARN_JOIN_REQUESTS||[]).find(function(x){return x.id===\''+r.id+'\';});if(br)br.status=\'approved\';showToast(\''+r.name.split(' ')[0]+' connected!\',\'check_circle\',\'success\');rerender();})()" style="flex:1;background:var(--md-secondary);color:#fff;border:none;border-radius:10px;padding:9px 14px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Approve connection</button>'
-          +'<button onclick="(function(){var br=(BARN_JOIN_REQUESTS||[]).find(function(x){return x.id===\''+r.id+'\';});if(br)br.status=\'declined\';showToast(\'Declined\',\'close\',\'info\');rerender();})()" style="padding:9px 13px;background:transparent;color:var(--md-on-surface-dim);border:1.5px solid var(--md-outline);border-radius:10px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Decline</button>'
+            +'<button onclick="(function(){var br=(BARN_JOIN_REQUESTS||[]).find(function(x){return x.id===\''+r.id+'\';});if(br)br.status=\'approved\';showToast(\''+r.name.split(' ')[0]+' connected!\',\'check_circle\',\'success\');rerender();})()" style="flex:1;background:var(--md-secondary);color:#fff;border:none;border-radius:10px;padding:9px 14px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Approve connection</button>'
+            +'<button onclick="(function(){var br=(BARN_JOIN_REQUESTS||[]).find(function(x){return x.id===\''+r.id+'\';});if(br)br.status=\'declined\';showToast(\'Declined\',\'close\',\'info\');rerender();})()" style="padding:9px 13px;background:transparent;color:var(--md-on-surface-dim);border:1.5px solid var(--md-outline);border-radius:10px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Decline</button>'
           +'</div></div>';
       }).join('')+'</div>';
   }
 
-  // ── Staff join requests ───────────────────────────────────────────────────
+  // ── Section 2: Staff join requests (same style as pro requests) ───────────
   var staffBanner='';
   if(pendingStaffReqs.length){
     staffBanner='<div style="background:var(--md-secondary-container);border:1.5px solid var(--md-secondary)33;border-radius:12px;padding:11px 14px;margin-bottom:12px;">'
-      +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;">'+msiIcon('person_add',15,'var(--md-secondary)')
-      +'<span style="font-size:12px;font-weight:700;color:var(--md-secondary);">'+pendingStaffReqs.length+' staff join request'+(pendingStaffReqs.length>1?'s':'')+'</span></div>'
+      +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;">'+msiIcon('person_add',15,'var(--md-secondary)')+' <span style="font-size:12px;font-weight:700;color:var(--md-secondary);">'+pendingStaffReqs.length+' staff join request'+(pendingStaffReqs.length>1?'s':'')+'</span></div>'
       +pendingStaffReqs.map(function(r){
-        return '<div style="display:flex;align-items:center;gap:9px;padding:7px 0;border-top:1px solid var(--md-outline-variant);">'
-          +'<div style="font-size:12px;font-weight:600;color:var(--md-on-surface);flex:1;">'+r.name+'</div>'
-          +'<div style="font-size:10px;color:var(--md-on-surface-dim);">'+r.time+'</div>'
-          +'<button onclick="(function(){var sr=(STAFF_JOIN_REQUESTS||[]).find(function(x){return x.id===\''+r.id+'\';});if(sr)sr.status=\'approved\';showToast(\''+r.name.split(' ')[0]+' approved!\',\'check_circle\',\'success\');rerender();})()" style="background:var(--md-secondary);color:#fff;border:none;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Approve</button>'
-          +'</div>';
+        var ini=r.name.split(' ').map(function(w){return w[0]||'';}).join('').substring(0,2).toUpperCase();
+        return '<div style="background:var(--md-surface);border-radius:9px;padding:9px 11px;margin-bottom:7px;">'
+          +'<div style="display:flex;align-items:center;gap:9px;margin-bottom:8px;">'
+            +'<div style="width:32px;height:32px;border-radius:50%;background:var(--md-secondary-container);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:700;color:var(--md-secondary);">'+ini+'</div>'
+            +'<div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:var(--md-on-surface);">'+r.name+'</div>'
+            +'<div style="font-size:10px;color:var(--md-on-surface-dim);">Barn Staff \xb7 '+r.time+'</div></div>'
+          +'</div>'
+          +'<div style="font-size:12px;color:var(--md-on-surface-variant);line-height:1.5;margin-bottom:9px;padding:0 2px;"><strong>'+r.name.split(' ')[0]+'</strong> is requesting to join <strong>'+barnName+'</strong> as Barn Staff so they can log daily tasks, receive shift assignments, and communicate with the care team.</div>'
+          +'<div style="display:flex;gap:7px;">'
+            +'<button onclick="(function(){var sr=(STAFF_JOIN_REQUESTS||[]).find(function(x){return x.id===\''+r.id+'\';});if(sr)sr.status=\'approved\';showToast(\''+r.name.split(' ')[0]+' approved!\',\'check_circle\',\'success\');rerender();})()" style="flex:1;background:var(--md-secondary);color:#fff;border:none;border-radius:10px;padding:9px 14px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Approve</button>'
+            +'<button onclick="(function(){var sr=(STAFF_JOIN_REQUESTS||[]).find(function(x){return x.id===\''+r.id+'\';});if(sr)sr.status=\'declined\';showToast(\'Declined\',\'close\',\'info\');rerender();})()" style="padding:9px 13px;background:transparent;color:var(--md-on-surface-dim);border:1.5px solid var(--md-outline);border-radius:10px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Decline</button>'
+          +'</div></div>';
       }).join('')+'</div>';
   }
 
-  // ── Sent invitations section ──────────────────────────────────────────────
-  var pendingInvites=invites.filter(function(inv){return inv.status!=='accepted';});
-  var acceptedInvites=invites.filter(function(inv){return inv.status==='accepted';});
-  var invSection='';
-  if(invites.length){
-    invSection='<div style="margin-bottom:12px;">'
-      +'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Sent invitations</div>'
-      +'<div style="background:var(--md-surface);border-radius:12px;border:1px solid var(--md-outline-variant);overflow:hidden;">'
-      +invites.map(function(inv){
-        var rc=roleConfig(inv.role);
+  // ── Section 3: Merged professionals + invitations ─────────────────────────
+  // Build unified list: connected pros first, then pending/sent invites
+  var connectedCards=pros.map(function(p){
+    var rc=roleConfig(p.type);
+    var thread=MESSAGE_THREADS.find(function(th){return th.participants.some(function(x){return x.includes(p.name.split(' ')[0]);});});
+    return {_type:'connected',_sort:0,p:p,rc:rc,thread:thread};
+  });
+  var inviteCards=invites.filter(function(inv){return inv.status!=='accepted';}).map(function(inv){
+    var rc=roleConfig(inv.role);
+    return {_type:'invite',_sort:1,inv:inv,rc:rc};
+  });
+  var allCards=connectedCards.concat(inviteCards);
+
+  var profSection='<div style="margin-bottom:16px;">'
+    +'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Professionals</div>'
+    +'<div style="background:var(--md-surface);border-radius:12px;border:1px solid var(--md-outline-variant);overflow:hidden;">'
+    +(allCards.length ? allCards.map(function(card){
+      if(card._type==='connected'){
+        var p=card.p;var rc=card.rc;var thread=card.thread;
+        return '<div style="padding:11px 13px;border-bottom:1px solid var(--md-outline-variant);">'
+          // Header row
+          +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:9px;">'
+            +'<div style="width:40px;height:40px;border-radius:50%;background:'+p.bg+';display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;font-weight:700;color:'+p.color+';">'+p.initials+'</div>'
+            +'<div style="flex:1;min-width:0;">'
+              +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px;">'
+                +'<span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+p.name+'</span>'
+                +'<span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;background:'+rc.color+'18;color:'+rc.color+';">'+p.type+'</span>'
+                +(p.nayNay?'<span style="font-size:9px;font-weight:700;background:var(--md-primary-container);color:var(--md-primary);padding:1px 6px;border-radius:8px;">on NayNay</span>':'')
+              +'</div>'
+              +(p.email||p.phone?'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+(p.email||p.phone)+'</div>':'')
+            +'</div>'
+          +'</div>'
+          // Action buttons
+          +'<div style="display:flex;gap:7px;">'
+            +(p.nayNay&&thread
+              ?'<button onclick="S.activeTab=\'messages\';S.selectedThread=\''+thread.id+'\';rerender()" style="flex:1;background:none;border:1.5px solid var(--md-primary)33;padding:7px 10px;border-radius:9px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-primary);display:flex;align-items:center;justify-content:center;gap:5px;">'+msiIcon('chat',13,'var(--md-primary)')+' Message</button>'
+              :'<button onclick="showToast(\'Invite sent to '+p.name.split(' ')[0]+'!\',\'send\',\'success\')" style="flex:1;background:none;border:1.5px solid var(--md-outline-variant);padding:7px 10px;border-radius:9px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);display:flex;align-items:center;justify-content:center;gap:5px;">'+msiIcon('send',13,'var(--md-on-surface-dim)')+' Invite to NayNay</button>')
+            +'<button onclick="S.scheduleVisitSheet={step:1,proId:\''+p.id+'\',proName:\''+p.name+'\',proRole:\''+p.type+'\',service:\'\',date:\'\',timeStart:\'\',timeEnd:\'\',notes:\'\',horseIds:[]};rerender()" style="flex:1;background:none;border:1.5px solid var(--md-outline-variant);padding:7px 10px;border-radius:9px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface);display:flex;align-items:center;justify-content:center;gap:5px;">'+msiIcon('calendar_month',13,'var(--md-on-surface)')+' Schedule</button>'
+          +'</div>'
+        +'</div>';
+      } else {
+        // Invite card
+        var inv=card.inv;var rc=card.rc;
         var ini=initials(inv.firstName,inv.lastName);
         var isAccepted=inv.status==='accepted';
-        return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--md-outline-variant);">'
-          +'<div style="width:36px;height:36px;border-radius:50%;background:'+rc.color+'22;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
-          +'<span style="font-size:12px;font-weight:700;color:'+rc.color+';">'+ini+'</span></div>'
-          +'<div style="flex:1;min-width:0;">'
-            +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">'
-              +'<span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+inv.firstName+' '+inv.lastName+'</span>'
-              +'<span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;background:'+rc.color+'22;color:'+rc.color+';">'+inv.role+'</span>'
+        return '<div style="padding:11px 13px;border-bottom:1px solid var(--md-outline-variant);">'
+          +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:9px;">'
+            +'<div style="width:40px;height:40px;border-radius:50%;background:'+rc.color+'18;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:'+rc.color+';">'+ini+'</div>'
+            +'<div style="flex:1;min-width:0;">'
+              +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px;">'
+                +'<span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+inv.firstName+' '+inv.lastName+'</span>'
+                +'<span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;background:'+rc.color+'18;color:'+rc.color+';">'+inv.role+'</span>'
+              +'</div>'
+              +statusBadge(inv.status,inv.sentAt)
             +'</div>'
-            +statusBadge(inv.status,inv.sentAt)
           +'</div>'
-          +(!isAccepted?'<button onclick="S.mgrInviteSheet={step:3,resendId:\''+inv.id+'\',role:\''+inv.role+'\',firstName:\''+inv.firstName+'\',lastName:\''+inv.lastName+'\',email:\''+inv.email+'\',phone:\''+inv.phone+'\',inviteCode:\''+inv.inviteCode+'\'};rerender()" style="background:none;border:1.5px solid var(--md-outline-variant);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);white-space:nowrap;">Resend</button>':'')
+          +'<div style="display:flex;gap:7px;">'
+            +'<button onclick="S.mgrInviteSheet={step:3,resendId:\''+inv.id+'\',role:\''+inv.role+'\',firstName:\''+inv.firstName+'\',lastName:\''+inv.lastName+'\',email:\''+inv.email+'\',phone:\''+inv.phone+'\',inviteCode:\''+inv.inviteCode+'\'};rerender()" style="flex:1;background:none;border:1.5px solid var(--md-outline-variant);padding:7px 10px;border-radius:9px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);display:flex;align-items:center;justify-content:center;gap:5px;">'+msiIcon('send',13,'var(--md-on-surface-dim)')+' Resend</button>'
+            +'<button onclick="(function(){var idx=(BARN_INVITATIONS||[]).findIndex(function(x){return x.id===\''+inv.id+'\';});if(idx>=0)BARN_INVITATIONS.splice(idx,1);showToast(\'Invite revoked\',\'close\',\'info\');rerender();})()" style="flex:1;background:none;border:1.5px solid var(--md-error)44;padding:7px 10px;border-radius:9px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-error);display:flex;align-items:center;justify-content:center;gap:5px;">'+msiIcon('block',13,'var(--md-error)')+' Revoke</button>'
+          +'</div>'
+        +'</div>';
+      }
+    }).join('')
+    : '<div style="padding:20px;text-align:center;font-size:13px;color:var(--md-on-surface-dim);">No professionals connected yet. Use the + button to invite someone.</div>')
+    +'</div></div>';
+
+  // ── Schedule Visit Sheet ───────────────────────────────────────────────────
+  var scheduleSheet='';
+  if(svSheet){
+    var svStep=svSheet.step||1;
+    var INP='width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:12px;padding:11px 13px;font-size:14px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
+    var LBL='font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;';
+    var proRc=roleConfig(svSheet.proRole||'Other');
+    var proColor=proRc.color;
+
+    // Header shown on all steps
+    var svHeader='<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">'
+      +'<div style="width:38px;height:38px;border-radius:50%;background:'+proColor+'18;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon(proRc.icon,18,proColor)+'</div>'
+      +'<div style="flex:1;"><div style="font-size:16px;font-weight:800;color:var(--md-on-surface);">'+svSheet.proName+'</div>'
+      +'<div style="font-size:12px;color:var(--md-on-surface-dim);">'+svSheet.proRole+'</div></div>'
+    +'</div>';
+
+    var svContent='';
+    if(svStep===1){
+      var tomorrowISO=(function(){var d=new Date('2026-05-29');return d.getFullYear()+'-0'+(d.getMonth()+1)+'-'+(d.getDate()<10?'0':'')+d.getDate();})();
+      svContent=svHeader
+        +'<div style="font-size:15px;font-weight:700;color:var(--md-on-surface);margin-bottom:16px;">Schedule a visit</div>'
+        // Service
+        +'<div style="margin-bottom:12px;"><label style="'+LBL+'">Service</label>'
+          +'<input type="text" value="'+(svSheet.service||'')+'" oninput="S.scheduleVisitSheet.service=this.value" placeholder="e.g. Annual wellness exam, Dental float…" style="'+INP+'"/>'
+        +'</div>'
+        // Date
+        +'<div style="display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:12px;">'
+          +'<div><label style="'+LBL+'">Date</label>'
+          +'<input type="date" value="'+(svSheet.date||tomorrowISO)+'" oninput="S.scheduleVisitSheet.date=this.value" style="'+INP+'" min="2026-01-01"/></div>'
+        +'</div>'
+        // Time
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">'
+          +'<div><label style="'+LBL+'">Start time</label><input type="time" value="'+(svSheet.timeStart||'09:00')+'" oninput="S.scheduleVisitSheet.timeStart=this.value" style="'+INP+'"/></div>'
+          +'<div><label style="'+LBL+'">End time</label><input type="time" value="'+(svSheet.timeEnd||'12:00')+'" oninput="S.scheduleVisitSheet.timeEnd=this.value" style="'+INP+'"/></div>'
+        +'</div>'
+        // Notes
+        +'<div style="margin-bottom:20px;"><label style="'+LBL+'">Notes (optional)</label>'
+          +'<textarea oninput="S.scheduleVisitSheet.notes=this.value" placeholder="Any special instructions or context for '+svSheet.proName+'…" rows="3" style="'+INP+'resize:none;line-height:1.5;">'+( svSheet.notes||'')+'</textarea>'
+        +'</div>'
+        +'<div style="display:flex;gap:8px;">'
+          +'<button onclick="S.scheduleVisitSheet=null;rerender()" style="padding:13px 16px;background:var(--md-surface-variant);border:1.5px solid var(--md-outline-variant);border-radius:12px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);">Cancel</button>'
+          +'<button onclick="if(S.scheduleVisitSheet.service&&S.scheduleVisitSheet.date){S.scheduleVisitSheet.step=2;rerender();}" '+(svSheet.service&&svSheet.date?'':'disabled ')+'style="flex:1;background:'+(svSheet.service&&svSheet.date?'var(--md-primary)':'var(--md-outline-variant)')+';color:'+(svSheet.service&&svSheet.date?'#fff':'var(--md-on-surface-dim)')+';border:none;border-radius:12px;padding:13px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(svSheet.service&&svSheet.date?'pointer':'not-allowed')+';">Select horses</button>'
+        +'</div>';
+    } else if(svStep===2){
+      var selIds=svSheet.horseIds||[];
+      svContent=svHeader
+        +'<div style="font-size:15px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Select horses</div>'
+        +'<div style="font-size:12px;color:var(--md-on-surface-dim);margin-bottom:14px;">Owners of selected horses will be notified and can book their appointment.</div>'
+        +'<div style="background:var(--md-surface);border-radius:12px;border:1px solid var(--md-outline-variant);overflow:hidden;margin-bottom:20px;">'
+        +HORSES.map(function(h){
+          var sel=selIds.indexOf(h.id)>=0;
+          var owner=h.owners&&h.owners[0]?h.owners[0]:null;
+          return '<div onclick="(function(){var ids=S.scheduleVisitSheet.horseIds||[];var idx=ids.indexOf(\''+h.id+'\');if(idx>=0)ids.splice(idx,1);else ids.push(\''+h.id+'\');S.scheduleVisitSheet.horseIds=ids;rerender();})()" style="display:flex;align-items:center;gap:10px;padding:10px 13px;border-bottom:1px solid var(--md-outline-variant);cursor:pointer;background:'+(sel?'var(--md-primary-container)':'transparent')+';">'
+            +'<div style="width:36px;height:36px;border-radius:50%;background:'+(h.avatar?h.avatar.bg:'var(--md-primary)')+'33;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--md-primary);flex-shrink:0;">'+h.name.charAt(0)+'</div>'
+            +'<div style="flex:1;min-width:0;">'
+              +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+h.name+'</div>'
+              +(owner?'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+msiIcon('person',11,'var(--md-on-surface-dim)')+' '+owner.name+'</div>':'')
+            +'</div>'
+            +(sel?msiIcon('check_circle',20,'var(--md-primary)'):msiIcon('radio_button_unchecked',20,'var(--md-outline-variant)'))
           +'</div>';
-      }).join('')
-      +'</div></div>';
-  }
-
-  // ── Connected professionals list (unchanged) ──────────────────────────────
-  var connectedSection='<div style="margin-bottom:16px;">'
-    +'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Connected professionals</div>'
-    +pros.map(function(p){
-      var rc=roleConfig(p.type);
-      var thread=MESSAGE_THREADS.find(function(th){return th.participants.some(function(x){return x.includes(p.name.split(' ')[0]);});});
-      return '<div style="background:var(--md-surface);border-radius:12px;border:1px solid var(--md-outline-variant);padding:12px 13px;margin-bottom:8px;">'
-        +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">'
-        +'<div style="width:40px;height:40px;border-radius:50%;background:'+p.bg+';display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="font-size:14px;font-weight:700;color:'+p.color+';">'+p.initials+'</span></div>'
-        +'<div style="flex:1;min-width:0;">'
-          +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+p.name+'</div>'
-          +'<div style="display:flex;align-items:center;gap:5px;margin-top:2px;">'+msiIcon(rc.icon,12,rc.color)+'<span style="font-size:11px;color:var(--md-on-surface-dim);">'+p.type+'</span>'
-          +(p.nayNay?'<span style="font-size:9px;font-weight:700;background:var(--md-primary-container);color:var(--md-primary);padding:1px 6px;border-radius:8px;margin-left:3px;">on NayNay</span>':'<span style="font-size:9px;background:var(--md-outline-variant);color:var(--md-on-surface-dim);padding:1px 6px;border-radius:8px;margin-left:3px;">Not on NayNay</span>')
-          +'</div></div></div>'
-        +'<div style="display:flex;gap:7px;">'
-        +(p.nayNay&&thread?'<button onclick="S.activeTab=\'messages\';S.selectedThread=\''+thread.id+'\';rerender()" style="flex:1;background:none;border:1.5px solid var(--md-primary)33;padding:7px 10px;border-radius:9px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-primary);display:flex;align-items:center;justify-content:center;gap:5px;">'+msiIcon('chat',13,'var(--md-primary)')+' Message</button>':'<button onclick="S.mgrInviteSheet={step:1,role:\''+p.type+'\',firstName:\'\',lastName:\'\',email:\'\',phone:\'\',inviteCode:generateInviteCode()};rerender()" style="flex:1;background:none;border:1.5px solid var(--md-outline-variant);padding:7px 10px;border-radius:9px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);display:flex;align-items:center;justify-content:center;gap:5px;">'+msiIcon('send',13,'var(--md-on-surface-dim)')+' Invite to NayNay</button>')
-        +'<button onclick="showToast(\'Visit scheduled with '+p.name.split(' ')[0]+'!\',\'calendar_month\',\'success\')" style="background:none;border:1.5px solid var(--md-outline-variant);padding:7px 10px;border-radius:9px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);display:flex;align-items:center;gap:5px;">'+msiIcon('calendar_month',13,'var(--md-on-surface-dim)')+' Schedule</button>'
-        +'</div></div>';
-    }).join('')+'</div>';
-
-  // ── Invite sheet ──────────────────────────────────────────────────────────
-  var inviteSheet='';
-  if(sheet){
-    var step=sheet.step||1;
-    var sheetContent='';
-
-    // Step 1: Role picker
-    if(step===1){
-      sheetContent='<div style="font-size:17px;font-weight:800;color:var(--md-on-surface);margin-bottom:6px;">Invite someone</div>'
-        +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:20px;">Who would you like to invite to '+((mgrSetup&&mgrSetup.barnName)||'your barn')+'?</div>'
-        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px;">'
-        +ALL_ROLES.map(function(r){
-          var sel=sheet.role===r.id;
-          return '<button onclick="S.mgrInviteSheet.role=\''+r.id+'\';rerender()" style="display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:12px;border:2px solid '+(sel?r.color:'var(--md-outline-variant)')+';background:'+(sel?r.color+'18':'var(--md-surface-variant)')+';cursor:pointer;text-align:left;">'
-            +'<div style="width:32px;height:32px;border-radius:9px;background:'+r.color+'22;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon(r.icon,16,r.color)+'</div>'
-            +'<span style="font-size:13px;font-weight:700;color:'+(sel?r.color:'var(--md-on-surface)')+';">'+r.id+'</span>'
-            +(sel?msiIcon('check_circle',16,r.color):'')
-            +'</button>';
         }).join('')
         +'</div>'
-        +'<button onclick="if(S.mgrInviteSheet.role){S.mgrInviteSheet.step=2;S.mgrInviteSheet.inviteCode=S.mgrInviteSheet.inviteCode||generateInviteCode();rerender();}" '+(sheet.role?'':'disabled ')+'style="width:100%;background:'+(sheet.role?'var(--md-primary)':'var(--md-outline-variant)')+';color:'+(sheet.role?'#fff':'var(--md-on-surface-dim)')+';border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(sheet.role?'pointer':'not-allowed')+';">Continue</button>';
-    }
-
-    // Step 2: Contact info
-    else if(step===2){
-      var rc2=roleConfig(sheet.role||'Other');
-      var hasContact=(sheet.firstName||'').trim()||(sheet.lastName||'').trim();
-      var hasEmail=(sheet.email||'').trim();
-      var hasPhone=(sheet.phone||'').trim();
-      var canContinue=hasContact&&(hasEmail||hasPhone);
-      var INP='width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:12px;padding:11px 13px;font-size:14px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
-      sheetContent='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
-        +'<div style="width:32px;height:32px;border-radius:9px;background:'+rc2.color+'22;display:flex;align-items:center;justify-content:center;">'+msiIcon(rc2.icon,16,rc2.color)+'</div>'
-        +'<div style="font-size:17px;font-weight:800;color:var(--md-on-surface);">Invite '+sheet.role+'</div>'
+        +'<div style="display:flex;gap:8px;">'
+          +'<button onclick="S.scheduleVisitSheet.step=1;rerender()" style="padding:13px 16px;background:var(--md-surface-variant);border:1.5px solid var(--md-outline-variant);border-radius:12px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);">Back</button>'
+          +'<button onclick="if((S.scheduleVisitSheet.horseIds||[]).length){S.scheduleVisitSheet.step=3;rerender();}" '+((selIds.length)?'':'disabled ')+'style="flex:1;background:'+((selIds.length)?'var(--md-primary)':'var(--md-outline-variant)')+';color:'+((selIds.length)?'#fff':'var(--md-on-surface-dim)')+';border:none;border-radius:12px;padding:13px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+((selIds.length)?'pointer':'not-allowed')+';">Review &amp; confirm</button>'
+        +'</div>';
+    } else if(svStep===3){
+      var selectedHorses=HORSES.filter(function(h){return (svSheet.horseIds||[]).indexOf(h.id)>=0;});
+      var ownerNames=[...new Set(selectedHorses.map(function(h){return h.owners&&h.owners[0]?h.owners[0].name:null;}).filter(Boolean))];
+      var dateDisplay=svSheet.date?(function(){var parts=svSheet.date.split('-');var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return months[parseInt(parts[1])-1]+' '+parseInt(parts[2])+', '+parts[0];})():'';
+      var timeDisplay=(svSheet.timeStart||'')+(svSheet.timeEnd?' – '+svSheet.timeEnd:'');
+      svContent=svHeader
+        +'<div style="font-size:15px;font-weight:700;color:var(--md-on-surface);margin-bottom:14px;">Review &amp; confirm</div>'
+        +'<div style="background:var(--md-surface);border-radius:12px;border:1px solid var(--md-outline-variant);padding:13px;margin-bottom:12px;">'
+          +'<div style="display:flex;flex-direction:column;gap:8px;">'
+            +'<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--md-on-surface-dim);">Service</span><span style="font-weight:700;color:var(--md-on-surface);">'+svSheet.service+'</span></div>'
+            +'<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--md-on-surface-dim);">Date</span><span style="font-weight:700;color:var(--md-on-surface);">'+dateDisplay+'</span></div>'
+            +'<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--md-on-surface-dim);">Time</span><span style="font-weight:700;color:var(--md-on-surface);">'+timeDisplay+'</span></div>'
+            +'<div style="display:flex;justify-content:space-between;font-size:13px;align-items:flex-start;gap:8px;"><span style="color:var(--md-on-surface-dim);white-space:nowrap;">Horses</span><span style="font-weight:700;color:var(--md-on-surface);text-align:right;">'+selectedHorses.map(function(h){return h.name;}).join(', ')+'</span></div>'
+          +'</div>'
         +'</div>'
-        +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:18px;">Enter their contact info or pick from your contacts.</div>'
-        // From contacts button
-        +'<button onclick="(async function(){try{if(!navigator.contacts||!navigator.contacts.select)throw new Error(\'not supported\');var c=await navigator.contacts.select([\'name\',\'email\',\'tel\'],{multiple:false});if(c&&c[0]){var n=(c[0].name&&c[0].name[0])||\'\';\' \'.trim();var parts=n.split(\' \');S.mgrInviteSheet.firstName=parts[0]||\'\';S.mgrInviteSheet.lastName=parts.slice(1).join(\' \');S.mgrInviteSheet.email=(c[0].email&&c[0].email[0])||\'\';S.mgrInviteSheet.phone=(c[0].tel&&c[0].tel[0])||\'\';}rerender();}catch(e){showToast(\'Contacts not available — enter manually\',\'info\',\'info\');}})()" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline-variant);border-radius:12px;padding:12px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface);display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px;">'+msiIcon('contacts',18,'var(--md-primary)')+' Pick from contacts</button>'
-        +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div><span style="font-size:11px;color:var(--md-on-surface-dim);font-weight:600;">or enter manually</span><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div></div>'
-        // Name fields
-        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">'
-          +'<div><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">First name</label>'
-          +'<input type="text" value="'+(sheet.firstName||'')+'" oninput="S.mgrInviteSheet.firstName=this.value" placeholder="Jane" style="'+INP+'"/></div>'
-          +'<div><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Last name</label>'
-          +'<input type="text" value="'+(sheet.lastName||'')+'" oninput="S.mgrInviteSheet.lastName=this.value" placeholder="Smith" style="'+INP+'"/></div>'
+        +'<div style="background:var(--md-secondary-container)33;border:1.5px solid var(--md-secondary)22;border-radius:12px;padding:11px 13px;margin-bottom:20px;display:flex;gap:8px;align-items:flex-start;">'
+          +msiIcon('notifications',16,'var(--md-secondary)')
+          +'<div style="font-size:12px;color:var(--md-on-surface-variant);line-height:1.55;"><strong>'+(ownerNames.length?ownerNames.join(', '):'Owners')+'</strong> will receive a notification and can book their horse\'s appointment with '+svSheet.proName+'.</div>'
         +'</div>'
-        // Email
-        +'<div style="margin-bottom:10px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Email address</label>'
-        +'<input type="email" value="'+(sheet.email||'')+'" oninput="S.mgrInviteSheet.email=this.value" placeholder="jane@email.com" style="'+INP+'"/></div>'
-        // Phone
-        +'<div style="margin-bottom:18px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Mobile phone</label>'
-        +'<input type="tel" value="'+(sheet.phone||'')+'" oninput="S.mgrInviteSheet.phone=this.value" placeholder="(555) 000-0000" style="'+INP+'"/>'
-        +'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:5px;">At least one of email or phone is required.</div></div>'
-        // Buttons
-        +'<div style="display:flex;gap:9px;">'
-        +'<button onclick="S.mgrInviteSheet.step=1;rerender()" style="padding:13px 16px;background:var(--md-surface-variant);border:1.5px solid var(--md-outline-variant);border-radius:12px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);">Back</button>'
-        +'<button onclick="if('+(canContinue?'true':'false')+'){S.mgrInviteSheet.step=3;rerender();}" '+(canContinue?'':'disabled ')+'style="flex:1;background:'+(canContinue?'var(--md-primary)':'var(--md-outline-variant)')+';color:'+(canContinue?'#fff':'var(--md-on-surface-dim)')+';border:none;border-radius:12px;padding:13px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(canContinue?'pointer':'not-allowed')+';">Preview invite</button>'
+        +'<div style="display:flex;gap:8px;">'
+          +'<button onclick="S.scheduleVisitSheet.step=2;rerender()" style="padding:13px 16px;background:var(--md-surface-variant);border:1.5px solid var(--md-outline-variant);border-radius:12px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);">Back</button>'
+          +'<button onclick="(function(){'
+            +'var sv=S.scheduleVisitSheet;'
+            +'var visit={id:\'v\'+Date.now(),professionalId:sv.proId,professionalName:sv.proName,professionalType:sv.proRole,date:sv.date,timeStart:sv.timeStart,timeEnd:sv.timeEnd,services:[{name:sv.service,price:\'\',prepaid:false}],horseIds:sv.horseIds,notes:sv.notes,status:\'upcoming\'};'
+            +'BARN_VISITS.push(visit);'
+            +'S.scheduleVisitSheet=null;'
+            +'showToast(\'Visit scheduled with \'+sv.proName+\'!\',\'event_available\',\'success\');'
+            +'rerender();'
+          +'})()" style="flex:1;background:var(--md-primary);color:#fff;border:none;border-radius:12px;padding:13px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;">'+msiIcon('event_available',17,'#fff')+' Confirm visit</button>'
         +'</div>';
     }
 
-    // Step 3: Message preview + send
-    else if(step===3){
-      var msg=inviteMessage(sheet);
-      var shareUrl='https://naynay.app/join/'+(sheet.inviteCode||'XXXXXX');
-      var rc3=roleConfig(sheet.role||'Other');
-      var isResend=!!sheet.resendId;
-      sheetContent='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
-        +'<div style="width:32px;height:32px;border-radius:9px;background:'+rc3.color+'22;display:flex;align-items:center;justify-content:center;">'+msiIcon('mail',16,rc3.color)+'</div>'
-        +'<div style="font-size:17px;font-weight:800;color:var(--md-on-surface);">'+(isResend?'Resend invite':'Preview invite')+'</div>'
-        +'</div>'
-        +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:14px;">This message will be shared with <strong style="color:var(--md-on-surface);">'+(sheet.firstName||'your invitee')+(sheet.lastName?' '+sheet.lastName:'')+'</strong>.</div>'
-        // Message preview card
-        +'<div style="background:var(--md-surface-variant);border:1.5px solid var(--md-outline-variant);border-radius:14px;padding:14px 15px;margin-bottom:16px;max-height:260px;overflow-y:auto;">'
-          +'<div style="font-size:12px;color:var(--md-on-surface);line-height:1.7;white-space:pre-wrap;">'+msg+'</div>'
-        +'</div>'
-        // Invite code badge
-        +'<div style="display:flex;align-items:center;gap:10px;background:var(--md-primary-container);border-radius:12px;padding:10px 13px;margin-bottom:16px;">'
-          +msiIcon('qr_code',20,'var(--md-primary)')
-          +'<div><div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;">Invite code</div>'
-          +'<div style="font-size:18px;font-weight:800;color:var(--md-primary);letter-spacing:3px;">'+(sheet.inviteCode||'XXXXXX')+'</div></div>'
-          +'<div style="flex:1;text-align:right;font-size:11px;color:var(--md-on-surface-dim);">Link: naynay.app/join/'+sheet.inviteCode+'</div>'
-        +'</div>'
-        // Send button
-        +'<button onclick="(function(){'
-          +'var msg=\''+msg.replace(/'/g,"\\'").replace(/\n/g,'\\n')+'\';'
-          +'var url=\''+shareUrl+'\';'
-          +'if(navigator.share){navigator.share({title:\'Join '+((mgrSetup&&mgrSetup.barnName)||'our barn')+' on NayNay\',text:msg,url:url}).then(function(){var found=(BARN_INVITATIONS||[]).find(function(x){return x.id===\''+sheet.resendId+'\';});if(found){found.status=\'sent\';found.sentAt=new Date().toISOString().slice(0,10);}else{(BARN_INVITATIONS=BARN_INVITATIONS||[]).push({id:\'bi\'+Date.now(),firstName:S.mgrInviteSheet.firstName,lastName:S.mgrInviteSheet.lastName,email:S.mgrInviteSheet.email,phone:S.mgrInviteSheet.phone,role:S.mgrInviteSheet.role,inviteCode:S.mgrInviteSheet.inviteCode,sentAt:new Date().toISOString().slice(0,10),status:\'sent\',barnId:\'sunrise\',barnName:\''+(mgrSetup&&mgrSetup.barnName||'Sunrise Stables')+'\',managerName:\'Charlene Georgia\'});}S.mgrInviteSheet=null;showToast(\'Invite sent!\',\'check_circle\',\'success\');rerender();}).catch(function(){});}'
-          +'else{try{navigator.clipboard.writeText(msg+\'\\n\\n\'+url);showToast(\'Message copied to clipboard!\',\'content_copy\',\'success\');}catch(e){showToast(\'Copy the message above to share\',\'info\',\'info\');}}'
-        +'})()" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px;">'+msiIcon('ios_share',18,'#fff')+' Send invite</button>'
-        +(!isResend?'<button onclick="S.mgrInviteSheet.step=2;rerender()" style="width:100%;background:transparent;border:none;padding:10px;font-size:13px;font-weight:600;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);">Back</button>':'');
-    }
-
-    inviteSheet='<div onclick="S.mgrInviteSheet=null;rerender()" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:400;display:flex;flex-direction:column;justify-content:flex-end;">'
-      +'<div onclick="event.stopPropagation()" style="background:var(--md-surface);border-radius:20px 20px 0 0;padding:20px 16px '+(step===3?'24':'32')+'px;max-height:92vh;overflow-y:auto;">'
-      +'<div style="width:36px;height:4px;border-radius:2px;background:var(--md-outline-variant);margin:0 auto 18px;"></div>'
-      +sheetContent
+    scheduleSheet='<div onclick="S.scheduleVisitSheet=null;rerender()" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:400;display:flex;flex-direction:column;justify-content:flex-end;">'
+      +'<div onclick="event.stopPropagation()" style="background:var(--md-surface);border-radius:20px 20px 0 0;padding:20px 16px 32px;max-height:90vh;overflow-y:auto;">'
+        +'<div style="width:36px;height:4px;border-radius:2px;background:var(--md-outline-variant);margin:0 auto 18px;"></div>'
+        +svContent
       +'</div></div>';
   }
 
-  // ── FAB ──────────────────────────────────────────────────────────────────
+  // ── Invite sheet (unchanged) ───────────────────────────────────────────────
+  var inviteSheet='';
+  if(sheet){
+    var step=sheet.step||1;var sheetContent='';
+    if(step===1){
+      sheetContent='<div style="font-size:17px;font-weight:800;color:var(--md-on-surface);margin-bottom:6px;">Invite someone</div>'
+        +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:20px;">Who would you like to invite to '+barnName+'?</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px;">'
+        +ALL_ROLES.map(function(r){var sel=sheet.role===r.id;return '<button onclick="S.mgrInviteSheet.role=\''+r.id+'\';rerender()" style="display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:12px;border:2px solid '+(sel?r.color:'var(--md-outline-variant)')+';background:'+(sel?r.color+'18':'var(--md-surface-variant)')+';cursor:pointer;text-align:left;">'+'<div style="width:32px;height:32px;border-radius:9px;background:'+r.color+'22;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon(r.icon,16,r.color)+'</div>'+'<span style="font-size:13px;font-weight:700;color:'+(sel?r.color:'var(--md-on-surface)')+';">'+r.id+'</span>'+(sel?msiIcon('check_circle',16,r.color):'')+'</button>';}).join('')
+        +'</div>'
+        +'<button onclick="if(S.mgrInviteSheet.role){S.mgrInviteSheet.step=2;S.mgrInviteSheet.inviteCode=S.mgrInviteSheet.inviteCode||generateInviteCode();rerender();}" '+(sheet.role?'':'disabled ')+'style="width:100%;background:'+(sheet.role?'var(--md-primary)':'var(--md-outline-variant)')+';color:'+(sheet.role?'#fff':'var(--md-on-surface-dim)')+';border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(sheet.role?'pointer':'not-allowed')+';">Continue</button>';
+    } else if(step===2){
+      var rc2=roleConfig(sheet.role||'Other');var hasContact=(sheet.firstName||'').trim()||(sheet.lastName||'').trim();var hasEmail=(sheet.email||'').trim();var hasPhone=(sheet.phone||'').trim();var canContinue=hasContact&&(hasEmail||hasPhone);
+      var INP2='width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:12px;padding:11px 13px;font-size:14px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
+      sheetContent='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><div style="width:32px;height:32px;border-radius:9px;background:'+rc2.color+'22;display:flex;align-items:center;justify-content:center;">'+msiIcon(rc2.icon,16,rc2.color)+'</div><div style="font-size:17px;font-weight:800;color:var(--md-on-surface);">Invite '+sheet.role+'</div></div>'
+        +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:18px;">Enter their contact info or pick from your contacts.</div>'
+        +'<button onclick="(async function(){try{if(!navigator.contacts||!navigator.contacts.select)throw new Error(\'not supported\');var c=await navigator.contacts.select([\'name\',\'email\',\'tel\'],{multiple:false});if(c&&c[0]){var n=(c[0].name&&c[0].name[0])||\'\';\' \'.trim();var parts=n.split(\' \');S.mgrInviteSheet.firstName=parts[0]||\'\';S.mgrInviteSheet.lastName=parts.slice(1).join(\' \');S.mgrInviteSheet.email=(c[0].email&&c[0].email[0])||\'\';S.mgrInviteSheet.phone=(c[0].tel&&c[0].tel[0])||\'\';}rerender();}catch(e){showToast(\'Contacts not available — enter manually\',\'info\',\'info\');}})()" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline-variant);border-radius:12px;padding:12px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface);display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px;">'+msiIcon('contacts',18,'var(--md-primary)')+' Pick from contacts</button>'
+        +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div><span style="font-size:11px;color:var(--md-on-surface-dim);font-weight:600;">or enter manually</span><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div></div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;"><div><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">First name</label><input type="text" value="'+(sheet.firstName||'')+'" oninput="S.mgrInviteSheet.firstName=this.value" placeholder="Jane" style="'+INP2+'"/></div><div><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Last name</label><input type="text" value="'+(sheet.lastName||'')+'" oninput="S.mgrInviteSheet.lastName=this.value" placeholder="Smith" style="'+INP2+'"/></div></div>'
+        +'<div style="margin-bottom:10px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Email address</label><input type="email" value="'+(sheet.email||'')+'" oninput="S.mgrInviteSheet.email=this.value" placeholder="jane@email.com" style="'+INP2+'"/></div>'
+        +'<div style="margin-bottom:18px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Mobile phone</label><input type="tel" value="'+(sheet.phone||'')+'" oninput="S.mgrInviteSheet.phone=this.value" placeholder="(555) 000-0000" style="'+INP2+'"/><div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:5px;">At least one of email or phone is required.</div></div>'
+        +'<div style="display:flex;gap:9px;"><button onclick="S.mgrInviteSheet.step=1;rerender()" style="padding:13px 16px;background:var(--md-surface-variant);border:1.5px solid var(--md-outline-variant);border-radius:12px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);">Back</button><button onclick="if('+(canContinue?'true':'false')+'){S.mgrInviteSheet.step=3;rerender();}" '+(canContinue?'':'disabled ')+'style="flex:1;background:'+(canContinue?'var(--md-primary)':'var(--md-outline-variant)')+';color:'+(canContinue?'#fff':'var(--md-on-surface-dim)')+';border:none;border-radius:12px;padding:13px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(canContinue?'pointer':'not-allowed')+';">Preview invite</button></div>';
+    } else if(step===3){
+      var msg=inviteMessage(sheet);var shareUrl='https://naynay.app/join/'+(sheet.inviteCode||'XXXXXX');var rc3=roleConfig(sheet.role||'Other');var isResend=!!sheet.resendId;
+      sheetContent='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><div style="width:32px;height:32px;border-radius:9px;background:'+rc3.color+'22;display:flex;align-items:center;justify-content:center;">'+msiIcon('mail',16,rc3.color)+'</div><div style="font-size:17px;font-weight:800;color:var(--md-on-surface);">'+(isResend?'Resend invite':'Preview invite')+'</div></div>'
+        +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:14px;">This message will be shared with <strong style="color:var(--md-on-surface);">'+(sheet.firstName||'your invitee')+(sheet.lastName?' '+sheet.lastName:'')+'</strong>.</div>'
+        +'<div style="background:var(--md-surface-variant);border:1.5px solid var(--md-outline-variant);border-radius:14px;padding:14px 15px;margin-bottom:16px;max-height:260px;overflow-y:auto;"><div style="font-size:12px;color:var(--md-on-surface);line-height:1.7;white-space:pre-wrap;">'+msg+'</div></div>'
+        +'<div style="display:flex;align-items:center;gap:10px;background:var(--md-primary-container);border-radius:12px;padding:10px 13px;margin-bottom:16px;">'+msiIcon('qr_code',20,'var(--md-primary)')+'<div><div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;">Invite code</div><div style="font-size:18px;font-weight:800;color:var(--md-primary);letter-spacing:3px;">'+(sheet.inviteCode||'XXXXXX')+'</div></div><div style="flex:1;text-align:right;font-size:11px;color:var(--md-on-surface-dim);">naynay.app/join/'+sheet.inviteCode+'</div></div>'
+        +'<button onclick="(function(){var msg=\''+msg.replace(/'/g,"\\'").replace(/\n/g,'\\n')+'\';var url=\''+shareUrl+'\';if(navigator.share){navigator.share({title:\'Join '+(barnName.replace(/'/g,"\\'"))+' on NayNay\',text:msg,url:url}).then(function(){var found=(BARN_INVITATIONS||[]).find(function(x){return x.id===\''+sheet.resendId+'\';});if(found){found.status=\'sent\';found.sentAt=new Date().toISOString().slice(0,10);}else{(BARN_INVITATIONS=BARN_INVITATIONS||[]).push({id:\'bi\'+Date.now(),firstName:S.mgrInviteSheet.firstName,lastName:S.mgrInviteSheet.lastName,email:S.mgrInviteSheet.email,phone:S.mgrInviteSheet.phone,role:S.mgrInviteSheet.role,inviteCode:S.mgrInviteSheet.inviteCode,sentAt:new Date().toISOString().slice(0,10),status:\'sent\',barnId:\'sunrise\',barnName:\''+(barnName.replace(/'/g,"\\'"))+'\',managerName:\'Charlene Georgia\'});}S.mgrInviteSheet=null;showToast(\'Invite sent!\',\'check_circle\',\'success\');rerender();}).catch(function(){});}else{try{navigator.clipboard.writeText(msg+\'\\n\\n\'+url);showToast(\'Message copied to clipboard!\',\'content_copy\',\'success\');}catch(e){showToast(\'Copy the message above to share\',\'info\',\'info\');}}})()" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px;">'+msiIcon('ios_share',18,'#fff')+' Send invite</button>'
+        +(!isResend?'<button onclick="S.mgrInviteSheet.step=2;rerender()" style="width:100%;background:transparent;border:none;padding:10px;font-size:13px;font-weight:600;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);">Back</button>':'');
+    }
+    inviteSheet='<div onclick="S.mgrInviteSheet=null;rerender()" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:400;display:flex;flex-direction:column;justify-content:flex-end;"><div onclick="event.stopPropagation()" style="background:var(--md-surface);border-radius:20px 20px 0 0;padding:20px 16px '+(step===3?'24':'32')+'px;max-height:92vh;overflow-y:auto;"><div style="width:36px;height:4px;border-radius:2px;background:var(--md-outline-variant);margin:0 auto 18px;"></div>'+sheetContent+'</div></div>';
+  }
+
+  // ── FAB ────────────────────────────────────────────────────────────────────
   var fab='<button onclick="S.mgrInviteSheet={step:1,role:null,firstName:\'\',lastName:\'\',email:\'\',phone:\'\',inviteCode:generateInviteCode()};rerender()" style="position:fixed;bottom:80px;right:20px;z-index:200;width:54px;height:54px;border-radius:50%;background:var(--md-primary);border:none;box-shadow:0 4px 14px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;cursor:pointer;">'+msiIcon('person_add',24,'#fff')+'</button>';
 
-  return inviteSheet+fab+pendingBanner+staffBanner+invSection+connectedSection;
+  return scheduleSheet+inviteSheet+fab+pendingBanner+staffBanner+profSection;
 }
 
 function rMgrSetup(){
@@ -3652,32 +3712,118 @@ function rVetSetupAccount(){
   return rPersonCard(p,'vetSetup.profile',['DVM','VMD','PhD','MS','DVM PhD',''])+rPracticeCard(p,'vetSetup.profile','Practice')+creds;
 }
 
-function rVetSetupBarns(){
-  const t=TH;
-  const barns=vetSetup.connectedBarns;
-  // Barn connect flow overlay
-  if(S.barnConnectFlow&&S.barnConnectFlow.role==='vet') return rBarnConnectFlow('vet');
-  const info='<div style="background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:12px;font-weight:600;color:var(--md-on-primary-container);margin-bottom:12px;">'+barns.filter(function(b){return b.active;}).length+' active barn connections. You can message managers, arrange visits, and document care.</div>';
-  const cards=barns.map(function(b){
-    var thread=MESSAGE_THREADS.find(function(th){return th.participants.some(function(p){return p.includes('Charlene')||p.includes('Jordan')||p.includes('Dana');})&&th.roles.includes('Vet');});
-    return '<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);margin-bottom:10px;overflow:hidden;opacity:'+(b.active?1:0.65)+';">'
-      +'<div style="padding:12px 14px;display:flex;align-items:center;gap:10px;">'
-      +'<div style="width:38px;height:38px;border-radius:10px;background:var(--md-surface-variant);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="var(--md-primary)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 22V12h6v10" stroke="var(--md-primary)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
-      +'<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+b.name+'</div>'
-      +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+b.manager+' \xb7 '+b.horses+' horses \xb7 Since '+b.since+'</div></div>'
-      +'<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:'+(b.active?t.SUCBG:t.SUB)+';color:'+(b.active?t.SUC:t.TX3)+';border:1px solid '+(b.active?TH.mdSec+'44':t.BRD)+';">'+(b.active?'Active':'Inactive')+'</span>'
+function rProSetupConnections(role){
+  var isVet=role==='vet';
+  var roleColor=isVet?'var(--md-primary)':'var(--md-tertiary)';
+  var roleIcon=isVet?'medical_services':'fitness_center';
+  var setup=isVet?vetSetup:trainerSetup;
+  var connectedBarns=(setup&&setup.connectedBarns)||[];
+
+  // Inbound: barn requests TO this pro
+  var inboundReqs=(PRO_BARN_REQUESTS||[]).filter(function(r){
+    return r.status==='pending'&&r.role===(isVet?'Veterinarian':'Trainer');
+  });
+
+  // Outbound: requests this pro sent TO barns
+  var outboundSent=(PRO_BARN_REQUESTS_SENT[role]||[]);
+
+  // ── Section 1: Inbound barn requests ──────────────────────────────────────
+  var inboundSection='';
+  if(inboundReqs.length){
+    inboundSection='<div style="background:var(--md-primary-container);border:1.5px solid var(--md-primary)33;border-radius:12px;padding:11px 14px;margin-bottom:12px;">'
+      +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;">'
+        +msiIcon('home_work',15,'var(--md-primary)')
+        +'<span style="font-size:12px;font-weight:700;color:var(--md-primary);">'+inboundReqs.length+' barn connection request'+(inboundReqs.length>1?'s':'')+'</span>'
       +'</div>'
-      +'<div style="border-top:1px solid var(--md-outline-variant);padding:8px 14px;display:flex;gap:8px;">'
-      +'<button onclick="S.activeTab=\'messages\';S.selectedThread=\''+(thread?thread.id:'t2')+'\';rerender()" style="flex:1;background:none;border:1.5px solid var(--md-primary)33;padding:7px;border-radius:8px;font-size:12px;font-weight:600;color:var(--md-primary);font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;">'+msiIcon('chat',13,'var(--md-primary)')+' Send message</button>'
-      +'<button style="flex:1;background:none;border:1.5px solid '+(b.active?t.DNG:t.T)+';padding:7px;border-radius:8px;font-size:12px;font-weight:600;color:'+(b.active?t.DNG:t.T)+';font-family:\'DM Sans\',sans-serif;cursor:pointer;">'+(b.active?'Disconnect':'Reconnect')+'</button>'
-      +'</div></div>';
-  }).join('');
-  var fab='<button onclick="S.barnConnectFlow={role:\'vet\',step:\'search\',query:\'\',selected:null,sent:false};rerender()" style="position:fixed;bottom:80px;right:20px;z-index:200;width:56px;height:56px;border-radius:50%;background:var(--md-primary);border:none;box-shadow:0 4px 14px rgba(0,0,0,0.28);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-direction:column;gap:0;">'
-    +'<span style="font-size:10px;line-height:1;margin-bottom:-2px;color:#fff;">'+msiIcon('home_work',20,'#fff')+'</span>'
-    +'<span class="msi" style="font-size:14px;color:#fff;line-height:1;font-weight:900;">add</span>'
-    +'</button>';
-  return info+cards+fab;
+      +inboundReqs.map(function(r){
+        return '<div style="background:var(--md-surface);border-radius:9px;padding:10px 12px;margin-bottom:7px;">'
+          +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">'
+            +'<div style="width:38px;height:38px;border-radius:10px;background:var(--md-primary-container);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon('home_work',20,'var(--md-primary)')+'</div>'
+            +'<div style="flex:1;min-width:0;">'
+              +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+r.barnName+'</div>'
+              +'<div style="font-size:11px;color:var(--md-on-surface-dim);">Manager: '+r.managerName+' \xb7 '+r.time+'</div>'
+            +'</div>'
+          +'</div>'
+          +(r.message?'<div style="font-size:12px;color:var(--md-on-surface-variant);line-height:1.55;margin-bottom:10px;padding:0 2px;">'+r.message+'</div>':'')
+          +'<div style="display:flex;gap:8px;">'
+            +'<button onclick="(function(){var br=(PRO_BARN_REQUESTS||[]).find(function(x){return x.id===\''+r.id+'\';});if(br)br.status=\'approved\';showToast(\''+r.barnName+' connected!\',\'check_circle\',\'success\');rerender();})()" style="flex:1;background:var(--md-primary);color:#fff;border:none;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Approve connection</button>'
+            +'<button onclick="(function(){var br=(PRO_BARN_REQUESTS||[]).find(function(x){return x.id===\''+r.id+'\';});if(br)br.status=\'declined\';showToast(\'Declined\',\'close\',\'info\');rerender();})()" style="padding:10px 13px;background:transparent;color:var(--md-on-surface-dim);border:1.5px solid var(--md-outline);border-radius:10px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Decline</button>'
+          +'</div>'
+        +'</div>';
+      }).join('')
+    +'</div>';
+  }
+
+  // ── Section 2: Sent barn requests ─────────────────────────────────────────
+  var sentSection='';
+  if(outboundSent.length){
+    sentSection='<div style="margin-bottom:12px;">'
+      +'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Sent requests</div>'
+      +'<div style="background:var(--md-surface);border-radius:12px;border:1px solid var(--md-outline-variant);overflow:hidden;">'
+      +outboundSent.map(function(req){
+        var isAccepted=req.status==='accepted';
+        var daysAgo=req.sentAt?Math.round((new Date('2026-05-28')-new Date(req.sentAt))/(86400000)):0;
+        return '<div style="display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid var(--md-outline-variant);">'
+          +'<div style="width:36px;height:36px;border-radius:9px;background:'+roleColor+'18;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon('home_work',18,roleColor)+'</div>'
+          +'<div style="flex:1;min-width:0;">'
+            +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+req.barnName+'</div>'
+            +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+req.location+' \xb7 '+req.managerName+'</div>'
+          +'</div>'
+          +(isAccepted
+            ?'<span style="display:flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:var(--md-secondary);">'+msiIcon('check_circle',11,'var(--md-secondary)')+' Accepted</span>'
+            :'<div style="display:flex;align-items:center;gap:7px;">'
+              +'<span style="font-size:10px;font-weight:700;background:var(--md-warning);color:#fff;padding:2px 7px;border-radius:20px;">Pending</span>'
+              +'<button onclick="(function(){var r=(PRO_BARN_REQUESTS_SENT[\''+role+'\']||[]).find(function(x){return x.id===\''+req.id+'\';});if(r)r.status=\'cancelled\';showToast(\'Request cancelled\',\'close\',\'info\');rerender();})()" style="background:none;border:1.5px solid var(--md-outline-variant);border-radius:7px;padding:3px 8px;font-size:11px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);">Cancel</button>'
+            +'</div>')
+        +'</div>';
+      }).join('')
+    +'</div></div>';
+  }
+
+  // ── Section 3: Connected barns ────────────────────────────────────────────
+  var connectedSection='<div style="margin-bottom:16px;">'
+    +'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Connected barns</div>'
+    +(connectedBarns.length
+      ? connectedBarns.map(function(b){
+          var thread=MESSAGE_THREADS.find(function(th){
+            return th.roles&&(th.roles.includes(isVet?'Vet':'Trainer'));
+          });
+          return '<div style="background:var(--md-surface);border-radius:12px;border:1px solid var(--md-outline-variant);margin-bottom:8px;overflow:hidden;">'
+            +'<div style="padding:12px 14px;display:flex;align-items:center;gap:11px;">'
+              +'<div style="width:40px;height:40px;border-radius:11px;background:'+roleColor+'18;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon('home_work',20,roleColor)+'</div>'
+              +'<div style="flex:1;min-width:0;">'
+                +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+b.name+'</div>'
+                +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+(b.manager||'')+' \xb7 '+b.horses+' horses \xb7 Since '+b.since+'</div>'
+              +'</div>'
+              +'<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:'+(b.active?'var(--md-secondary-container)':'var(--md-surface-variant)')+';color:'+(b.active?'var(--md-secondary)':'var(--md-on-surface-dim)')+';">'+(b.active?'Active':'Inactive')+'</span>'
+            +'</div>'
+            +'<div style="border-top:1px solid var(--md-outline-variant);padding:8px 14px;display:flex;gap:8px;">'
+              +'<button onclick="S.activeTab=\'messages\';S.selectedThread=\''+(thread?thread.id:(isVet?'t2':'t4'))+'\';rerender()" style="flex:1;background:none;border:1.5px solid '+roleColor+'33;padding:7px 10px;border-radius:9px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:'+roleColor+';display:flex;align-items:center;justify-content:center;gap:5px;">'+msiIcon('chat',13,roleColor)+' Message</button>'
+              +'<button onclick="showToast(\'Viewing '+b.name+'\',\'home_work\',\'info\')" style="background:none;border:1.5px solid var(--md-outline-variant);padding:7px 10px;border-radius:9px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);display:flex;align-items:center;gap:5px;">'+msiIcon('open_in_new',13,'var(--md-on-surface-dim)')+' View</button>'
+              +(b.active
+                ?'<button onclick="showToast(\'Disconnected from '+b.name+'\',\'link_off\',\'info\')" style="background:none;border:1.5px solid var(--md-error)44;padding:7px 10px;border-radius:9px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-error);display:flex;align-items:center;gap:5px;">'+msiIcon('link_off',13,'var(--md-error)')+' Leave</button>'
+                :'')
+            +'</div>'
+          +'</div>';
+        }).join('')
+      : '<div style="background:var(--md-surface-variant);border-radius:12px;padding:20px;text-align:center;color:var(--md-on-surface-dim);">'
+          +msiIcon('home_work',28,'var(--md-outline-variant)')
+          +'<div style="font-size:13px;font-weight:600;margin-top:8px;color:var(--md-on-surface);">No barns connected yet</div>'
+          +'<div style="font-size:12px;margin-top:4px;line-height:1.5;">Request a connection using the + button below.</div>'
+        +'</div>')
+  +'</div>';
+
+  // ── FAB → existing rBarnConnectFlow ───────────────────────────────────────
+  var fab='<button onclick="S.barnConnectFlow={role:\''+role+'\',step:\'search\',query:\'\',selected:null,sent:false};rerender()" style="position:fixed;bottom:80px;right:20px;z-index:200;width:54px;height:54px;border-radius:50%;background:'+roleColor+';border:none;box-shadow:0 4px 14px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;cursor:pointer;">'+msiIcon('add',26,'#fff')+'</button>';
+
+  // If barn connect flow is active, delegate to existing function
+  if(S.barnConnectFlow&&S.barnConnectFlow.role===role) return rBarnConnectFlow(role);
+
+  return fab+inboundSection+sentSection+connectedSection;
 }
+
+function rVetSetupBarns(){return rProSetupConnections('vet');}
+function rTrainerSetupBarns(){return rProSetupConnections('trainer');}
 
 function rVetSetupPayments(){
   const t=TH;const pay=vetSetup.payment;
@@ -3751,7 +3897,8 @@ const QUICK_ACTIONS={
   'request-barn-visit':   {id:'request-barn-visit',    roles:['manager','vet','trainer'],        label:'Request Visit',      icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 22V12h6v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',                                                            color:'var(--md-primary)', bg:'var(--md-primary-container)'},
   'create-regimen':       {id:'create-regimen',        roles:['trainer'],                        label:'Create Training Regimen', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',                                                               color:'var(--md-primary)', bg:'var(--md-primary-container)'},
   'request-appointment':  {id:'request-appointment',   roles:['owner'],                          label:'Request Appointment',     icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', color:'var(--md-primary)', bg:'var(--md-primary-container)'},
-  'document-exam':  {id:'document-exam',  roles:['vet'], label:'Document Exam', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="9" y="3" width="6" height="4" rx="1" stroke="currentColor" stroke-width="1.8"/><path d="M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>', bg:'var(--md-primary-container)',color:'var(--md-primary)'},
+  'schedule-appointment': {id:'schedule-appointment', roles:['vet'], label:'Schedule Appointment', bg:'var(--md-primary-container)', color:'var(--md-primary)', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'},
+    'document-exam':  {id:'document-exam',  roles:['vet'], label:'Document Exam', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="9" y="3" width="6" height="4" rx="1" stroke="currentColor" stroke-width="1.8"/><path d="M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>', bg:'var(--md-primary-container)',color:'var(--md-primary)'},
   'upload-imaging': {id:'upload-imaging', roles:['vet','owner','trainer'], label:'Upload Imaging', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.8"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>', bg:'var(--md-primary-container)',color:'var(--md-primary)'}
 };
 
@@ -4684,68 +4831,89 @@ if(!window.reqApptState) window.reqApptState={horseId:'',proType:'',proId:'',des
 function rRequestAppointmentForm(){
   const t=TH;
   const ra=window.reqApptState;
+  function resetState(){window.reqApptState={horseId:'',proType:'',proId:'',serviceId:'',description:'',preferredDate:'',preferredTime:'',submitted:false};S.quickAction=null;rerender();}
   const backBtn='<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">'
-    +'<button onclick="S.quickAction=null;window.reqApptState={horseId:\'\',proType:\'\',proId:\'\',description:\'\',preferredDate:\'\',preferredTime:\'\',submitted:false};rerender()" style="background:none;border:none;padding:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M14 5L8 11l6 6" stroke="var(--md-on-surface)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'
-    +'<div style="flex:1;display:flex;align-items:center;gap:7px;"><div style="width:28px;height:28px;border-radius:7px;background:var(--md-warning-container);display:flex;align-items:center;justify-content:center;font-size:14px;">📅</div><span style="font-size:15px;font-weight:700;color:var(--md-on-surface);">Request Appointment</span></div></div>';
+    +'<button onclick="window.reqApptState={horseId:\'\',proType:\'\',proId:\'\',serviceId:\'\',description:\'\',preferredDate:\'\',preferredTime:\'\',submitted:false};S.quickAction=null;rerender()" style="background:none;border:none;padding:4px;cursor:pointer;display:flex;">'+msiIcon('arrow_back',22,'var(--md-on-surface)')+'</button>'
+    +'<div style="flex:1;display:flex;align-items:center;gap:7px;"><div style="width:28px;height:28px;border-radius:7px;background:var(--md-warning-container);display:flex;align-items:center;justify-content:center;">'+msiIcon('event_note',16,'var(--md-warning)')+'</div>'
+    +'<span style="font-size:15px;font-weight:700;color:var(--md-on-surface);">Request Appointment</span></div></div>';
 
   if(ra.submitted){
-    const pro=BARN_PROFESSIONALS.find(function(p){return p.id===ra.proId;})||{name:ra.proType,type:ra.proType,nayNay:false};
+    var pro2=BARN_PROFESSIONALS.find(function(p){return p.id===ra.proId;})||{name:ra.proType,type:ra.proType,nayNay:false};
+    var allSvcs=vetServices.concat(trainerServices);
+    var svcObj=ra.serviceId?allSvcs.find(function(sv){return sv.id===ra.serviceId;})||{name:ra.serviceId}:{name:ra.description||'Appointment'};
     return backBtn+'<div style="background:var(--md-secondary-container);border:1.5px solid var(--md-secondary)44;border-radius:14px;padding:20px;text-align:center;margin-bottom:14px;">'
-      +'<svg width="36" height="36" viewBox="0 0 36 36" fill="none" style="margin:0 auto 10px;display:block;"><circle cx="18" cy="18" r="16" fill="var(--md-secondary)22" stroke="var(--md-secondary)" stroke-width="1.5"/><path d="M10 18l5.5 5.5 10.5-10.5" stroke="var(--md-secondary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      +'<svg width="36" height="36" viewBox="0 0 36 36" fill="none" style="margin:0 auto 10px;display:block;"><circle cx="18" cy="18" r="16" fill="var(--md-secondary)22" stroke="var(--md-secondary)" stroke-width="1.5"/><path d="M11 18l5 5 9-9" stroke="var(--md-secondary)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
       +'<div style="font-size:16px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Request sent!</div>'
-      +'<div style="font-size:13px;color:var(--md-on-surface-variant);">'+pro.name+'</div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-variant);">'+pro2.name+' · '+svcObj.name+'</div>'
       +'<div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:3px;">'+(ra.preferredDate?ra.preferredDate+' · ':'')+( ra.preferredTime||'')+'</div></div>'
-      +(pro.nayNay
-        ?'<div style="background:var(--md-primary-container);border:1.5px solid var(--md-outline);border-radius:12px;padding:12px 14px;display:flex;gap:9px;align-items:flex-start;"><div style="font-size:18px;">📲</div><div><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:2px;">Request sent via NayNay</div><div style="font-size:12px;color:var(--md-on-surface-dim);">'+pro.name+' will receive your request directly in the app.</div></div></div>'
-        :'<div style="background:var(--md-warning-container);border:1.5px solid var(--md-warning)44;border-radius:12px;padding:12px 14px;display:flex;gap:9px;align-items:flex-start;"><div style="font-size:18px;">📧</div><div><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:2px;">Request sent by email</div><div style="font-size:12px;color:var(--md-on-surface-dim);">'+pro.name+' will be notified by email.</div></div></div>'
+      +(pro2.nayNay
+        ?'<div style="background:var(--md-primary-container);border:1.5px solid var(--md-outline);border-radius:12px;padding:12px 14px;display:flex;gap:9px;align-items:flex-start;"><div style="font-size:12px;color:var(--md-on-surface);">'+msiIcon('notifications_active',14,'var(--md-primary)')+' <strong>'+pro2.name+'</strong> has been notified on NayNay and will confirm a time shortly.</div></div>'
+        :'<div style="background:var(--md-warning-container);border:1.5px solid var(--md-warning)44;border-radius:12px;padding:12px 14px;display:flex;gap:9px;align-items:flex-start;"><div style="font-size:12px;color:var(--md-on-surface);">'+msiIcon('sms',14,'var(--md-warning)')+' Your request has been sent. You\'ll hear back once a time is confirmed.</div></div>'
       );
   }
 
   // Horse picker
-  const ownerHorses=[{id:'h3',photo:'https://images.pexels.com/photos/1289659/pexels-photo-1289659.jpeg?w=400&h=400&fit=crop',name:'Luna'},{id:'h4',name:'Rivendell'}];
-  const horseSel='<div style="margin-bottom:13px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:6px;">Horse</label>'
-    +'<div style="display:flex;gap:8px;">'+ownerHorses.map(function(h){const sel=ra.horseId===h.id;return '<button onclick="window.reqApptState.horseId=\''+h.id+'\';rerender()" style="font-family:\'DM Sans\',sans-serif;flex:1;padding:10px;border-radius:10px;border:1.5px solid '+(sel?t.T:t.BRD)+';background:'+(sel?t.TL:t.CARD)+';font-size:13px;font-weight:700;color:'+(sel?t.T:t.TX)+';cursor:pointer;">'+h.name+'</button>';}).join('')+'</div></div>';
+  var ownerHorses=[{id:'h3',name:'Luna'},{id:'h4',name:'Rivendell'}];
+  var horseSel='<div style="margin-bottom:13px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:6px;">Horse</label>'
+    +'<div style="display:flex;gap:8px;">'+ownerHorses.map(function(h){var sel=ra.horseId===h.id;return '<button onclick="window.reqApptState.horseId=\''+h.id+'\';rerender()" style="font-family:\'DM Sans\',sans-serif;padding:7px 14px;border-radius:20px;border:1.5px solid '+(sel?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(sel?'var(--md-primary-container)':'var(--md-surface)')+';font-size:13px;font-weight:700;color:'+(sel?'var(--md-primary)':'var(--md-on-surface-variant)')+';cursor:pointer;">'+h.name+'</button>';}).join('')+'</div></div>';
 
-  // Professional type chips
-  const proTypes=['Vet','Farrier','Dentist','Chiropractor','Masseuse','Trainer','Other'];
-  const proTypeSel='<div style="margin-bottom:13px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:6px;">Professional type</label>'
-    +'<div style="display:flex;flex-wrap:wrap;gap:7px;">'+proTypes.map(function(pt){const sel=ra.proType===pt;return '<button onclick="window.reqApptState.proType=\''+pt+'\';window.reqApptState.proId=\'\';rerender()" style="font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:6px 13px;border-radius:20px;background:'+(sel?t.T:t.CARD)+';color:'+(sel?'#fff':t.TX2)+';border:1.5px solid '+(sel?t.T:t.BRD)+';">'+pt+'</button>';}).join('')+'</div></div>';
+  // Pro type chips
+  var proTypes=['Vet','Farrier','Dentist','Chiropractor','Masseuse','Trainer','Other'];
+  var proTypeSel='<div style="margin-bottom:13px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:6px;">Professional type</label>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:7px;">'+proTypes.map(function(pt){var sel=ra.proType===pt;return '<button onclick="window.reqApptState.proType=\''+pt+'\';window.reqApptState.proId=\'\';window.reqApptState.serviceId=\'\';rerender()" style="font-family:\'DM Sans\',sans-serif;padding:6px 12px;border-radius:20px;border:1.5px solid '+(sel?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(sel?'var(--md-primary-container)':'var(--md-surface)')+';font-size:12px;font-weight:700;color:'+(sel?'var(--md-primary)':'var(--md-on-surface-variant)')+';cursor:pointer;">'+pt+'</button>';}).join('')+'</div></div>';
 
-  // Matching professionals from barn list
-  const matchingPros=ra.proType?BARN_PROFESSIONALS.filter(function(p){return p.type===ra.proType;}):[]; 
-  const proList=matchingPros.length?'<div style="margin-bottom:13px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:6px;">Send request to</label>'
-    +matchingPros.map(function(p){const sel=ra.proId===p.id;return '<div onclick="window.reqApptState.proId=\''+p.id+'\';rerender()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--md-shape-md);border:1px solid '+(sel?t.T:t.BRD)+';background:'+(sel?t.TL:t.CARD)+';margin-bottom:7px;cursor:pointer;">'
-    +'<div style="width:36px;height:36px;border-radius:50%;background:'+p.bg+';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:'+p.color+';flex-shrink:0;">'+p.initials+'</div>'
-    +'<div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+p.name+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+(p.nayNay?'<span style="color:var(--md-primary);font-weight:700;">NayNay member</span>':p.email||p.phone)+'</div></div>'
-    +(sel?'<svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8" fill="var(--md-primary)"/><path d="M5 9l3 3 5-5" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>':'')
+  // Matching pros
+  var matchingPros=ra.proType?BARN_PROFESSIONALS.filter(function(p){return p.type===ra.proType;}):[]; 
+  var proList=matchingPros.length?'<div style="margin-bottom:13px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:6px;">Select professional</label>'
+    +matchingPros.map(function(p){var sel=ra.proId===p.id;return '<div onclick="window.reqApptState.proId=\''+p.id+'\';window.reqApptState.serviceId=\'\';rerender()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1.5px solid '+(sel?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(sel?'var(--md-primary-container)':'var(--md-surface)')+';margin-bottom:7px;cursor:pointer;">'
+      +'<div style="width:36px;height:36px;border-radius:50%;background:'+p.bg+';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:'+p.color+';flex-shrink:0;">'+p.initials+'</div>'
+      +'<div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+p.name+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+(p.nayNay?'<span style="background:var(--md-primary-container);color:var(--md-primary);font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;margin-right:4px;">on NayNay</span>':'')+p.type+'</div></div>'
+      +(sel?'<svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8" fill="var(--md-primary)"/><path d="M5 9l3 3 5-5" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>':'')
     +'</div>';}).join('')+'</div>':'';
 
-  // What you need
-  const descField='<div style="margin-bottom:13px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">What do you need?</label>'
-    +'<textarea placeholder="e.g. Annual spring shots for Luna, Coggins test, and dental float if needed…" oninput="window.reqApptState.description=this.value" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:var(--md-shape-sm);padding:10px 14px;font-size:14px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;resize:none;min-height:80px;box-sizing:border-box;">'+ra.description+'</textarea></div>';
+  // Services for selected pro type
+  var servicesForType=[];
+  if(ra.proId){
+    if(ra.proType==='Vet'){servicesForType=vetServices.filter(function(sv){return sv.canBeRequestedByOwner!==false&&(sv.category==='Exam'||sv.category==='Vaccination');});}
+    else if(ra.proType==='Trainer'){servicesForType=trainerServices.filter(function(sv){return sv.canBeRequestedByOwner!==false;});}
+    else if(ra.proType==='Farrier'){servicesForType=[{id:'farrier_full',name:'Full Set (shoes)',duration:60},{id:'farrier_trim',name:'Trim only',duration:30},{id:'farrier_reset',name:'Reset (re-shoe)',duration:45},{id:'farrier_front',name:'Front shoes only',duration:40},{id:'farrier_special',name:'Corrective shoeing',duration:75}];}
+    else if(ra.proType==='Dentist'){servicesForType=[{id:'dent_float',name:'Dental float',duration:60},{id:'dent_exam',name:'Dental exam',duration:30},{id:'dent_extract',name:'Tooth extraction',duration:90},{id:'dent_xray',name:'Dental X-ray',duration:45}];}
+    else if(ra.proType==='Chiropractor'){servicesForType=[{id:'chiro_adj',name:'Full adjustment',duration:45},{id:'chiro_eval',name:'Initial evaluation',duration:60},{id:'chiro_follow',name:'Follow-up visit',duration:30}];}
+    else if(ra.proType==='Masseuse'){servicesForType=[{id:'mass_full',name:'Full-body massage',duration:60},{id:'mass_spot',name:'Spot treatment',duration:30},{id:'mass_post',name:'Post-competition massage',duration:45}];}
+  }
 
-  // Preferred date + time
-  const now=new Date();
-  const prefDate='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">'
+  var svcSel='';
+  if(servicesForType.length){
+    svcSel='<div style="margin-bottom:13px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:6px;">Service</label>'
+      +'<div style="display:flex;flex-direction:column;gap:6px;">'
+      +servicesForType.map(function(sv){var sel=ra.serviceId===sv.id;return '<div onclick="window.reqApptState.serviceId=\''+sv.id+'\';rerender()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1.5px solid '+(sel?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(sel?'var(--md-primary-container)':'var(--md-surface)')+';cursor:pointer;">'
+        +'<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+sv.name+'</div>'
+        +(sv.duration||sv.price?'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:1px;">'+(sv.duration?msiIcon('timer',11,'var(--md-on-surface-dim)')+' '+sv.duration+' min':'')+(sv.duration&&sv.price?' · ':'')+(sv.price?'$'+sv.price:'')+'</div>':'')
+        +'</div>'+(sel?msiIcon('check_circle',18,'var(--md-primary)'):msiIcon('radio_button_unchecked',18,'var(--md-outline-variant)'))+'</div>';}).join('')
+      +'</div></div>';
+  }
+
+  // Additional details
+  var detailField=ra.proId?'<div style="margin-bottom:13px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Additional details <span style="font-weight:400;color:var(--md-on-surface-dim);">(optional)</span></label>'
+    +'<textarea placeholder="Any specifics about what you need, relevant medical history, or context that would help the professional prepare…" oninput="window.reqApptState.description=this.value" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;resize:none;box-sizing:border-box;" rows="3">'+( ra.description||'')+'</textarea>'
+    +'</div>':'';
+
+  // Date/time
+  var prefDate='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">'
     +'<div><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Preferred date</label>'
-    +'<div style="background:var(--md-primary-container);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;display:flex;align-items:center;justify-content:space-between;">'
+    +'<div style="background:var(--md-primary-container);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;display:flex;align-items:center;">'
     +'<input type="date" value="'+(ra.preferredDate||'')+'" onchange="window.reqApptState.preferredDate=this.value" style="background:transparent;border:none;outline:none;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);flex:1;"/>'
-    +'<svg width="15" height="15" viewBox="0 0 18 18" fill="none"><rect x="2" y="3" width="14" height="13" rx="1.5" stroke="var(--md-primary)" stroke-width="1.2"/></div></div>'
+    +'</div></div>'
     +'<div><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Preferred time</label>'
-    +'<div style="background:var(--md-primary-container);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;display:flex;align-items:center;justify-content:space-between;">'
+    +'<div style="background:var(--md-primary-container);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;display:flex;align-items:center;">'
     +'<input type="time" value="'+(ra.preferredTime||'')+'" onchange="window.reqApptState.preferredTime=this.value" style="background:transparent;border:none;outline:none;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);flex:1;"/>'
     +'</div></div></div>';
 
-  const canSend=!!ra.horseId&&!!ra.proType&&!!ra.proId;
-  const sendBtn='<button onclick="'+(canSend?'window.reqApptState.submitted=true;rerender()':'void 0')+'" style="width:100%;background:'+(canSend?t.T:t.BRD)+';color:#fff;border:none;padding:13px;border-radius:var(--md-shape-md);font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(canSend?'pointer':'default')+';">Send request</button>';
+  var canSend=!!ra.horseId&&!!ra.proType&&!!ra.proId&&(servicesForType.length===0||!!ra.serviceId);
+  var sendBtn='<button onclick="'+(canSend?'window.reqApptState.submitted=true;rerender()':'void 0')+'" style="width:100%;background:'+(canSend?t.T:t.BRD)+';color:#fff;border:none;padding:13px;border-radius:var(--md-shape-md);font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(canSend?'pointer':'not-allowed')+';">Send request</button>';
 
-  return backBtn+'<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);padding:14px;">'+horseSel+proTypeSel+proList+descField+prefDate+sendBtn+'</div>';
+  return backBtn+'<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);padding:14px;">'+horseSel+proTypeSel+proList+svcSel+detailField+prefDate+sendBtn+'</div>';
 }
-
-// --- SHARED NOTIFY STEP --------------------------------------
-// S.notifyCtx = {active, context, summary:{icon,title,subtitle,detail,urgent}, onDone, selections:{}}
-// contexts: 'obs' | 'visit_confirmed' | 'visit_requested'
-// onDone: function name string to call after send/skip
 
 function getNotifyGroups(ctx, role){
   // Returns [{id, label, sub, icon, recommended, hideForRole?}]
@@ -5022,6 +5190,234 @@ function rBarnConnectionRequestBanner(role){
     +'<span style="font-size:13px;font-weight:700;color:var(--md-secondary);">'+pending.length+' barn connection request'+(pending.length>1?'s':'')+'</span></div>'
     +rows
     +'</div>';
+}
+
+function rVetScheduleAppt(){
+  var vas=S.vetApptSheet||{step:1,serviceId:null,horseId:null,date:'',time:'09:00',notes:'',chargeMethod:'card'};
+  if(!S.vetApptSheet) S.vetApptSheet=vas;
+
+  var INP='width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:12px;padding:11px 13px;font-size:14px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
+  var LBL='font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;';
+
+  function backBtn(target){
+    return '<button onclick="S.vetApptSheet.step='+target+';rerender()" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:var(--md-on-surface-dim);font-family:\'DM Sans\',sans-serif;font-size:13px;font-weight:600;padding:0;margin-bottom:18px;">'+msiIcon('arrow_back',18,'var(--md-on-surface-dim)')+' Back</button>';
+  }
+
+  // ── Step 1: Select service ───────────────────────────────────────────────
+  if(vas.step===1){
+    var catOrder=['Exam','Procedure','Vaccination','Regimens'];
+    var vetSvcs=vetServices.filter(function(sv){return sv.category!=='Regimens'||sv.id.startsWith('svc_reg');});
+    var grouped={};
+    catOrder.forEach(function(cat){grouped[cat]=[];});
+    vetSvcs.forEach(function(sv){if(grouped[sv.category])grouped[sv.category].push(sv);});
+
+    var svcList=catOrder.filter(function(cat){return grouped[cat].length;}).map(function(cat){
+      return '<div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin:12px 0 6px;">'
+        +cat+'</div>'
+        +grouped[cat].map(function(sv){
+          var sel=vas.serviceId===sv.id;
+          return '<div onclick="S.vetApptSheet.serviceId=\''+sv.id+'\';rerender()" style="display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:12px;border:2px solid '+(sel?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(sel?'var(--md-primary-container)':'var(--md-surface)')+';margin-bottom:6px;cursor:pointer;">'
+            +'<div style="flex:1;min-width:0;">'
+              +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+sv.name+'</div>'
+              +'<div style="display:flex;align-items:center;gap:8px;margin-top:2px;">'
+                +(sv.duration?msiIcon('timer',11,'var(--md-on-surface-dim)')+'<span style="font-size:11px;color:var(--md-on-surface-dim);">'+sv.duration+' min</span>':'')
+                +(sv.price?'<span style="font-size:11px;color:var(--md-on-surface-dim);">\xb7</span><span style="font-size:11px;font-weight:700;color:var(--md-primary);">$'+sv.price+'</span>':'')
+              +'</div>'
+            +'</div>'
+            +(sel?msiIcon('check_circle',20,'var(--md-primary)'):'')
+          +'</div>';
+        }).join('');
+    }).join('');
+
+    var canCont=!!vas.serviceId;
+    return '<div style="padding:0 4px;">'
+      +'<div style="font-size:18px;font-weight:800;color:var(--md-on-surface);margin-bottom:4px;">Schedule Appointment</div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:16px;">Select the service to schedule.</div>'
+      +svcList
+      +'<button onclick="if(S.vetApptSheet.serviceId){S.vetApptSheet.step=2;rerender();}" '+(canCont?'':'disabled ')+'style="width:100%;background:'+(canCont?'var(--md-primary)':'var(--md-outline-variant)')+';color:'+(canCont?'#fff':'var(--md-on-surface-dim)')+';border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(canCont?'pointer':'not-allowed')+';margin-top:16px;">Continue</button>'
+      +'<button onclick="S.quickAction=null;S.vetApptSheet=null;rerender()" style="width:100%;background:transparent;border:none;padding:11px;font-size:13px;color:var(--md-on-surface-dim);font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-top:4px;">Cancel</button>'
+      +'</div>';
+  }
+
+  // ── Step 2: Horse + Date/Time ────────────────────────────────────────────
+  if(vas.step===2){
+    var svc=vetServices.find(function(sv){return sv.id===vas.serviceId;});
+    var eligibleHorses=HORSES;
+    var selHorse=vas.horseId?HORSES_ALL.find(function(h){return h.id===vas.horseId;}):null;
+    var tomorrowISO=(function(){var d=new Date('2026-05-29');return d.getFullYear()+'-'+(d.getMonth()<9?'0':'')+(d.getMonth()+1)+'-'+(d.getDate()<10?'0':'')+d.getDate();})();
+
+    var horseSelector='<div style="margin-bottom:16px;"><label style="'+LBL+'">Horse</label>'
+      +'<select oninput="S.vetApptSheet.horseId=this.value;rerender()" style="'+INP+'">'
+      +'<option value="">Select horse…</option>'
+      +eligibleHorses.map(function(h){return '<option value="'+h.id+'"'+(vas.horseId===h.id?' selected':'')+'>'+h.name+' — '+h.breed+' ('+h.barn+')</option>';}).join('')
+      +'</select></div>';
+
+    // Horse + owner preview card
+    var horsePreview='';
+    if(selHorse){
+      var owner=selHorse.owners&&selHorse.owners[0]?selHorse.owners[0]:null;
+      horsePreview='<div style="background:var(--md-surface-variant);border-radius:12px;padding:11px 13px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">'
+        +'<div style="width:40px;height:40px;border-radius:50%;background:'+(selHorse.avatar?selHorse.avatar.bg:'var(--md-primary)')+'33;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--md-primary);">'+selHorse.name.charAt(0)+'</div>'
+        +'<div style="flex:1;">'
+          +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+selHorse.name+'</div>'
+          +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+selHorse.breed+' \xb7 '+selHorse.age+'</div>'
+          +(owner?'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:1px;">'+msiIcon('person',11,'var(--md-on-surface-dim)')+' Owner: '+owner.name+'</div>':'')
+        +'</div>'
+      +'</div>';
+    }
+
+    var dateTime='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">'
+      +'<div><label style="'+LBL+'">Date</label>'
+      +'<input type="date" value="'+(vas.date||tomorrowISO)+'" oninput="S.vetApptSheet.date=this.value" style="'+INP+'" min="2026-01-01"/></div>'
+      +'<div><label style="'+LBL+'">Time</label>'
+      +'<input type="time" value="'+(vas.time||'09:00')+'" oninput="S.vetApptSheet.time=this.value" style="'+INP+'"/></div>'
+      +'</div>';
+
+    var notesField='<div style="margin-bottom:20px;"><label style="'+LBL+'">Notes (optional)</label>'
+      +'<textarea oninput="S.vetApptSheet.notes=this.value" placeholder="Reason for visit, special instructions…" rows="3" style="'+INP+'resize:none;line-height:1.5;">'+( vas.notes||'')+'</textarea></div>';
+
+    var canCont2=!!vas.horseId&&!!(vas.date||tomorrowISO)&&!!vas.time;
+    return backBtn(1)
+      +'<div style="font-size:18px;font-weight:800;color:var(--md-on-surface);margin-bottom:2px;">Horse &amp; Time</div>'
+      +(svc?'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:16px;">'+msiIcon('medical_services',12,'var(--md-primary)')+' <strong>'+svc.name+'</strong> &middot; '+(svc.duration||'–')+' min &middot; $'+(svc.price||'–')+'</div>':'')
+      +horseSelector+horsePreview+dateTime+notesField
+      +'<button onclick="if(S.vetApptSheet.horseId&&(S.vetApptSheet.date||\''+tomorrowISO+'\')){if(!S.vetApptSheet.date)S.vetApptSheet.date=\''+tomorrowISO+'\';S.vetApptSheet.step=3;rerender();}" '+(canCont2?'':'disabled ')+'style="width:100%;background:'+(canCont2?'var(--md-primary)':'var(--md-outline-variant)')+';color:'+(canCont2?'#fff':'var(--md-on-surface-dim)')+';border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(canCont2?'pointer':'not-allowed')+';">Continue</button>';
+  }
+
+  // ── Step 3: Owner & Payment Review ───────────────────────────────────────
+  if(vas.step===3){
+    var svc3=vetServices.find(function(sv){return sv.id===vas.serviceId;})||{name:'Service',duration:30,price:0};
+    var horse3=HORSES_ALL.find(function(h){return h.id===vas.horseId;})||{name:'Horse',barn:'Barn',owners:[]};
+    var owner3=horse3.owners&&horse3.owners[0]?horse3.owners[0]:null;
+    var ownerUserId=owner3?owner3.userId:null;
+    var payMethod=ownerUserId?(OWNER_PAYMENT_METHODS[ownerUserId]||null):null;
+
+    // Format date/time display
+    var dateDisplay=vas.date?(function(){var parts=vas.date.split('-');var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return months[parseInt(parts[1])-1]+' '+parseInt(parts[2])+', '+parts[0];})():'TBD';
+    var timeDisplay=vas.time?(function(){var parts=vas.time.split(':');var h=parseInt(parts[0]);var m=parts[1];var ampm=h>=12?'PM':'AM';h=h%12||12;return h+':'+m+' '+ampm;})():'TBD';
+
+    // Card brand icon SVGs
+    function cardIcon(brand){
+      if(!brand)return msiIcon('credit_card',20,'var(--md-on-surface-dim)');
+      if(brand==='Visa')return '<svg width="32" height="20" viewBox="0 0 32 20" fill="none"><rect width="32" height="20" rx="4" fill="#1A1F71"/><text x="16" y="14" text-anchor="middle" font-family="Arial" font-size="8" font-weight="bold" fill="#F7B600">VISA</text></svg>';
+      if(brand==='Mastercard')return '<svg width="32" height="20" viewBox="0 0 32 20" fill="none"><rect width="32" height="20" rx="4" fill="#252525"/><circle cx="12" cy="10" r="6" fill="#EB001B"/><circle cx="20" cy="10" r="6" fill="#F79E1B"/><path d="M16 5.4a6 6 0 0 1 0 9.2A6 6 0 0 1 16 5.4z" fill="#FF5F00"/></svg>';
+      if(brand==='Amex')return '<svg width="32" height="20" viewBox="0 0 32 20" fill="none"><rect width="32" height="20" rx="4" fill="#2E77BC"/><text x="16" y="14" text-anchor="middle" font-family="Arial" font-size="7" font-weight="bold" fill="#fff">AMEX</text></svg>';
+      return msiIcon('credit_card',20,'var(--md-on-surface-dim)');
+    }
+
+    // Owner card
+    var ownerCard='<div style="background:var(--md-surface);border-radius:12px;border:1px solid var(--md-outline-variant);padding:12px 13px;margin-bottom:12px;">'
+      +'<div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:9px;">Owner</div>'
+      +(owner3
+        ?'<div style="display:flex;align-items:center;gap:10px;">'
+          +'<div style="width:38px;height:38px;border-radius:50%;background:var(--md-primary-container);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--md-primary);flex-shrink:0;">'+owner3.name.split(' ').map(function(w){return w[0];}).join('').substring(0,2)+'</div>'
+          +'<div style="flex:1;">'
+            +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+owner3.name+'</div>'
+            +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+horse3.name+' owner</div>'
+          +'</div>'
+          +msiIcon('verified',16,'var(--md-secondary)')
+        +'</div>'
+        :'<div style="font-size:12px;color:var(--md-on-surface-dim);">No owner on file</div>')
+      +'</div>';
+
+    // Payment card
+    var payCard='<div style="background:var(--md-surface);border-radius:12px;border:1px solid var(--md-outline-variant);padding:12px 13px;margin-bottom:12px;">'
+      +'<div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:9px;">Payment method</div>'
+      +(payMethod
+        ?'<div style="display:flex;align-items:center;gap:10px;">'
+          +cardIcon(payMethod.brand)
+          +'<div style="flex:1;">'
+            +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+payMethod.brand+' \xb7\xb7\xb7\xb7 '+payMethod.last4+'</div>'
+            +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+payMethod.cardName+' \xb7 Expires '+payMethod.expiry+'</div>'
+          +'</div>'
+          +'<span style="font-size:10px;font-weight:700;background:var(--md-secondary-container);color:var(--md-secondary);padding:2px 8px;border-radius:20px;">On file</span>'
+        +'</div>'
+        :'<div style="display:flex;align-items:center;gap:8px;">'+msiIcon('info',16,'var(--md-on-surface-dim)')+'<div style="font-size:12px;color:var(--md-on-surface-dim);">No card on file. Payment can be collected at time of service.</div></div>')
+      +'</div>';
+
+    // Charge method toggle
+    var chargeToggle='<div style="margin-bottom:14px;"><div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Charge method</div>'
+      +'<div style="display:flex;gap:8px;">'
+      +['card','visit'].map(function(m2){
+        var sel=vas.chargeMethod===m2;
+        var label=m2==='card'?'Card on file':'Collect at visit';
+        var icon=m2==='card'?'credit_card':'payments';
+        return '<button onclick="S.vetApptSheet.chargeMethod=\''+m2+'\';rerender()" style="flex:1;display:flex;align-items:center;gap:7px;padding:10px 12px;border-radius:10px;border:2px solid '+(sel?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(sel?'var(--md-primary-container)':'var(--md-surface)')+';cursor:pointer;font-family:\'DM Sans\',sans-serif;">'
+          +msiIcon(icon,16,sel?'var(--md-primary)':'var(--md-on-surface-dim)')
+          +'<span style="font-size:12px;font-weight:700;color:'+(sel?'var(--md-primary)':'var(--md-on-surface-dim)')+';">'+label+'</span>'
+        +'</button>';
+      }).join('')
+      +'</div></div>';
+
+    // Appt summary
+    var summary='<div style="background:var(--md-primary-container)33;border:1.5px solid var(--md-primary)22;border-radius:12px;padding:12px 13px;margin-bottom:16px;">'
+      +'<div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:9px;">Appointment summary</div>'
+      +'<div style="display:flex;flex-direction:column;gap:6px;">'
+      +'<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--md-on-surface-dim);">Service</span><span style="font-weight:700;color:var(--md-on-surface);">'+svc3.name+'</span></div>'
+      +'<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--md-on-surface-dim);">Horse</span><span style="font-weight:700;color:var(--md-on-surface);">'+horse3.name+'</span></div>'
+      +'<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--md-on-surface-dim);">Date &amp; Time</span><span style="font-weight:700;color:var(--md-on-surface);">'+dateDisplay+' at '+timeDisplay+'</span></div>'
+      +'<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--md-on-surface-dim);">Duration</span><span style="font-weight:700;color:var(--md-on-surface);">'+(svc3.duration||'–')+' min</span></div>'
+      +'<div style="height:1px;background:var(--md-outline-variant);margin:4px 0;"></div>'
+      +'<div style="display:flex;justify-content:space-between;font-size:14px;"><span style="font-weight:700;color:var(--md-on-surface);">Total</span><span style="font-weight:800;color:var(--md-primary);">$'+(svc3.price||0)+'</span></div>'
+      +'</div></div>';
+
+    return backBtn(2)
+      +'<div style="font-size:18px;font-weight:800;color:var(--md-on-surface);margin-bottom:16px;">Review &amp; Confirm</div>'
+      +ownerCard+payCard+chargeToggle+summary
+      +'<button onclick="(function(){'
+        +'var svc4=vetServices.find(function(sv){return sv.id===S.vetApptSheet.serviceId;});'
+        +'var horse4=HORSES_ALL.find(function(h){return h.id===S.vetApptSheet.horseId;});'
+        +'var owner4=horse4&&horse4.owners&&horse4.owners[0]?horse4.owners[0]:null;'
+        +'var appt={'
+          +'id:\'sa\'+Date.now(),'
+          +'serviceId:S.vetApptSheet.serviceId,'
+          +'serviceName:svc4?svc4.name:\'Service\','
+          +'horseId:S.vetApptSheet.horseId,'
+          +'horseName:horse4?horse4.name:\'Horse\','
+          +'barnName:horse4?horse4.barn:\'Barn\','
+          +'ownerName:owner4?owner4.name:\'Owner\','
+          +'date:S.vetApptSheet.date,'
+          +'time:S.vetApptSheet.time,'
+          +'duration:svc4?svc4.duration:30,'
+          +'price:svc4?svc4.price:0,'
+          +'chargeMethod:S.vetApptSheet.chargeMethod||\'card\','
+          +'status:\'confirmed\','
+          +'vetName:vetSetup.firstName?vetSetup.firstName+\' \'+vetSetup.lastName:\'Dr. Goudz\''
+        +'};'
+        +'SCHEDULED_APPOINTMENTS.push(appt);'
+        +'S.vetApptSheet={confirmed:appt,step:4};'
+        +'rerender();'
+      +'})()" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:16px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">'+msiIcon('event_available',18,'#fff')+' Confirm appointment</button>';
+  }
+
+  // ── Step 4: Confirmation ─────────────────────────────────────────────────
+  if(vas.step===4){
+    var appt4=vas.confirmed||{};
+    var svc4b=vetServices.find(function(sv){return sv.id===appt4.serviceId;})||{name:'Service'};
+    var dateDisplay4=appt4.date?(function(){var parts=appt4.date.split('-');var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return months[parseInt(parts[1])-1]+' '+parseInt(parts[2])+', '+parts[0];})():'';
+    var timeDisplay4=appt4.time?(function(){var parts=appt4.time.split(':');var h=parseInt(parts[0]);var m=parts[1];var ampm=h>=12?'PM':'AM';h=h%12||12;return h+':'+m+' '+ampm;})():'';
+
+    return '<div style="text-align:center;padding:20px 10px 10px;">'
+      +'<div style="width:64px;height:64px;border-radius:50%;background:var(--md-secondary-container);border:2px solid var(--md-secondary)44;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">'+msiIcon('event_available',28,'var(--md-secondary)')+'</div>'
+      +'<div style="font-size:22px;font-weight:800;color:var(--md-on-surface);margin-bottom:6px;">Appointment confirmed!</div>'
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:24px;line-height:1.6;">A confirmation has been sent to <strong>'+appt4.ownerName+'</strong>.</div>'
+      +'<div style="background:var(--md-surface-variant);border-radius:14px;padding:14px 16px;margin-bottom:24px;text-align:left;">'
+        +'<div style="display:flex;flex-direction:column;gap:8px;">'
+          +'<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--md-on-surface-dim);">Service</span><span style="font-weight:700;color:var(--md-on-surface);">'+appt4.serviceName+'</span></div>'
+          +'<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--md-on-surface-dim);">Horse</span><span style="font-weight:700;color:var(--md-on-surface);">'+appt4.horseName+'</span></div>'
+          +'<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--md-on-surface-dim);">Date</span><span style="font-weight:700;color:var(--md-on-surface);">'+dateDisplay4+' at '+timeDisplay4+'</span></div>'
+          +'<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--md-on-surface-dim);">Owner</span><span style="font-weight:700;color:var(--md-on-surface);">'+appt4.ownerName+'</span></div>'
+          +'<div style="height:1px;background:var(--md-outline-variant);margin:2px 0;"></div>'
+          +'<div style="display:flex;justify-content:space-between;font-size:14px;"><span style="font-weight:700;color:var(--md-on-surface);">Total</span><span style="font-weight:800;color:var(--md-primary);">$'+appt4.price+'</span></div>'
+        +'</div>'
+      +'</div>'
+      +'<div style="display:flex;gap:10px;">'
+        +'<button onclick="S.quickAction=null;S.vetApptSheet=null;rerender()" style="flex:1;background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:14px;padding:14px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);">Done</button>'
+        +'<button onclick="S.vetApptSheet={step:1,serviceId:null,horseId:null,date:\'\',time:\'09:00\',notes:\'\',chargeMethod:\'card\'};rerender()" style="flex:1;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:14px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Schedule another</button>'
+      +'</div></div>';
+  }
+
+  return '';
 }
 
 function rVetHome(){const t=TH;const appts=[{horse:'Rivendell',barn:'Sunrise Stables',month:'Mar',day:'22',time:'10:00 AM',type:'Follow-up — post colic',urgent:false},{horse:'Bella',barn:'Oakwood Farm',month:'Mar',day:'24',time:'2:00 PM',type:'Annual vaccinations',urgent:false},{horse:'Thunder',barn:'River Ranch',month:'Mar',day:'16',time:'11:30 AM',type:'Lameness eval',urgent:true}];const header=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><div><div style="font-size:17px;font-weight:700;color:var(--md-on-surface);">Good morning, Dr. Matthew</div><div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:2px;">Mon, Mar 16 · 3 upcoming appointments</div></div><div style="width:38px;height:38px;border-radius:50%;background:var(--md-secondary)22;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class=\"msi\" style=\"font-size:30px;color:var(--md-secondary);line-height:1;\">face_6</span></div></div>`;const stats=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;"><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-primary);">12</div><div style="font-size:11px;color:var(--md-on-surface-dim);">In care</div></div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-primary);">3</div><div style="font-size:11px;color:var(--md-on-surface-dim);">Appts</div></div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-warning);">2</div><div style="font-size:11px;color:var(--md-on-surface-dim);">Confirmations</div></div></div>`;const pending=`<div style="background:var(--md-warning-container);border:1.5px solid var(--md-warning)44;border-radius:12px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="S.vetSignedIn=false;S.vetView='confirmation';S.vetConfirmPage=false;rerender()"><div style="flex:1;"><div style="font-size:12px;font-weight:700;color:var(--md-warning);margin-bottom:2px;">Confirmation request pending</div><div style="font-size:12px;color:var(--md-on-surface-variant);">Rivendell · Potomavac + Imrab · Charlene Georgia</div></div><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="var(--md-warning)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;const apptCards=appts.map(function(a){
@@ -8118,7 +8514,12 @@ function rHorseDetail(h){
     // Build event map: day → [{type,logged,hasMedia}]
     var evMap={};
     (sessions||[]).forEach(function(s){
-      if(s.dateISO.startsWith(moKey)){var d=parseInt(s.dateISO.slice(8));evMap[d]=evMap[d]||[];evMap[d].push({type:s.type,logged:true,hasMedia:false});}
+      if(s.dateISO.startsWith(moKey)){
+        var d=parseInt(s.dateISO.slice(8));
+        // Only add if trainingLogs doesn't already cover this day+type
+        var coveredByLog=trainingLogs.some(function(l){return l.dateISO===s.dateISO&&l.type===s.type;});
+        if(!coveredByLog){evMap[d]=evMap[d]||[];evMap[d].push({type:s.type,logged:true,hasMedia:false});}
+      }
     });
     trainingLogs.forEach(function(l){
       if(l.dateISO.startsWith(moKey)){var d=parseInt(l.dateISO.slice(8));evMap[d]=evMap[d]||[];evMap[d].push({type:l.type,logged:true,hasMedia:l.mediaCount>0});}
@@ -8157,16 +8558,48 @@ function rHorseDetail(h){
       var selLogs=trainingLogs.filter(function(l){return parseInt(l.dateISO.slice(8))===selectedDay&&l.dateISO.startsWith(moKey);});
       var selSessions=(sessions||[]).filter(function(s){return parseInt(s.dateISO.slice(8))===selectedDay&&s.dateISO.startsWith(moKey);});
       var selUp=upcomingSessions.filter(function(us){return parseInt(us.dateISO.slice(8))===selectedDay&&us.dateISO.startsWith(moKey);});
+      // Render all sessions for this day — logs + history + upcoming, all shown together
+      var allDayItems=[];
+      // 1. Logged journal entries (richSessionRow)
+      selLogs.forEach(function(l){allDayItems.push({_k:'log',d:l});});
+      // 2. Completed history sessions not already covered by a log on same day+type
+      selSessions.forEach(function(ss){
+        // Suppress if trainingLogs has an entry for same day + same type
+        // (they represent the same session stored in both data structures)
+        var alreadyLogged=selLogs.some(function(l){return l.type===ss.type&&l.dateISO===ss.dateISO;});
+        if(!alreadyLogged) allDayItems.push({_k:'session',d:ss});
+      });
+      // 3. Upcoming/scheduled sessions
+      selUp.forEach(function(us){allDayItems.push({_k:'upcoming',d:us});});
+
       dayDetail='<div style="background:var(--md-surface-variant);border-radius:12px;padding:12px;margin-top:10px;">'
-        +'<div style="font-size:12px;font-weight:700;color:var(--md-on-surface);margin-bottom:10px;">'+moLabel.split(' ')[0]+' '+selectedDay+'</div>'
-        +(selLogs.length?selLogs.map(richSessionRow).join(''):'')
-        +(selSessions.length&&!selLogs.length?selSessions.map(function(s){return '<div style="padding:8px 0;font-size:12px;color:var(--md-on-surface-dim);">'+msiIcon(typeIcon(s.type),13,typeColor(s.type))+' '+s.type+' &middot; '+s.duration+' min (TQS '+s.tqs+')</div>';}).join(''):'')
-        +(selUp.length?selUp.map(function(us){return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--md-outline-variant);">'
-          +msiIcon(typeIcon(us.type),13,typeColor(us.type))+'<span style="font-size:12px;color:var(--md-on-surface);">'+us.type+'</span>'
-          +'<span style="font-size:11px;color:var(--md-on-surface-dim);">'+us.time+' &middot; '+us.duration+' min</span>'
-          +'<span style="margin-left:auto;font-size:10px;color:var(--md-on-surface-dim);background:var(--md-surface-variant);border-radius:6px;padding:2px 6px;">Scheduled</span>'
-        +'</div>';}).join(''):'')
-        +(!selEvs.length?'<div style="font-size:12px;color:var(--md-on-surface-dim);text-align:center;padding:8px 0;">No sessions</div>':'')
+        +'<div style="font-size:12px;font-weight:700;color:var(--md-on-surface);margin-bottom:10px;">'+moLabel.split(' ')[0]+' '+selectedDay
+          +(allDayItems.length?' <span style="font-size:10px;font-weight:600;color:var(--md-on-surface-dim);background:var(--md-surface);border-radius:20px;padding:1px 7px;">'+allDayItems.length+' session'+(allDayItems.length>1?'s':'')+'</span>':'')
+        +'</div>'
+        +(allDayItems.length
+          ? allDayItems.map(function(item,idx){
+              var divider=idx>0?'<div style="height:1px;background:var(--md-outline-variant);margin:8px 0;"></div>':'';
+              if(item._k==='log') return divider+richSessionRow(item.d);
+              if(item._k==='session'){
+                var ss=item.d;
+                return divider+'<div style="padding:6px 0;display:flex;align-items:center;gap:8px;">'
+                  +'<div style="width:28px;height:28px;border-radius:7px;background:'+typeColor(ss.type)+'22;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon(typeIcon(ss.type),14,typeColor(ss.type))+'</div>'
+                  +'<div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+ss.type+'</div>'
+                  +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+ss.duration+' min &middot; TQS '+ss.tqs+'</div></div>'
+                +'</div>';
+              }
+              if(item._k==='upcoming'){
+                var us=item.d;
+                return divider+'<div style="padding:6px 0;display:flex;align-items:center;gap:8px;">'
+                  +'<div style="width:28px;height:28px;border-radius:7px;background:'+typeColor(us.type)+'22;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon(typeIcon(us.type),14,typeColor(us.type))+'</div>'
+                  +'<div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+us.type+'</div>'
+                  +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+us.time+' &middot; '+us.duration+' min'+(us.trainer?' &middot; '+us.trainer:'')+'</div></div>'
+                  +'<span style="font-size:10px;font-weight:600;color:var(--md-primary);background:var(--md-primary-container);border-radius:6px;padding:2px 7px;">Scheduled</span>'
+                +'</div>';
+              }
+              return '';
+            }).join('')
+          : '<div style="font-size:12px;color:var(--md-on-surface-dim);text-align:center;padding:8px 0;">No sessions</div>')
         +'</div>';
     }
 
@@ -8374,7 +8807,8 @@ function rHorseDetail(h){
   const reg=HORSE_REGIMENS[h.id]||{feed:[],supplements:[],medications:[],vetNotes:''};
   function regRow(item,cc,cb){return '<div style="padding:9px 0;border-bottom:1px solid var(--md-outline-variant);display:flex;gap:9px;align-items:flex-start;">'+(item.changed?'<span style="font-size:9px;font-weight:700;background:'+cb+';color:'+cc+';padding:2px 6px;border-radius:6px;flex-shrink:0;margin-top:2px;">Changed</span>':'<div style="width:8px;flex-shrink:0;"></div>')+'<div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--md-on-surface);">'+item.label+'</div><div style="font-size:12px;color:var(--md-on-surface-dim);">'+item.amount+(item.schedule?' · '+item.schedule:'')+'</div>'+(item.changeNote?'<div style="font-size:11px;color:'+cc+';margin-top:2px;line-height:1.4;">'+item.changeNote+'</div>':'')+'</div></div>';}
   // Feed & Meds state
-  if(!window._regimenEditState) window._regimenEditState={type:null,horseId:h.id};
+  if(!window._regimenEditState) window._regimenEditState={type:null,horseId:h.id,_feedFabOpen:false};
+  if(window._regimenEditState._feedFabOpen===undefined) window._regimenEditState._feedFabOpen=false;
   var reState=window._regimenEditState;
 
   function addRegimenForm(type){
@@ -8423,23 +8857,50 @@ function rHorseDetail(h){
 
   var feedTabSections=
     '<div style="margin-bottom:14px;">'
-    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><div style="font-size:12px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;">Feed</div>'+addBtn('feed','feed item')+'</div>'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><div style="font-size:12px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;">Feed</div>'+'</div>'
     +(reState.type==='feed'?addRegimenForm('feed'):'')
     +feedSection+'</div>'
     +'<div style="margin-bottom:14px;">'
-    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><div style="font-size:12px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;">Supplements</div>'+addBtn('supplement','supplement')+'</div>'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><div style="font-size:12px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;">Supplements</div>'+'</div>'
     +(reState.type==='supplement'?addRegimenForm('supplement'):'')
     +suppSection+'</div>'
     +'<div style="margin-bottom:14px;">'
-    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><div style="font-size:12px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;">Medications</div>'+addBtn('medication','medication')+'</div>'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><div style="font-size:12px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;">Medications</div>'+'</div>'
     +(reState.type==='medication'?addRegimenForm('medication'):'')
     +medSection+'</div>'
     +(reg.vetNotes?'<div style="background:var(--md-surface-variant);border-radius:10px;padding:11px 13px;"><div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;margin-bottom:4px;">Vet notes</div><div style="font-size:13px;color:var(--md-on-surface-variant);line-height:1.5;">'+reg.vetNotes+'</div></div>':'');
+  // ── Feed tab speed-dial FAB ────────────────────────────────────────────────
+  var feedFabOpen=(tab==='feed')&&!!(reState._feedFabOpen);
+  var feedFab='';
+  if(tab==='feed'&&anyRole('vet','manager','staff')){
+    var feedFabOptions=[
+      {type:'feed',       label:'Feed item',  icon:'grass',         color:'var(--md-primary)'},
+      {type:'supplement', label:'Supplement', icon:'medication',     color:'var(--md-secondary)'},
+      {type:'medication', label:'Medication', icon:'vaccines',       color:'var(--md-error)'},
+    ];
+    feedFab=''
+      // Backdrop to close
+      +(feedFabOpen?'<div onclick="window._regimenEditState._feedFabOpen=false;rerender()" style="position:fixed;inset:0;z-index:198;"></div>':'')
+      +'<div style="position:fixed;bottom:80px;right:20px;z-index:199;display:flex;flex-direction:column;align-items:flex-end;gap:10px;">'
+      // Speed-dial options
+      +(feedFabOpen
+        ? feedFabOptions.map(function(opt){
+            return '<div style="display:flex;align-items:center;gap:10px;">'
+              +'<span style="background:var(--md-surface);color:var(--md-on-surface);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,0.2);">'+opt.label+'</span>'
+              +'<button onclick="window._regimenEditState={type:\''+opt.type+'\',horseId:\''+h.id+'\',_feedFabOpen:false};rerender()" style="width:44px;height:44px;border-radius:50%;background:'+opt.color+'22;border:1.5px solid '+opt.color+'44;box-shadow:0 2px 8px rgba(0,0,0,0.15);display:flex;align-items:center;justify-content:center;cursor:pointer;">'+msiIcon(opt.icon,20,opt.color)+'</button>'
+            +'</div>';
+          }).join('')
+        : '')
+      // Main FAB
+      +'<button onclick="window._regimenEditState._feedFabOpen=!window._regimenEditState._feedFabOpen;rerender()" style="width:54px;height:54px;border-radius:50%;background:var(--md-primary);border:none;box-shadow:0 4px 14px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.15s;transform:'+(feedFabOpen?'rotate(45deg)':'rotate(0deg)')+';">'+msiIcon('add',26,'#fff')+'</button>'
+      +'</div>';
+  }
+
   var feedTab='<div style="padding:14px;">'+feedTabSections+'</div>';
 
 
   const content={overview:overviewTab,pedigree:pedigreeTab,health:healthTab,training:trainingTab,competitions:competitionsTab,connections:connectionsTab,media:mediaTab,feed:feedTab}[tab]||overviewTab;
-  return logSheet+trainingFab+'<div style="display:flex;flex-direction:column;height:100%;">'+hero+tabBar+'<div id="horse-tab-body" style="flex:1;overflow-y:auto;">'+content+'</div></div>';
+  return logSheet+trainingFab+feedFab+'<div style="display:flex;flex-direction:column;height:100%;">'+hero+tabBar+'<div id="horse-tab-body" style="flex:1;overflow-y:auto;">'+content+'</div></div>';
 }
 
 // --- BARN PROFESSIONALS DATA ---------------------------------
