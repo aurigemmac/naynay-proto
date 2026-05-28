@@ -153,6 +153,23 @@ var PRO_BARN_REQUESTS=[
    message:'We\'re looking for a skilled trainer to join our team at Sunrise Stables. We have 6 horses in active training programs across hunter/jumper and dressage.'},
 ];
 
+// Invitations sent BY the barn manager TO potential connections
+function generateInviteCode(){
+  var chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  var code='';for(var i=0;i<6;i++)code+=chars[Math.floor(Math.random()*chars.length)];
+  return code;
+}
+var BARN_INVITATIONS=[
+  {id:'bi1',firstName:'Sarah',lastName:'Johnson',email:'sarah.j@email.com',phone:'(914) 555-0177',role:'Staff',
+   inviteCode:'ODQWEZ',sentAt:'2026-05-26',status:'pending',barnId:'sunrise',barnName:'Sunrise Stables',managerName:'Charlene Georgia'},
+  {id:'bi2',firstName:'Mike',lastName:'Wells',email:'drwells@vetcare.com',phone:'(914) 555-0188',role:'Veterinarian',
+   inviteCode:'RXKM4P',sentAt:'2026-05-24',status:'sent',barnId:'sunrise',barnName:'Sunrise Stables',managerName:'Charlene Georgia'},
+  {id:'bi3',firstName:'Tom',lastName:'Farrow',email:'tom@horseshoe.com',phone:'(845) 555-0199',role:'Farrier',
+   inviteCode:'YB7NQA',sentAt:'2026-05-20',status:'accepted',barnId:'sunrise',barnName:'Sunrise Stables',managerName:'Charlene Georgia'},
+  {id:'bi4',firstName:'Lisa',lastName:'Monroe',email:'lisa.m@gmail.com',phone:'(914) 555-0211',role:'Trainer',
+   inviteCode:'CW3FTS',sentAt:'2026-05-28',status:'pending',barnId:'sunrise',barnName:'Sunrise Stables',managerName:'Charlene Georgia'},
+];
+
 
 
 
@@ -897,7 +914,7 @@ let S={
   trainingAssignments:{[TODAY]:todayTrainingAssign},
   mgrView:'home',assignDate:TODAY,expandedAssign:null,expandedTrainingAssign:null,
   mgrAssignTab:'tasks',
-  selectedHorse:null,taskFilter:'all',
+  selectedHorse:null,mgrInviteSheet:null,trainingView:'list',trainingFabOpen:false,trainingCalMonth:null,trainingLogSheet:null,taskFilter:'all',
   vetSignedIn:false,vetView:'confirmation',vetSetupTab:'account',trainerSetupTab:'account',mgrSetupTab:'tasks',staffSetupTab:'account',ownerSetupTab:'account',taskScheduleExpanded:false,editingTaskId:null,aiScheduleDismissed:{},aiScheduleAdded:{},
   vetConfirmPage:false,vetEditMode:false,prevVetView:null,
   feedCardExpanded:false,feedCardHorse:null,
@@ -3074,69 +3091,243 @@ function rMgrSetupConnections(){
   var t=TH;
   var pros=BARN_PROFESSIONALS;
   var pendingBarnReqs=(BARN_JOIN_REQUESTS||[]).filter(function(r){return r.status==='pending';});
+  var pendingStaffReqs=(STAFF_JOIN_REQUESTS||[]).filter(function(r){return r.status==='pending';});
+  var invites=BARN_INVITATIONS||[];
+  var sheet=S.mgrInviteSheet;
 
-  // Type icon map
-  function typeIcon(type){
-    return type==='Vet'?'medical_services':type==='Trainer'?'fitness_center':type==='Farrier'?'construction':type==='Dentist'?'dentistry':type==='Masseuse'?'self_improvement':'person';
-  }
-  function typeColor(type){
-    return type==='Vet'?'var(--md-primary)':type==='Trainer'?'var(--md-tertiary)':type==='Farrier'?'var(--md-warning)':type==='Dentist'?'var(--md-error)':'var(--md-secondary)';
+  // ── Role config ────────────────────────────────────────────────────────────
+  var ALL_ROLES=[
+    {id:'Veterinarian', icon:'medical_services', color:'var(--md-primary)'},
+    {id:'Trainer',      icon:'fitness_center',   color:'var(--md-tertiary)'},
+    {id:'Farrier',      icon:'construction',      color:'var(--md-warning)'},
+    {id:'Dentist',      icon:'dentistry',         color:'var(--md-error)'},
+    {id:'Chiropractor', icon:'self_improvement',  color:'var(--md-secondary)'},
+    {id:'Horse Owner',  icon:'favorite',          color:'#C04A6A'},
+    {id:'Staff',        icon:'person',            color:'var(--md-on-surface-dim)'},
+    {id:'Other',        icon:'more_horiz',        color:'var(--md-on-surface-dim)'},
+  ];
+  function roleConfig(r){return ALL_ROLES.find(function(x){return x.id===r;})||ALL_ROLES[ALL_ROLES.length-1];}
+  function initials(f,l){return ((f||'').charAt(0)+(l||'').charAt(0)).toUpperCase()||'?';}
+  function statusBadge(status,sentAt){
+    if(status==='accepted')return '<span style="display:flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:var(--md-secondary);">'+msiIcon('check_circle',11,'var(--md-secondary)')+' Accepted</span>';
+    if(status==='sent'){
+      var d=sentAt?Math.round((new Date('2026-05-28')-new Date(sentAt))/(86400000)):0;
+      return '<span style="font-size:10px;color:var(--md-on-surface-dim);font-weight:600;">Sent '+(d>0?d+'d ago':'today')+'</span>';
+    }
+    return '<span style="font-size:10px;font-weight:700;background:var(--md-warning);color:#fff;padding:2px 7px;border-radius:20px;">Pending</span>';
   }
 
-  // Pending connection requests banner
-  var pendingBanner=pendingBarnReqs.length
-    ?'<div style="background:var(--md-primary-container);border:1.5px solid var(--md-primary)33;border-radius:12px;padding:11px 14px;margin-bottom:14px;">'
+  // ── Role-specific bullet points for invite message ──────────────────────────
+  function roleBullets(role){
+    var map={
+      'Veterinarian':['Access patient records and health history for all horses','Log visits, treatments, and follow-up notes','Coordinate care directly with owners and barn staff'],
+      'Trainer':['Log training sessions and track horse progress','Share session notes and updates with horse owners','Coordinate scheduling with the barn team'],
+      'Farrier':['View appointment schedules and horse hoof notes','Access relevant horse health information','Coordinate visit timing with barn staff and owners'],
+      'Dentist':['Access horse dental history and records','Schedule and log dental visits','Share treatment notes with owners and barn team'],
+      'Chiropractor':['Review horse health and training history','Log adjustment sessions and observations','Coordinate with vets and trainers on care plans'],
+      'Horse Owner':['Monitor your horse\'s health, training, and daily care','Communicate with your barn team and professionals','View farrier, vet, and training schedules'],
+      'Staff':['View your daily task schedule and assignments','Log completed tasks and report issues','Communicate with barn management and team'],
+      'Other':['Connect with your barn\'s care team','Access relevant horse records and schedules','Communicate and coordinate with barn staff'],
+    };
+    return (map[role]||map['Other']).map(function(b){return '\u2022 '+b;}).join('\n');
+  }
+
+  function inviteMessage(inv){
+    var firstName=inv.firstName||'there';
+    var role=inv.role||'team member';
+    var barnName=inv.barnName||'the barn';
+    var managerName=inv.managerName||'The barn manager';
+    var code=inv.inviteCode||'XXXXXX';
+    return 'Hi '+firstName+',\n\n'+managerName+' has invited you to join '+barnName+' on NayNay \u2014 the equine care platform connecting barn teams, professionals, and horse owners.\n\nAs '+role+', you\u2019ll be able to:\n'+roleBullets(role)+'\n\nNayNay keeps everything in one place \u2014 health records, training logs, schedules, and team communication.\n\nSign up at: https://naynay.app/join/'+code+'\nOr use invite code: '+code+'\n\n\u2014 '+managerName+', '+barnName;
+  }
+
+  // ── Pending inbound requests banner (unchanged) ───────────────────────────
+  var pendingBanner='';
+  if(pendingBarnReqs.length){
+    pendingBanner='<div style="background:var(--md-primary-container);border:1.5px solid var(--md-primary)33;border-radius:12px;padding:11px 14px;margin-bottom:12px;">'
       +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;">'+msiIcon('pending',15,'var(--md-primary)')
       +'<span style="font-size:12px;font-weight:700;color:var(--md-primary);">'+pendingBarnReqs.length+' pending connection request'+(pendingBarnReqs.length>1?'s':'')+'</span></div>'
       +pendingBarnReqs.map(function(r){
-        return '<div style="background:var(--md-surface);border-radius:9px;padding:9px 11px;margin-bottom:7px;display:flex;align-items:center;gap:9px;">'
-          +'<div style="width:32px;height:32px;border-radius:50%;background:var(--md-secondary-container);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon(r.role==='Veterinarian'?'medical_services':'fitness_center',16,'var(--md-secondary)')+'</div>'
+        return '<div style="background:var(--md-surface);border-radius:9px;padding:9px 11px;margin-bottom:7px;">'
+          +'<div style="display:flex;align-items:center;gap:9px;margin-bottom:8px;">'
+          +'<div style="width:32px;height:32px;border-radius:50%;background:var(--md-secondary-container);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon(r.role==='Veterinarian'?'medical_services':'person',16,'var(--md-secondary)')+'</div>'
           +'<div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:var(--md-on-surface);">'+r.name+'</div>'
-          +'<div style="font-size:10px;color:var(--md-on-surface-dim);">'+r.role+' \xb7 '+r.time+'</div></div>'
-          +'<div style="display:flex;gap:5px;">'
-          +'<button onclick="(function(){var br=(BARN_JOIN_REQUESTS||[]).find(function(x){return x.id===\''+r.id+'\';});if(br)br.status=\'approved\';showToast(\''+r.name.split(' ')[0]+' connected!\',\'check_circle\',\'success\');rerender();})()" style="padding:5px 11px;background:var(--md-primary);color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Approve</button>'
-          +'<button onclick="(function(){var br=(BARN_JOIN_REQUESTS||[]).find(function(x){return x.id===\''+r.id+'\';});if(br)br.status=\'declined\';showToast(\'Declined\',\'close\',\'info\');rerender();})()" style="padding:5px 9px;background:var(--md-surface-variant);color:var(--md-on-surface-dim);border:1px solid var(--md-outline);border-radius:8px;font-size:11px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Decline</button>'
+          +'<div style="font-size:10px;color:var(--md-on-surface-dim);">'+(r.role||r.type||'Professional')+' \xb7 '+r.time+'</div></div></div>'
+          +(r.message?'<div style="font-size:12px;color:var(--md-on-surface-variant);line-height:1.5;margin-bottom:9px;padding:0 2px;">'+r.message+'</div>':'')
+          +'<div style="display:flex;gap:7px;">'
+          +'<button onclick="(function(){var br=(BARN_JOIN_REQUESTS||[]).find(function(x){return x.id===\''+r.id+'\';});if(br)br.status=\'approved\';showToast(\''+r.name.split(' ')[0]+' connected!\',\'check_circle\',\'success\');rerender();})()" style="flex:1;background:var(--md-secondary);color:#fff;border:none;border-radius:10px;padding:9px 14px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Approve connection</button>'
+          +'<button onclick="(function(){var br=(BARN_JOIN_REQUESTS||[]).find(function(x){return x.id===\''+r.id+'\';});if(br)br.status=\'declined\';showToast(\'Declined\',\'close\',\'info\');rerender();})()" style="padding:9px 13px;background:transparent;color:var(--md-on-surface-dim);border:1.5px solid var(--md-outline);border-radius:10px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Decline</button>'
           +'</div></div>';
-      }).join('')+'</div>'
-    :'';
+      }).join('')+'</div>';
+  }
 
-  // Connected professionals list
+  // ── Staff join requests ───────────────────────────────────────────────────
+  var staffBanner='';
+  if(pendingStaffReqs.length){
+    staffBanner='<div style="background:var(--md-secondary-container);border:1.5px solid var(--md-secondary)33;border-radius:12px;padding:11px 14px;margin-bottom:12px;">'
+      +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;">'+msiIcon('person_add',15,'var(--md-secondary)')
+      +'<span style="font-size:12px;font-weight:700;color:var(--md-secondary);">'+pendingStaffReqs.length+' staff join request'+(pendingStaffReqs.length>1?'s':'')+'</span></div>'
+      +pendingStaffReqs.map(function(r){
+        return '<div style="display:flex;align-items:center;gap:9px;padding:7px 0;border-top:1px solid var(--md-outline-variant);">'
+          +'<div style="font-size:12px;font-weight:600;color:var(--md-on-surface);flex:1;">'+r.name+'</div>'
+          +'<div style="font-size:10px;color:var(--md-on-surface-dim);">'+r.time+'</div>'
+          +'<button onclick="(function(){var sr=(STAFF_JOIN_REQUESTS||[]).find(function(x){return x.id===\''+r.id+'\';});if(sr)sr.status=\'approved\';showToast(\''+r.name.split(' ')[0]+' approved!\',\'check_circle\',\'success\');rerender();})()" style="background:var(--md-secondary);color:#fff;border:none;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Approve</button>'
+          +'</div>';
+      }).join('')+'</div>';
+  }
+
+  // ── Sent invitations section ──────────────────────────────────────────────
+  var pendingInvites=invites.filter(function(inv){return inv.status!=='accepted';});
+  var acceptedInvites=invites.filter(function(inv){return inv.status==='accepted';});
+  var invSection='';
+  if(invites.length){
+    invSection='<div style="margin-bottom:12px;">'
+      +'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Sent invitations</div>'
+      +'<div style="background:var(--md-surface);border-radius:12px;border:1px solid var(--md-outline-variant);overflow:hidden;">'
+      +invites.map(function(inv){
+        var rc=roleConfig(inv.role);
+        var ini=initials(inv.firstName,inv.lastName);
+        var isAccepted=inv.status==='accepted';
+        return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--md-outline-variant);">'
+          +'<div style="width:36px;height:36px;border-radius:50%;background:'+rc.color+'22;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
+          +'<span style="font-size:12px;font-weight:700;color:'+rc.color+';">'+ini+'</span></div>'
+          +'<div style="flex:1;min-width:0;">'
+            +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">'
+              +'<span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+inv.firstName+' '+inv.lastName+'</span>'
+              +'<span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;background:'+rc.color+'22;color:'+rc.color+';">'+inv.role+'</span>'
+            +'</div>'
+            +statusBadge(inv.status,inv.sentAt)
+          +'</div>'
+          +(!isAccepted?'<button onclick="S.mgrInviteSheet={step:3,resendId:\''+inv.id+'\',role:\''+inv.role+'\',firstName:\''+inv.firstName+'\',lastName:\''+inv.lastName+'\',email:\''+inv.email+'\',phone:\''+inv.phone+'\',inviteCode:\''+inv.inviteCode+'\'};rerender()" style="background:none;border:1.5px solid var(--md-outline-variant);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);white-space:nowrap;">Resend</button>':'')
+          +'</div>';
+      }).join('')
+      +'</div></div>';
+  }
+
+  // ── Connected professionals list (unchanged) ──────────────────────────────
   var connectedSection='<div style="margin-bottom:16px;">'
     +'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Connected professionals</div>'
     +pros.map(function(p){
-      var ic=typeIcon(p.type);var col=typeColor(p.type);
+      var rc=roleConfig(p.type);
       var thread=MESSAGE_THREADS.find(function(th){return th.participants.some(function(x){return x.includes(p.name.split(' ')[0]);});});
       return '<div style="background:var(--md-surface);border-radius:12px;border:1px solid var(--md-outline-variant);padding:12px 13px;margin-bottom:8px;">'
         +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">'
         +'<div style="width:40px;height:40px;border-radius:50%;background:'+p.bg+';display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="font-size:14px;font-weight:700;color:'+p.color+';">'+p.initials+'</span></div>'
         +'<div style="flex:1;min-width:0;">'
-        +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+p.name+'</div>'
-        +'<div style="display:flex;align-items:center;gap:5px;margin-top:2px;">'+msiIcon(ic,12,col)+'<span style="font-size:11px;color:var(--md-on-surface-dim);">'+p.type+'</span>'
-        +(p.nayNay?'<span style="font-size:9px;font-weight:700;background:var(--md-primary-container);color:var(--md-primary);padding:1px 6px;border-radius:8px;margin-left:4px;">on NayNay</span>':'<span style="font-size:9px;color:var(--md-on-surface-dim);margin-left:4px;">\xb7 not on NayNay</span>')
-        +'</div></div></div>'
+          +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+p.name+'</div>'
+          +'<div style="display:flex;align-items:center;gap:5px;margin-top:2px;">'+msiIcon(rc.icon,12,rc.color)+'<span style="font-size:11px;color:var(--md-on-surface-dim);">'+p.type+'</span>'
+          +(p.nayNay?'<span style="font-size:9px;font-weight:700;background:var(--md-primary-container);color:var(--md-primary);padding:1px 6px;border-radius:8px;margin-left:3px;">on NayNay</span>':'<span style="font-size:9px;background:var(--md-outline-variant);color:var(--md-on-surface-dim);padding:1px 6px;border-radius:8px;margin-left:3px;">Not on NayNay</span>')
+          +'</div></div></div>'
         +'<div style="display:flex;gap:7px;">'
-        +(p.nayNay&&thread
-          ?'<button onclick="S.activeTab=\'messages\';S.selectedThread=\''+thread.id+'\';rerender()" style="flex:1;background:none;border:1.5px solid var(--md-primary)33;padding:7px 10px;border-radius:9px;font-size:12px;font-weight:600;color:var(--md-primary);font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;">'+msiIcon('chat',13,'var(--md-primary)')+' Message</button>'
-          :'<button onclick="showToast(\'Invite sent to '+p.name.split(' ')[0]+'!\',\'send\',\'success\')" style="flex:1;background:none;border:1.5px solid var(--md-outline-variant);padding:7px 10px;border-radius:9px;font-size:12px;font-weight:600;color:var(--md-on-surface-dim);font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;">'+msiIcon('send',13,'var(--md-on-surface-dim)')+' Send NayNay invite</button>')
-        +'<button onclick="showToast(\'Visit scheduled with '+p.name.split(' ')[0]+'!\',\'calendar_month\',\'success\')" style="background:none;border:1.5px solid var(--md-outline-variant);padding:7px 10px;border-radius:9px;font-size:12px;font-weight:600;color:var(--md-on-surface-dim);font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;">'+msiIcon('calendar_month',13,'var(--md-on-surface-dim)')+' Schedule visit</button>'
+        +(p.nayNay&&thread?'<button onclick="S.activeTab=\'messages\';S.selectedThread=\''+thread.id+'\';rerender()" style="flex:1;background:none;border:1.5px solid var(--md-primary)33;padding:7px 10px;border-radius:9px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-primary);display:flex;align-items:center;justify-content:center;gap:5px;">'+msiIcon('chat',13,'var(--md-primary)')+' Message</button>':'<button onclick="S.mgrInviteSheet={step:1,role:\''+p.type+'\',firstName:\'\',lastName:\'\',email:\'\',phone:\'\',inviteCode:generateInviteCode()};rerender()" style="flex:1;background:none;border:1.5px solid var(--md-outline-variant);padding:7px 10px;border-radius:9px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);display:flex;align-items:center;justify-content:center;gap:5px;">'+msiIcon('send',13,'var(--md-on-surface-dim)')+' Invite to NayNay</button>')
+        +'<button onclick="showToast(\'Visit scheduled with '+p.name.split(' ')[0]+'!\',\'calendar_month\',\'success\')" style="background:none;border:1.5px solid var(--md-outline-variant);padding:7px 10px;border-radius:9px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);display:flex;align-items:center;gap:5px;">'+msiIcon('calendar_month',13,'var(--md-on-surface-dim)')+' Schedule</button>'
         +'</div></div>';
-    }).join('')
-    +'</div>';
+    }).join('')+'</div>';
 
-  // Invite new professional panel
-  var inviteSection='<div style="background:var(--md-surface-variant);border-radius:12px;padding:12px 14px;margin-bottom:14px;">'
-    +'<div style="font-size:12px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Invite a professional</div>'
-    +'<div style="font-size:12px;color:var(--md-on-surface-dim);margin-bottom:12px;line-height:1.5;">Invite a vet, trainer, farrier, or other specialist to connect with your barn. They\'ll be able to message you, request visits, and collaborate on equine care.</div>'
-    +'<div style="display:flex;flex-wrap:wrap;gap:7px;">'
-    +['Veterinarian','Trainer','Farrier','Dentist','Other'].map(function(role){
-      var icon=role==='Veterinarian'?'medical_services':role==='Trainer'?'fitness_center':role==='Farrier'?'construction':role==='Dentist'?'dentistry':'person';
-      return '<button onclick="showToast(\'Invite link copied for '+role+'!\',\'link\',\'success\')" style="display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:20px;background:var(--md-surface);border:1.5px solid var(--md-outline-variant);font-size:12px;font-weight:600;color:var(--md-on-surface-dim);font-family:\'DM Sans\',sans-serif;cursor:pointer;">'+msiIcon(icon,13,'var(--md-on-surface-dim)')+' '+role+'</button>';
-    }).join('')
-    +'</div></div>';
+  // ── Invite sheet ──────────────────────────────────────────────────────────
+  var inviteSheet='';
+  if(sheet){
+    var step=sheet.step||1;
+    var sheetContent='';
 
-  return pendingBanner+connectedSection+inviteSection;
+    // Step 1: Role picker
+    if(step===1){
+      sheetContent='<div style="font-size:17px;font-weight:800;color:var(--md-on-surface);margin-bottom:6px;">Invite someone</div>'
+        +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:20px;">Who would you like to invite to '+((mgrSetup&&mgrSetup.barnName)||'your barn')+'?</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px;">'
+        +ALL_ROLES.map(function(r){
+          var sel=sheet.role===r.id;
+          return '<button onclick="S.mgrInviteSheet.role=\''+r.id+'\';rerender()" style="display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:12px;border:2px solid '+(sel?r.color:'var(--md-outline-variant)')+';background:'+(sel?r.color+'18':'var(--md-surface-variant)')+';cursor:pointer;text-align:left;">'
+            +'<div style="width:32px;height:32px;border-radius:9px;background:'+r.color+'22;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon(r.icon,16,r.color)+'</div>'
+            +'<span style="font-size:13px;font-weight:700;color:'+(sel?r.color:'var(--md-on-surface)')+';">'+r.id+'</span>'
+            +(sel?msiIcon('check_circle',16,r.color):'')
+            +'</button>';
+        }).join('')
+        +'</div>'
+        +'<button onclick="if(S.mgrInviteSheet.role){S.mgrInviteSheet.step=2;S.mgrInviteSheet.inviteCode=S.mgrInviteSheet.inviteCode||generateInviteCode();rerender();}" '+(sheet.role?'':'disabled ')+'style="width:100%;background:'+(sheet.role?'var(--md-primary)':'var(--md-outline-variant)')+';color:'+(sheet.role?'#fff':'var(--md-on-surface-dim)')+';border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(sheet.role?'pointer':'not-allowed')+';">Continue</button>';
+    }
+
+    // Step 2: Contact info
+    else if(step===2){
+      var rc2=roleConfig(sheet.role||'Other');
+      var hasContact=(sheet.firstName||'').trim()||(sheet.lastName||'').trim();
+      var hasEmail=(sheet.email||'').trim();
+      var hasPhone=(sheet.phone||'').trim();
+      var canContinue=hasContact&&(hasEmail||hasPhone);
+      var INP='width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:12px;padding:11px 13px;font-size:14px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
+      sheetContent='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
+        +'<div style="width:32px;height:32px;border-radius:9px;background:'+rc2.color+'22;display:flex;align-items:center;justify-content:center;">'+msiIcon(rc2.icon,16,rc2.color)+'</div>'
+        +'<div style="font-size:17px;font-weight:800;color:var(--md-on-surface);">Invite '+sheet.role+'</div>'
+        +'</div>'
+        +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:18px;">Enter their contact info or pick from your contacts.</div>'
+        // From contacts button
+        +'<button onclick="(async function(){try{if(!navigator.contacts||!navigator.contacts.select)throw new Error(\'not supported\');var c=await navigator.contacts.select([\'name\',\'email\',\'tel\'],{multiple:false});if(c&&c[0]){var n=(c[0].name&&c[0].name[0])||\'\';\' \'.trim();var parts=n.split(\' \');S.mgrInviteSheet.firstName=parts[0]||\'\';S.mgrInviteSheet.lastName=parts.slice(1).join(\' \');S.mgrInviteSheet.email=(c[0].email&&c[0].email[0])||\'\';S.mgrInviteSheet.phone=(c[0].tel&&c[0].tel[0])||\'\';}rerender();}catch(e){showToast(\'Contacts not available — enter manually\',\'info\',\'info\');}})()" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline-variant);border-radius:12px;padding:12px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface);display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px;">'+msiIcon('contacts',18,'var(--md-primary)')+' Pick from contacts</button>'
+        +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div><span style="font-size:11px;color:var(--md-on-surface-dim);font-weight:600;">or enter manually</span><div style="flex:1;height:1px;background:var(--md-outline-variant);"></div></div>'
+        // Name fields
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">'
+          +'<div><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">First name</label>'
+          +'<input type="text" value="'+(sheet.firstName||'')+'" oninput="S.mgrInviteSheet.firstName=this.value" placeholder="Jane" style="'+INP+'"/></div>'
+          +'<div><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Last name</label>'
+          +'<input type="text" value="'+(sheet.lastName||'')+'" oninput="S.mgrInviteSheet.lastName=this.value" placeholder="Smith" style="'+INP+'"/></div>'
+        +'</div>'
+        // Email
+        +'<div style="margin-bottom:10px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Email address</label>'
+        +'<input type="email" value="'+(sheet.email||'')+'" oninput="S.mgrInviteSheet.email=this.value" placeholder="jane@email.com" style="'+INP+'"/></div>'
+        // Phone
+        +'<div style="margin-bottom:18px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Mobile phone</label>'
+        +'<input type="tel" value="'+(sheet.phone||'')+'" oninput="S.mgrInviteSheet.phone=this.value" placeholder="(555) 000-0000" style="'+INP+'"/>'
+        +'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:5px;">At least one of email or phone is required.</div></div>'
+        // Buttons
+        +'<div style="display:flex;gap:9px;">'
+        +'<button onclick="S.mgrInviteSheet.step=1;rerender()" style="padding:13px 16px;background:var(--md-surface-variant);border:1.5px solid var(--md-outline-variant);border-radius:12px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);">Back</button>'
+        +'<button onclick="if('+(canContinue?'true':'false')+'){S.mgrInviteSheet.step=3;rerender();}" '+(canContinue?'':'disabled ')+'style="flex:1;background:'+(canContinue?'var(--md-primary)':'var(--md-outline-variant)')+';color:'+(canContinue?'#fff':'var(--md-on-surface-dim)')+';border:none;border-radius:12px;padding:13px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(canContinue?'pointer':'not-allowed')+';">Preview invite</button>'
+        +'</div>';
+    }
+
+    // Step 3: Message preview + send
+    else if(step===3){
+      var msg=inviteMessage(sheet);
+      var shareUrl='https://naynay.app/join/'+(sheet.inviteCode||'XXXXXX');
+      var rc3=roleConfig(sheet.role||'Other');
+      var isResend=!!sheet.resendId;
+      sheetContent='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
+        +'<div style="width:32px;height:32px;border-radius:9px;background:'+rc3.color+'22;display:flex;align-items:center;justify-content:center;">'+msiIcon('mail',16,rc3.color)+'</div>'
+        +'<div style="font-size:17px;font-weight:800;color:var(--md-on-surface);">'+(isResend?'Resend invite':'Preview invite')+'</div>'
+        +'</div>'
+        +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:14px;">This message will be shared with <strong style="color:var(--md-on-surface);">'+(sheet.firstName||'your invitee')+(sheet.lastName?' '+sheet.lastName:'')+'</strong>.</div>'
+        // Message preview card
+        +'<div style="background:var(--md-surface-variant);border:1.5px solid var(--md-outline-variant);border-radius:14px;padding:14px 15px;margin-bottom:16px;max-height:260px;overflow-y:auto;">'
+          +'<div style="font-size:12px;color:var(--md-on-surface);line-height:1.7;white-space:pre-wrap;">'+msg+'</div>'
+        +'</div>'
+        // Invite code badge
+        +'<div style="display:flex;align-items:center;gap:10px;background:var(--md-primary-container);border-radius:12px;padding:10px 13px;margin-bottom:16px;">'
+          +msiIcon('qr_code',20,'var(--md-primary)')
+          +'<div><div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;">Invite code</div>'
+          +'<div style="font-size:18px;font-weight:800;color:var(--md-primary);letter-spacing:3px;">'+(sheet.inviteCode||'XXXXXX')+'</div></div>'
+          +'<div style="flex:1;text-align:right;font-size:11px;color:var(--md-on-surface-dim);">Link: naynay.app/join/'+sheet.inviteCode+'</div>'
+        +'</div>'
+        // Send button
+        +'<button onclick="(function(){'
+          +'var msg=\''+msg.replace(/'/g,"\\'").replace(/\n/g,'\\n')+'\';'
+          +'var url=\''+shareUrl+'\';'
+          +'if(navigator.share){navigator.share({title:\'Join '+((mgrSetup&&mgrSetup.barnName)||'our barn')+' on NayNay\',text:msg,url:url}).then(function(){var found=(BARN_INVITATIONS||[]).find(function(x){return x.id===\''+sheet.resendId+'\';});if(found){found.status=\'sent\';found.sentAt=new Date().toISOString().slice(0,10);}else{(BARN_INVITATIONS=BARN_INVITATIONS||[]).push({id:\'bi\'+Date.now(),firstName:S.mgrInviteSheet.firstName,lastName:S.mgrInviteSheet.lastName,email:S.mgrInviteSheet.email,phone:S.mgrInviteSheet.phone,role:S.mgrInviteSheet.role,inviteCode:S.mgrInviteSheet.inviteCode,sentAt:new Date().toISOString().slice(0,10),status:\'sent\',barnId:\'sunrise\',barnName:\''+(mgrSetup&&mgrSetup.barnName||'Sunrise Stables')+'\',managerName:\'Charlene Georgia\'});}S.mgrInviteSheet=null;showToast(\'Invite sent!\',\'check_circle\',\'success\');rerender();}).catch(function(){});}'
+          +'else{try{navigator.clipboard.writeText(msg+\'\\n\\n\'+url);showToast(\'Message copied to clipboard!\',\'content_copy\',\'success\');}catch(e){showToast(\'Copy the message above to share\',\'info\',\'info\');}}'
+        +'})()" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px;">'+msiIcon('ios_share',18,'#fff')+' Send invite</button>'
+        +(!isResend?'<button onclick="S.mgrInviteSheet.step=2;rerender()" style="width:100%;background:transparent;border:none;padding:10px;font-size:13px;font-weight:600;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);">Back</button>':'');
+    }
+
+    inviteSheet='<div onclick="S.mgrInviteSheet=null;rerender()" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:400;display:flex;flex-direction:column;justify-content:flex-end;">'
+      +'<div onclick="event.stopPropagation()" style="background:var(--md-surface);border-radius:20px 20px 0 0;padding:20px 16px '+(step===3?'24':'32')+'px;max-height:92vh;overflow-y:auto;">'
+      +'<div style="width:36px;height:4px;border-radius:2px;background:var(--md-outline-variant);margin:0 auto 18px;"></div>'
+      +sheetContent
+      +'</div></div>';
+  }
+
+  // ── FAB ──────────────────────────────────────────────────────────────────
+  var fab='<button onclick="S.mgrInviteSheet={step:1,role:null,firstName:\'\',lastName:\'\',email:\'\',phone:\'\',inviteCode:generateInviteCode()};rerender()" style="position:fixed;bottom:80px;right:20px;z-index:200;width:54px;height:54px;border-radius:50%;background:var(--md-primary);border:none;box-shadow:0 4px 14px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;cursor:pointer;">'+msiIcon('person_add',24,'#fff')+'</button>';
+
+  return inviteSheet+fab+pendingBanner+staffBanner+invSection+connectedSection;
 }
-
 
 function rMgrSetup(){
   const t=TH;
@@ -6549,6 +6740,52 @@ const HORSE_TRAINING_HISTORY={
   ],
 };
 
+// ── UPCOMING TRAINING SESSIONS ────────────────────────────────────────────
+var UPCOMING_TRAINING={
+  'rv':[
+    {id:'ut1',dateISO:'2026-03-18',date:'Mar 18',time:'8:00 AM',type:'Dressage',duration:55,trainer:'Alyse',notes:'Test prep — focus on medium trot'},
+    {id:'ut2',dateISO:'2026-03-21',date:'Mar 21',time:'9:00 AM',type:'Flat',duration:45,trainer:'Alyse',notes:'Lateral work'},
+    {id:'ut3',dateISO:'2026-03-23',date:'Mar 23',time:'8:00 AM',type:'Hack',duration:35,trainer:'Alyse',notes:'Trail cool-down'},
+  ],
+  'h1':[
+    {id:'ut4',dateISO:'2026-03-18',date:'Mar 18',time:'10:00 AM',type:'Jump',duration:45,trainer:'Jordan M.',notes:'Grid work — oxers'},
+    {id:'ut5',dateISO:'2026-03-20',date:'Mar 20',time:'9:00 AM',type:'Flat',duration:40,trainer:'Jordan M.',notes:'Flatwork and collection'},
+  ],
+  'h3':[
+    {id:'ut6',dateISO:'2026-03-19',date:'Mar 19',time:'7:00 AM',type:'Flat',duration:35,trainer:'Alyse',notes:'20m circles, transitions'},
+    {id:'ut7',dateISO:'2026-03-22',date:'Mar 22',time:'8:00 AM',type:'Dressage',duration:40,trainer:'Alyse',notes:'Intro test walkthrough'},
+  ],
+};
+
+// ── HORSE TRAINING LOGS (journal entries) ────────────────────────────────
+var HORSE_TRAINING_LOGS={
+  'rv':[
+    {id:'tl1',dateISO:'2026-03-16',sessionId:null,type:'Dressage',duration:55,horseId:'rv',
+     loggedIntensity:4,intensityLabel:'Strong',notes:'Really solid half-pass work today. Rivendell was very attentive and forward. Piaffe transitions improving.',
+     weather:'Sunny',temp:52,conditions:['Clear','Light breeze'],mediaCount:2,mediaType:'photo'},
+    {id:'tl2',dateISO:'2026-03-14',sessionId:null,type:'Dressage',duration:50,horseId:'rv',
+     loggedIntensity:3,intensityLabel:'Medium',notes:'Good canter work. She got a little tense in the shoulder-in but worked through it.',
+     weather:'Cloudy',temp:48,conditions:['Overcast','Calm'],mediaCount:0,mediaType:null},
+    {id:'tl3',dateISO:'2026-03-11',sessionId:null,type:'Hack',duration:40,horseId:'rv',
+     loggedIntensity:2,intensityLabel:'Easy',notes:'Nice relaxing trail session. She was totally switched off — exactly what she needed.',
+     weather:'Sunny',temp:58,conditions:['Sunny','Warm'],mediaCount:1,mediaType:'video'},
+  ],
+  'h1':[
+    {id:'tl4',dateISO:'2026-03-15',sessionId:null,type:'Jump',duration:45,horseId:'h1',
+     loggedIntensity:4,intensityLabel:'Strong',notes:'Great grid session. Apollo cleared everything cleanly. Working on tight rollbacks.',
+     weather:'Sunny',temp:61,conditions:['Clear','Warm'],mediaCount:3,mediaType:'photo'},
+    {id:'tl5',dateISO:'2026-03-12',sessionId:null,type:'Flat',duration:40,horseId:'h1',
+     loggedIntensity:3,intensityLabel:'Medium',notes:'Flatwork focus. Connection improving on the left rein.',
+     weather:'Cloudy',temp:54,conditions:['Overcast'],mediaCount:0,mediaType:null},
+  ],
+  'h3':[
+    {id:'tl6',dateISO:'2026-03-16',sessionId:null,type:'Dressage',duration:40,horseId:'h3',
+     loggedIntensity:3,intensityLabel:'Medium',notes:'First intro test walkthrough. Luna was very good and relaxed throughout.',
+     weather:'Sunny',temp:55,conditions:['Sunny','Calm'],mediaCount:1,mediaType:'photo'},
+  ],
+};
+
+
 // ── HORSE COMPETITION HISTORY ──────────────────────────────────────────────
 // score = percentage (dressage), placement = 'Nth of N'
 // trainingWeek = sessions + avgTQS in 7 days before comp
@@ -7681,41 +7918,338 @@ function rHorseDetail(h){
     return '<div style="background:var(--md-secondary-container);border-radius:10px;padding:10px 12px;margin-bottom:12px;"><div style="font-size:10px;font-weight:700;color:var(--md-secondary);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;">Insights</div>'+ins.map(function(x){return '<div style="font-size:12px;color:var(--md-on-surface);display:flex;align-items:center;gap:4px;margin-bottom:3px;">'+x+'</div>';}).join('')+'</div>';
   }
 
-  function sessionRow(s){
-    var sk=['rhythm','suppleness','contact','impulsion','straightness','collection'];
-    var sessKey=s.dateISO+'_'+h.id;
-    var expanded=S.expandedSession===sessKey;
-    var skillBars=sk.filter(function(k){return s.skills[k]!=null;}).map(function(k){var v=s.skills[k];return '<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;"><div style="font-size:9px;color:var(--md-on-surface-dim);width:44px;flex-shrink:0;">'+k.charAt(0).toUpperCase()+k.slice(0,5)+'</div><div style="flex:1;height:4px;background:var(--md-surface-variant);border-radius:2px;"><div style="height:100%;width:'+Math.round(v/10*100)+'%;background:'+tqsColor(v)+';border-radius:2px;"></div></div><div style="font-size:9px;font-weight:700;color:var(--md-on-surface-dim);width:22px;text-align:right;">'+v+'</div></div>';}).join('');
-    return '<div style="border-bottom:1px solid var(--md-outline-variant);">'
-      +'<div onclick="toggleSessionEl(this)" data-key="'+sessKey+'" style="display:flex;align-items:center;gap:9px;padding:10px 14px;cursor:pointer;">'
-      +'<div style="width:36px;height:36px;border-radius:9px;background:'+typeColor(s.type)+'22;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon(s.type==='Dressage'?'sports':s.type==='Hack'?'nature':'fitness_center',18,typeColor(s.type))+'</div>'
-      +'<div style="flex:1;min-width:0;"><div style="display:flex;align-items:center;gap:6px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+s.type+'</div>'+(s.feedChange?'<span style="font-size:9px;font-weight:700;background:var(--md-tertiary-container);color:var(--md-tertiary);padding:2px 5px;border-radius:6px;">feed \u0394</span>':'')+'</div>'
-      +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+s.date+' \xb7 '+s.duration+' min \xb7 '+s.env.temp+'\xb0F \xb7 '+s.env.weather+'</div>'
-      +(s.focus&&s.focus.length?'<div style="font-size:11px;color:var(--md-on-surface-variant);margin-top:1px;">'+s.focus.join(' \xb7 ')+'</div>':'')+'</div>'
-      +'<div style="text-align:right;flex-shrink:0;"><div style="font-size:16px;font-weight:700;color:'+tqsColor(s.tqs)+';">'+s.tqs+'</div><div style="font-size:9px;color:var(--md-on-surface-dim);">TQS</div></div>'
-      +'<svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;transform:'+(expanded?'rotate(180deg)':'rotate(0deg)')+';"><path d="M4 6l4 4 4-4" stroke="var(--md-on-surface-dim)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+
+  // ── TRAINING TAB REBUILD ─────────────────────────────────────────────────
+
+  var trainingLogs = HORSE_TRAINING_LOGS[h.id] || [];
+  var upcomingSessions = UPCOMING_TRAINING[h.id] || [];
+
+  // Intensity config
+  var INTENSITY = [
+    {n:1,label:'Low',   bg:'#1e7e34',color:'#6fcf8a'},
+    {n:2,label:'Easy',  bg:'#5a7a1a',color:'#b5d46f'},
+    {n:3,label:'Medium',bg:'#8a7000',color:'#f0c040'},
+    {n:4,label:'Strong',bg:'#7a4000',color:'#f09040'},
+    {n:5,label:'High',  bg:'#7a1000',color:'#f06060'},
+  ];
+  function intensityChip(n,active){
+    var cfg=INTENSITY[n-1]||INTENSITY[2];
+    var onStyle='background:'+cfg.bg+';color:'+cfg.color+';border:1.5px solid '+cfg.color+'44;';
+    var offStyle='background:var(--md-surface-variant);color:var(--md-on-surface-dim);border:1.5px solid var(--md-outline-variant);';
+    return '<span style="'+(active?onStyle:offStyle)+'padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block;">'+n+' — '+cfg.label+'</span>';
+  }
+  function intensityDots(n){
+    return [1,2,3,4,5].map(function(i){
+      var cfg=INTENSITY[i-1];
+      return '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+(i<=n?cfg.color:'var(--md-outline-variant)')+';margin-right:2px;"></span>';
+    }).join('');
+  }
+  function weatherIcon(w){
+    var map={Sunny:'wb_sunny',Clear:'wb_sunny',Cloudy:'cloud',Overcast:'cloud',Rain:'water_drop','Light Rain':'grain',Windy:'air','Light breeze':'air'};
+    return map[w]||'wb_cloudy';
+  }
+
+  // ── Journal entry bottom sheet ───────────────────────────────────────────
+  var tls = (S.horseTab==='training')?S.trainingLogSheet:null;
+  var logSheet = '';
+  if(tls && tls.open){
+    var tlsIntensity = tls.loggedIntensity||3;
+    var tlsNotes = tls.notes||'';
+    var tlsWeather = tls.weather||'Sunny';
+    var tlsConds = tls.conditions||[];
+    var WEATHER_OPTS = ['Sunny','Cloudy','Overcast','Rain','Windy'];
+    var COND_OPTS = ['Clear','Light breeze','Windy','Humid','Hot','Cool','Indoor'];
+    logSheet = '<div onclick="S.trainingLogSheet=null;rerender()" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;display:flex;flex-direction:column;justify-content:flex-end;">'
+      +'<div onclick="event.stopPropagation()" style="background:var(--md-surface);border-radius:20px 20px 0 0;padding:20px 16px 32px;max-height:92vh;overflow-y:auto;">'
+      +'<div style="width:36px;height:4px;border-radius:2px;background:var(--md-outline-variant);margin:0 auto 16px;"></div>'
+      // Horse + type header
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">'
+        +'<div style="font-size:18px;font-weight:800;color:var(--md-on-surface);">'+h.name+'</div>'
+        +'<span style="background:var(--md-tertiary-container);color:var(--md-tertiary);border-radius:8px;padding:3px 10px;font-size:12px;font-weight:700;">'+msiIcon(typeIcon(tls.type||'Flat'),13,'var(--md-tertiary)')+' '+(tls.type||'Flat')+'</span>'
       +'</div>'
-      +(expanded?'<div style="padding:0 14px 12px;"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div>'+skillBars+'</div><div style="background:var(--md-surface-variant);border-radius:9px;padding:9px;">'+(s.notes?'<div style="font-size:11px;color:var(--md-on-surface-variant);line-height:1.5;margin-bottom:6px;font-style:italic;">'+s.notes+'</div>':'')+'<div style="font-size:10px;color:var(--md-on-surface-dim);">'+s.env.footing+' footing \xb7 '+s.env.humidity+'% humidity</div>'+(s.feedChange&&s.feedNote?'<div style="font-size:10px;color:var(--md-tertiary);margin-top:4px;">'+s.feedNote+'</div>':'')+'</div></div></div>':'')
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">'
+        +msiIcon('schedule',13,'var(--md-on-surface-dim)')
+        +'<span style="font-size:12px;color:var(--md-on-surface-dim);">'+(tls.time||'Now')+' &middot; '+(tls.duration||45)+' min</span>'
+        +intensityDots(tlsIntensity)
+        +'<span style="font-size:12px;color:var(--md-on-surface-dim);">'+(INTENSITY[tlsIntensity-1]||INTENSITY[2]).label+'</span>'
+      +'</div>'
+      // Log this session header
+      +'<div style="font-size:13px;font-weight:700;color:var(--md-primary);margin-bottom:14px;">Log this session</div>'
+      // Actual intensity
+      +'<div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;">Actual Intensity</div>'
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;">'
+        +[1,2,3,4,5].map(function(n){
+          return '<button onclick="S.trainingLogSheet.loggedIntensity='+n+';rerender()" style="'+(n===tlsIntensity?'background:'+INTENSITY[n-1].bg+';color:'+INTENSITY[n-1].color+';border:2px solid '+INTENSITY[n-1].color+'44;':'background:var(--md-surface-variant);color:var(--md-on-surface-dim);border:2px solid var(--md-outline-variant);')+'padding:7px 12px;border-radius:20px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">'+n+' — '+INTENSITY[n-1].label+'</button>';
+        }).join('')
+      +'</div>'
+      // Session notes
+      +'<div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;">Session Notes</div>'
+      +'<textarea oninput="S.trainingLogSheet.notes=this.value" placeholder="How did it go?" rows="3" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:12px;padding:10px 12px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;resize:none;margin-bottom:16px;">'+tlsNotes+'</textarea>'
+      // Weather
+      +'<div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;">Weather</div>'
+      +'<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:8px;">'
+        +WEATHER_OPTS.map(function(w){var on=tlsWeather===w;return '<button onclick="S.trainingLogSheet.weather=\''+w+'\';rerender()" style="display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:20px;border:1.5px solid '+(on?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(on?'var(--md-primary-container)':'var(--md-surface-variant)')+';color:'+(on?'var(--md-primary)':'var(--md-on-surface-dim)')+';font-size:12px;font-weight:600;font-family:\'DM Sans\',sans-serif;cursor:pointer;">'+msiIcon(weatherIcon(w),13,on?'var(--md-primary)':'var(--md-on-surface-dim)')+' '+w+'</button>';}).join('')
+      +'</div>'
+      // Conditions chips
+      +'<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px;">'
+        +COND_OPTS.map(function(cd){
+          var on=tlsConds.indexOf(cd)>=0;
+          return '<button onclick="var idx=(S.trainingLogSheet.conditions||[]).indexOf(\''+cd+'\');if(idx>=0)S.trainingLogSheet.conditions.splice(idx,1);else (S.trainingLogSheet.conditions=S.trainingLogSheet.conditions||[]).push(\''+cd+'\');rerender()" style="padding:4px 10px;border-radius:20px;border:1.5px solid '+(on?'var(--md-secondary)':'var(--md-outline-variant)')+';background:'+(on?'var(--md-secondary-container)':'var(--md-surface-variant)')+';color:'+(on?'var(--md-secondary)':'var(--md-on-surface-dim)')+';font-size:11px;font-weight:600;font-family:\'DM Sans\',sans-serif;cursor:pointer;">'+cd+'</button>';
+        }).join('')
+      +'</div>'
+      // Media
+      +'<div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;">Media</div>'
+      +'<div style="display:flex;gap:10px;margin-bottom:20px;">'
+        +'<button style="flex:1;background:var(--md-surface-variant);border:1.5px solid var(--md-outline-variant);border-radius:12px;padding:12px;font-size:13px;font-weight:600;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);display:flex;align-items:center;justify-content:center;gap:7px;">'+msiIcon('photo_camera',16,'var(--md-on-surface-dim)')+' Photo</button>'
+        +'<button style="flex:1;background:var(--md-surface-variant);border:1.5px solid var(--md-outline-variant);border-radius:12px;padding:12px;font-size:13px;font-weight:600;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);display:flex;align-items:center;justify-content:center;gap:7px;">'+msiIcon('videocam',16,'var(--md-on-surface-dim)')+' Video</button>'
+      +'</div>'
+      // Buttons
+      +'<div style="display:flex;gap:10px;">'
+        +'<button onclick="(function(){var entry={id:\'tl\'+Date.now(),dateISO:new Date().toISOString().split(\'T\')[0],type:S.trainingLogSheet.type||\'Flat\',duration:S.trainingLogSheet.duration||45,horseId:\''+h.id+'\',loggedIntensity:S.trainingLogSheet.loggedIntensity||3,intensityLabel:(["","Low","Easy","Medium","Strong","High"])[S.trainingLogSheet.loggedIntensity||3],notes:S.trainingLogSheet.notes||\'\',weather:S.trainingLogSheet.weather||\'Sunny\',temp:65,conditions:S.trainingLogSheet.conditions||[],mediaCount:0,mediaType:null};(HORSE_TRAINING_LOGS[\''+h.id+'\']=HORSE_TRAINING_LOGS[\''+h.id+'\']||[]).unshift(entry);S.trainingLogSheet=null;showToast(\'Session logged!\',\'check_circle\',\'success\');rerender();})()" style="flex:3;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Save &amp; complete</button>'
+        +'<button onclick="S.trainingLogSheet=null;rerender()" style="flex:1;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:14px;padding:15px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);">Cancel</button>'
+      +'</div>'
+      +'</div></div>';
+  }
+
+  // ── FAB speed-dial ────────────────────────────────────────────────────────
+  var fabOpen = (S.horseTab==='training')&&(S.trainingFabOpen||false);
+  var trainingFab = S.horseTab!=='training' ? '' : ''
+    // Backdrop
+    +(fabOpen?'<div onclick="S.trainingFabOpen=false;rerender()" style="position:fixed;inset:0;z-index:198;"></div>':'')
+    +'<div style="position:fixed;bottom:80px;right:20px;z-index:199;display:flex;flex-direction:column;align-items:flex-end;gap:10px;">'
+    // Speed-dial options (shown when open)
+    +(fabOpen
+      ?'<div style="display:flex;align-items:center;gap:10px;">'
+          +'<span style="background:var(--md-surface);color:var(--md-on-surface);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,0.2);">Training Regimen</span>'
+          +'<button onclick="S.trainingFabOpen=false;window._regimenEditState={type:\'edit\',horseId:\''+h.id+'\'};rerender()" style="width:44px;height:44px;border-radius:50%;background:var(--md-secondary-container);color:var(--md-secondary);border:none;box-shadow:0 2px 8px rgba(0,0,0,0.2);display:flex;align-items:center;justify-content:center;cursor:pointer;">'+msiIcon('repeat',20,'var(--md-secondary)')+'</button>'
+        +'</div>'
+      +'<div style="display:flex;align-items:center;gap:10px;">'
+          +'<span style="background:var(--md-surface);color:var(--md-on-surface);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,0.2);">Journal Entry</span>'
+          +'<button onclick="S.trainingFabOpen=false;S.trainingLogSheet={open:true,type:\'Flat\',duration:45,time:\'Now\',loggedIntensity:3,notes:\'\',weather:\'Sunny\',conditions:[]};rerender()" style="width:44px;height:44px;border-radius:50%;background:var(--md-primary-container);color:var(--md-primary);border:none;box-shadow:0 2px 8px rgba(0,0,0,0.2);display:flex;align-items:center;justify-content:center;cursor:pointer;">'+msiIcon('edit_note',20,'var(--md-primary)')+'</button>'
+        +'</div>'
+      :'')
+    // Main FAB
+    +'<button onclick="S.trainingFabOpen=!S.trainingFabOpen;rerender()" style="width:54px;height:54px;border-radius:50%;background:var(--md-primary);border:none;box-shadow:0 4px 14px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.15s;transform:'+(fabOpen?'rotate(45deg)':'rotate(0deg)')+';">'+msiIcon('add',26,'#fff')+'</button>'
+    +'</div>';
+
+  // ── Upcoming sessions section ─────────────────────────────────────────────
+  var upcomingSection = '';
+  if(upcomingSessions.length){
+    var upRows = upcomingSessions.map(function(us){
+      var tc = typeColor(us.type);
+      return '<div style="display:flex;align-items:center;gap:10px;padding:10px 13px;border-bottom:1px solid var(--md-outline-variant);">'
+        +'<div style="width:36px;height:36px;border-radius:9px;background:'+tc+'22;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon(typeIcon(us.type),18,tc)+'</div>'
+        +'<div style="flex:1;min-width:0;">'
+          +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">'
+            +'<span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+us.type+'</span>'
+            +'<span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;background:'+tc+'22;color:'+tc+';">'+us.date+'</span>'
+          +'</div>'
+          +'<div style="font-size:11px;color:var(--md-on-surface-dim);display:flex;align-items:center;gap:6px;">'
+            +msiIcon('schedule',11,'var(--md-on-surface-dim)')+' '+us.time
+            +' &middot; '+msiIcon('timer',11,'var(--md-on-surface-dim)')+' '+us.duration+' min'
+            +(us.trainer?' &middot; '+msiIcon('person',11,'var(--md-on-surface-dim)')+' '+us.trainer:'')
+          +'</div>'
+          +(us.notes?'<div style="font-size:11px;color:var(--md-on-surface-variant);margin-top:2px;font-style:italic;">'+us.notes+'</div>':'')
+        +'</div>'
+        +'<button onclick="S.trainingFabOpen=false;S.trainingLogSheet={open:true,type:\''+us.type+'\',duration:'+us.duration+',time:\''+us.time+'\',loggedIntensity:3,notes:\'\',weather:\'Sunny\',conditions:[]};rerender()" style="background:var(--md-primary-container);color:var(--md-primary);border:none;border-radius:8px;padding:5px 9px;font-size:11px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;white-space:nowrap;">Log</button>'
+        +'</div>';
+    }).join('');
+    upcomingSection = '<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);overflow:hidden;margin-bottom:12px;">'
+      +'<div style="padding:10px 13px 8px;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--md-outline-variant);">'
+        +msiIcon('event_upcoming',15,'var(--md-primary)')
+        +'<span style="font-size:12px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;">Upcoming</span>'
+        +'<span style="margin-left:auto;font-size:11px;font-weight:700;background:var(--md-primary-container);color:var(--md-primary);padding:1px 8px;border-radius:20px;">'+upcomingSessions.length+'</span>'
+      +'</div>'
+      +upRows
       +'</div>';
   }
 
+  // ── Session log list view ─────────────────────────────────────────────────
+  function richSessionRow(log){
+    var tc=typeColor(log.type);
+    var cfg=INTENSITY[(log.loggedIntensity||3)-1]||INTENSITY[2];
+    var wIcon=weatherIcon(log.weather||'Sunny');
+    return '<div style="border-bottom:1px solid var(--md-outline-variant);padding:12px 13px;">'
+      // Header row
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'
+        +'<div style="width:34px;height:34px;border-radius:9px;background:'+tc+'22;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon(typeIcon(log.type),17,tc)+'</div>'
+        +'<div style="flex:1;">'
+          +'<div style="display:flex;align-items:center;gap:6px;">'
+            +'<span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+log.type+'</span>'
+            +intensityChip(log.loggedIntensity||3,true)
+          +'</div>'
+          +'<div style="font-size:11px;color:var(--md-on-surface-dim);display:flex;align-items:center;gap:5px;margin-top:2px;">'
+            +msiIcon('calendar_today',11,'var(--md-on-surface-dim)')+' '+log.dateISO.slice(5).replace('-','/')
+            +' &middot; '+msiIcon('timer',11,'var(--md-on-surface-dim)')+' '+log.duration+' min'
+            +(log.mediaCount?'<span style="display:flex;align-items:center;gap:2px;background:var(--md-surface-variant);border-radius:6px;padding:1px 5px;">'+msiIcon('photo_camera',10,'var(--md-primary)')+' '+log.mediaCount+'</span>':'')
+          +'</div>'
+        +'</div>'
+      +'</div>'
+      // Intensity dots row
+      +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:7px;">'
+        +msiIcon('fitness_center',13,'var(--md-on-surface-dim)')
+        +'<div style="display:flex;gap:3px;">'+intensityDots(log.loggedIntensity||3)+'</div>'
+        +'<span style="font-size:11px;color:'+cfg.color+';font-weight:700;">'+cfg.label+'</span>'
+      +'</div>'
+      // Notes
+      +(log.notes?'<div style="display:flex;gap:6px;align-items:flex-start;margin-bottom:7px;">'
+        +msiIcon('edit_note',13,'var(--md-on-surface-dim)')
+        +'<span style="font-size:12px;color:var(--md-on-surface-variant);line-height:1.5;flex:1;">'+log.notes+'</span>'
+      +'</div>':'')
+      // Weather & conditions
+      +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">'
+        +msiIcon(wIcon,13,'var(--md-on-surface-dim)')
+        +(log.temp?'<span style="font-size:11px;color:var(--md-on-surface-dim);font-weight:600;">'+log.temp+'°F</span>':'')
+        +(log.conditions||[]).map(function(cd){return '<span style="font-size:10px;background:var(--md-surface-variant);color:var(--md-on-surface-dim);border-radius:6px;padding:1px 7px;font-weight:600;">'+cd+'</span>';}).join('')
+      +'</div>'
+      +'</div>';
+  }
+
+  // ── Calendar view ─────────────────────────────────────────────────────────
+  function calendarView(){
+    var now=new Date('2026-03-17');
+    var calRef=S.trainingCalMonth?new Date(S.trainingCalMonth+'T12:00:00'):new Date(now.getFullYear(),now.getMonth(),1);
+    var yr=calRef.getFullYear(),mo=calRef.getMonth();
+    var firstDay=new Date(yr,mo,1).getDay(); // 0=Sun
+    var daysInMo=new Date(yr,mo+1,0).getDate();
+    var moLabel=['January','February','March','April','May','June','July','August','September','October','November','December'][mo]+' '+yr;
+    var moKey=yr+'-'+(mo<9?'0'+(mo+1):(mo+1));
+
+    // Build event map: day → [{type,logged,hasMedia}]
+    var evMap={};
+    (sessions||[]).forEach(function(s){
+      if(s.dateISO.startsWith(moKey)){var d=parseInt(s.dateISO.slice(8));evMap[d]=evMap[d]||[];evMap[d].push({type:s.type,logged:true,hasMedia:false});}
+    });
+    trainingLogs.forEach(function(l){
+      if(l.dateISO.startsWith(moKey)){var d=parseInt(l.dateISO.slice(8));evMap[d]=evMap[d]||[];evMap[d].push({type:l.type,logged:true,hasMedia:l.mediaCount>0});}
+    });
+    upcomingSessions.forEach(function(us){
+      if(us.dateISO.startsWith(moKey)){var d=parseInt(us.dateISO.slice(8));evMap[d]=evMap[d]||[];evMap[d].push({type:us.type,logged:false,hasMedia:false});}
+    });
+
+    var selectedDay=S.trainingCalDay;
+    var days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    // Build calendar grid
+    var cells='';
+    var startOffset=(firstDay===0?6:firstDay-1); // Mon-first offset
+    for(var i=0;i<startOffset;i++) cells+='<div></div>';
+    for(var d2=1;d2<=daysInMo;d2++){
+      var isToday=yr===now.getFullYear()&&mo===now.getMonth()&&d2===now.getDate();
+      var isSel=selectedDay===d2;
+      var evs=evMap[d2]||[];
+      cells+='<div onclick="S.trainingCalDay='+(isSel?'null':d2)+';rerender()" style="min-height:54px;padding:4px 3px;border-radius:8px;background:'+(isSel?'var(--md-primary-container)':isToday?'var(--md-surface-variant)':'transparent')+';cursor:pointer;position:relative;">'
+        +'<div style="font-size:11px;font-weight:'+(isToday?'800':'600')+';color:'+(isToday?'var(--md-primary)':isSel?'var(--md-primary)':'var(--md-on-surface)')+';text-align:center;margin-bottom:3px;">'+d2+'</div>'
+        +'<div style="display:flex;flex-wrap:wrap;gap:2px;justify-content:center;">'
+          +evs.slice(0,3).map(function(ev){
+            var ec=typeColor(ev.type);
+            return '<span style="display:inline-flex;align-items:center;width:9px;height:9px;border-radius:50%;background:'+(ev.logged?ec:'transparent')+';border:1.5px solid '+ec+';position:relative;">'
+              +(ev.hasMedia?'<span style="position:absolute;top:-3px;right:-3px;width:5px;height:5px;border-radius:50%;background:var(--md-primary);border:1px solid var(--md-surface);"></span>':'')
+              +'</span>';
+          }).join('')
+        +'</div>'
+      +'</div>';
+    }
+
+    // Day detail panel
+    var dayDetail='';
+    if(selectedDay){
+      var selEvs=(evMap[selectedDay]||[]);
+      var selLogs=trainingLogs.filter(function(l){return parseInt(l.dateISO.slice(8))===selectedDay&&l.dateISO.startsWith(moKey);});
+      var selSessions=(sessions||[]).filter(function(s){return parseInt(s.dateISO.slice(8))===selectedDay&&s.dateISO.startsWith(moKey);});
+      var selUp=upcomingSessions.filter(function(us){return parseInt(us.dateISO.slice(8))===selectedDay&&us.dateISO.startsWith(moKey);});
+      dayDetail='<div style="background:var(--md-surface-variant);border-radius:12px;padding:12px;margin-top:10px;">'
+        +'<div style="font-size:12px;font-weight:700;color:var(--md-on-surface);margin-bottom:10px;">'+moLabel.split(' ')[0]+' '+selectedDay+'</div>'
+        +(selLogs.length?selLogs.map(richSessionRow).join(''):'')
+        +(selSessions.length&&!selLogs.length?selSessions.map(function(s){return '<div style="padding:8px 0;font-size:12px;color:var(--md-on-surface-dim);">'+msiIcon(typeIcon(s.type),13,typeColor(s.type))+' '+s.type+' &middot; '+s.duration+' min (TQS '+s.tqs+')</div>';}).join(''):'')
+        +(selUp.length?selUp.map(function(us){return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--md-outline-variant);">'
+          +msiIcon(typeIcon(us.type),13,typeColor(us.type))+'<span style="font-size:12px;color:var(--md-on-surface);">'+us.type+'</span>'
+          +'<span style="font-size:11px;color:var(--md-on-surface-dim);">'+us.time+' &middot; '+us.duration+' min</span>'
+          +'<span style="margin-left:auto;font-size:10px;color:var(--md-on-surface-dim);background:var(--md-surface-variant);border-radius:6px;padding:2px 6px;">Scheduled</span>'
+        +'</div>';}).join(''):'')
+        +(!selEvs.length?'<div style="font-size:12px;color:var(--md-on-surface-dim);text-align:center;padding:8px 0;">No sessions</div>':'')
+        +'</div>';
+    }
+
+    return '<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:12px;">'
+      // Month nav
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">'
+        +'<button onclick="var d=new Date(\''+(yr+'-'+(mo<9?'0'+(mo+1):(mo+1)))+'-01T12:00:00\');d.setMonth(d.getMonth()-1);S.trainingCalMonth=d.getFullYear()+\'-\'+(d.getMonth()<9?\'0\'+(d.getMonth()+1):(d.getMonth()+1));S.trainingCalDay=null;rerender()" style="background:none;border:none;cursor:pointer;padding:4px;border-radius:8px;color:var(--md-on-surface-dim);">'+msiIcon('chevron_left',20,'var(--md-on-surface-dim)')+'</button>'
+        +'<span style="font-size:14px;font-weight:700;color:var(--md-on-surface);">'+moLabel+'</span>'
+        +'<button onclick="var d=new Date(\''+(yr+'-'+(mo<9?'0'+(mo+1):(mo+1)))+'-01T12:00:00\');d.setMonth(d.getMonth()+1);S.trainingCalMonth=d.getFullYear()+\'-\'+(d.getMonth()<9?\'0\'+(d.getMonth()+1):(d.getMonth()+1));S.trainingCalDay=null;rerender()" style="background:none;border:none;cursor:pointer;padding:4px;border-radius:8px;color:var(--md-on-surface-dim);">'+msiIcon('chevron_right',20,'var(--md-on-surface-dim)')+'</button>'
+      +'</div>'
+      // Day headers
+      +'<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px;">'
+        +days.map(function(d){return '<div style="text-align:center;font-size:10px;font-weight:700;color:var(--md-on-surface-dim);">'+d+'</div>';}).join('')
+      +'</div>'
+      // Day cells
+      +'<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;">'+cells+'</div>'
+      // Legend
+      +'<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--md-outline-variant);">'
+        +['Flat','Dressage','Jump','Hack','Fitness'].map(function(tp){return '<span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--md-on-surface-dim);"><span style="width:8px;height:8px;border-radius:50%;background:'+typeColor(tp)+';display:inline-block;"></span>'+tp+'</span>';}).join('')
+        +'<span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--md-on-surface-dim);"><span style="width:8px;height:8px;border-radius:50%;background:transparent;border:1.5px solid var(--md-outline);display:inline-block;"></span>Scheduled</span>'
+      +'</div>'
+      +dayDetail
+      +'</div>';
+  }
+
+  // ── Typeicon helper (add Jump support) ────────────────────────────────────
+  function typeIcon(tp){return ({Dressage:'sports',Flat:'directions_run',Jump:'fitness_center',Hack:'terrain',Fitness:'speed'})[tp]||'sports';}
+
+  // ── Build session log section (with embedded toggle) ──────────────────────
+  var sessionLogSection='';
+  if(sessions.length||trainingLogs.length){
+    var tvMode=S.trainingView||'list';
+    var toggleHtml='<div style="display:flex;gap:3px;background:var(--md-surface-variant);border-radius:8px;padding:2px;">'
+      +'<button onclick="S.trainingView=\'list\';rerender()" style="padding:4px 10px;border-radius:6px;border:none;font-size:11px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;background:'+(tvMode==='list'?'var(--md-surface)':'transparent')+';color:'+(tvMode==='list'?'var(--md-primary)':'var(--md-on-surface-dim)')+';transition:0.1s;">List</button>'
+      +'<button onclick="S.trainingView=\'cal\';rerender()" style="padding:4px 10px;border-radius:6px;border:none;font-size:11px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;background:'+(tvMode==='cal'?'var(--md-surface)':'transparent')+';color:'+(tvMode==='cal'?'var(--md-primary)':'var(--md-on-surface-dim)')+';transition:0.1s;">Calendar</button>'
+    +'</div>';
+
+    var sectionHeader='<div style="display:flex;align-items:center;margin-bottom:8px;">'
+      +'<div style="flex:1;font-size:12px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;">Session Log</div>'
+      +toggleHtml
+    +'</div>';
+
+    var logContent='';
+    if(tvMode==='cal'){
+      logContent=calendarView();
+    } else {
+      // Merge logged sessions and history sessions for list
+      var allLogs=trainingLogs.slice();
+      logContent='<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);overflow:hidden;">'
+        +(allLogs.length?allLogs.map(richSessionRow).join(''):sessions.map(sessionRow).join(''))
+        +'</div>';
+    }
+    sessionLogSection=sectionHeader+logContent;
+  }
+
+  // ── Compose full training tab ─────────────────────────────────────────────
   var trainingTab;
-  if(!sessions.length){
+  if(!sessions.length && !trainingLogs.length && !upcomingSessions.length){
     trainingTab='<div style="padding:20px;text-align:center;color:var(--md-on-surface-dim);font-size:13px;">No training records for '+h.name+'.</div>';
   } else {
-    var ra=sessions.slice(0,4).reduce(function(s,x){return s+x.tqs;},0)/Math.min(sessions.length,4);
+    var ra=sessions.slice(0,4).reduce(function(s,x){return s+x.tqs;},0)/Math.min(sessions.length||1,4);
     var dsCnt=sessions.filter(function(s){return s.type==='Dressage';}).length;
     trainingTab='<div style="padding:14px;">'
-      +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">'
-      +[{l:'Sessions',v:sessions.length},{l:'Dressage',v:dsCnt},{l:'Avg TQS',v:Math.round(ra*10)/10}].map(function(a){return '<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;"><div style="font-size:10px;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">'+a.l+'</div><div style="font-size:18px;font-weight:700;color:var(--md-on-surface);">'+a.v+'</div></div>';}).join('')+'</div>'
+      // Summary stats (kept)
+      +(sessions.length?'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">'
+        +[{l:'Sessions',v:sessions.length},{l:'Dressage',v:dsCnt},{l:'Avg TQS',v:Math.round(ra*10)/10}].map(function(a){return '<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;text-align:center;"><div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;">'+a.l+'</div><div style="font-size:20px;font-weight:800;color:var(--md-on-surface);">'+a.v+'</div></div>';}).join('')
+        +'</div>':'')
+      // Insights (kept)
       +envInsights(sessions)
-      +'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:12px;margin-bottom:12px;"><div style="font-size:11px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Training Quality Score</div>'+makeTqsChart(sessions)+'</div>'
-      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">'
-      +'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:12px;display:flex;flex-direction:column;align-items:center;"><div style="font-size:11px;font-weight:700;color:var(--md-on-surface);margin-bottom:6px;align-self:flex-start;">Skill profile</div>'+makeRadarChart(sessions)+'<div style="font-size:9px;color:var(--md-on-surface-dim);margin-top:4px;align-self:flex-start;display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:10px;height:2px;background:var(--md-primary);vertical-align:middle;"></span>Recent <span style="display:inline-block;width:12px;border-top:1px dashed var(--md-on-surface-dim);vertical-align:middle;margin-left:4px;"></span>Prior</div></div>'
-      +'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:12px;"><div style="font-size:11px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Sessions / week</div>'+makeFreqChart(sessions)+'</div>'
+      // Discipline+goals card (kept - lines 7654-7658)
+      +'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:12px;margin-bottom:12px;"><div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Discipline &amp; Goals</div>'
+        +'<div style="font-size:13px;color:var(--md-on-surface);">'+h.discipline+(h.level?' &middot; '+h.level:'')+'</div>'
+        +(h.goals?'<div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:4px;">'+h.goals+'</div>':'')
       +'</div>'
-      +'<div style="font-size:12px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Session log</div>'
-      +'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);overflow:hidden;">'+sessions.map(sessionRow).join('')+'</div>'
+      // Radar+freq charts (kept)
+      +(sessions.length>=3?'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">'
+        +'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:12px;display:flex;flex-direction:column;align-items:center;"><div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:6px;">Skills Radar</div>'+makeRadarChart(sessions)+'</div>'
+        +'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:12px;"><div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:6px;">Frequency</div>'+makeFreqChart(sessions)+'</div>'
+        +'</div>':'')
+      // Upcoming
+      +upcomingSection
+      // Session log (with toggle)
+      +sessionLogSection
       +'</div>';
   }
 
@@ -7905,7 +8439,7 @@ function rHorseDetail(h){
 
 
   const content={overview:overviewTab,pedigree:pedigreeTab,health:healthTab,training:trainingTab,competitions:competitionsTab,connections:connectionsTab,media:mediaTab,feed:feedTab}[tab]||overviewTab;
-  return '<div style="display:flex;flex-direction:column;height:100%;">'+hero+tabBar+'<div id="horse-tab-body" style="flex:1;overflow-y:auto;">'+content+'</div></div>';
+  return logSheet+trainingFab+'<div style="display:flex;flex-direction:column;height:100%;">'+hero+tabBar+'<div id="horse-tab-body" style="flex:1;overflow-y:auto;">'+content+'</div></div>';
 }
 
 // --- BARN PROFESSIONALS DATA ---------------------------------
