@@ -8336,24 +8336,6 @@ function rHorseDetail(h){
   if(isMareForHealth) healthAddOptions.push({group:'breed',icon:'monitor_heart',label:'Ultrasound Entry',color:'var(--md-error)',action:"window._usFormOpen=window._usFormOpen||{};window._usFormOpen['"+h.id+"']=true;"});
   if(isMareForHealth) healthAddOptions.push({group:'breed',icon:'cruelty_free',label:'Foal Record',color:'var(--md-secondary)',action:"window._foalFormOpen=window._foalFormOpen||{};window._foalFormOpen['"+h.id+"']=true;"});
 
-  var healthAddSheet='';
-  if(S.healthAddSheetOpen&&healthAddOptions.length){
-    var logOpts=healthAddOptions.filter(function(o){return o.group==='log';});
-    var breedOpts=healthAddOptions.filter(function(o){return o.group==='breed';});
-    function healthOptRow(o){
-      return '<button onclick="'+o.action+'S.healthAddSheetOpen=false;rerender()" style="width:100%;display:flex;align-items:center;gap:12px;padding:12px 14px;background:none;border:none;border-bottom:1px solid var(--md-outline-variant);cursor:pointer;text-align:left;">'
-        +'<div style="width:36px;height:36px;border-radius:10px;background:'+o.color+'18;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon(o.icon,18,o.color)+'</div>'
-        +'<span style="font-size:14px;font-weight:600;color:var(--md-on-surface);">'+o.label+'</span>'
-      +'</button>';
-    }
-    healthAddSheet='<div onclick="S.healthAddSheetOpen=false;rerender()" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:400;display:flex;flex-direction:column;justify-content:flex-end;">'
-      +'<div onclick="event.stopPropagation()" style="background:var(--md-surface);border-radius:20px 20px 0 0;padding-top:12px;padding-bottom:24px;max-height:80vh;overflow-y:auto;">'
-        +'<div style="width:36px;height:4px;border-radius:2px;background:var(--md-outline-variant);margin:0 auto 14px;"></div>'
-        +(logOpts.length?'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;padding:0 14px 8px;">Log Health Data</div>'+logOpts.map(healthOptRow).join(''):'')
-        +(breedOpts.length?'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;padding:14px 14px 8px;">Breeding &amp; Reproduction</div>'+breedOpts.map(healthOptRow).join(''):'')
-      +'</div>'
-    +'</div>';
-  }
   var healthFab=healthAddOptions.length?'<button onclick="S.healthAddSheetOpen=true;rerender()" style="position:fixed;bottom:80px;right:20px;z-index:200;width:54px;height:54px;border-radius:50%;background:var(--md-primary);border:none;box-shadow:0 4px 14px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;cursor:pointer;">'+msiIcon('add',26,'#fff')+'</button>':'';
 
 
@@ -8432,7 +8414,6 @@ function rHorseDetail(h){
         +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Breeding records</div>'
         +''
       +'</div>'
-      +addForm
       +recRows
     +'</div>';
   }
@@ -8625,7 +8606,6 @@ function rHorseDetail(h){
         +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Reproductive ultrasounds</div>'
         +''
       +'</div>'
-      +usAddForm
       +usRows
     +'</div>';
   }
@@ -8729,7 +8709,6 @@ function rHorseDetail(h){
         +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Foal records</div>'
         +''
       +'</div>'
-      +foalAddForm
       +foalRows
     +'</div>';
   }
@@ -8798,6 +8777,41 @@ function rHorseDetail(h){
     }
   }
 
+
+  // ── Health Add sheet: menu OR active form, rendered after breeding/us/foal ────
+  var healthAddSheet='';
+  if(S.healthAddSheetOpen&&healthAddOptions.length){
+    var logOpts=healthAddOptions.filter(function(o){return o.group==='log';});
+    var breedOpts=healthAddOptions.filter(function(o){return o.group==='breed';});
+    function healthOptRow(o){
+      var closeAction=o.group==='log'?'S.healthAddSheetOpen=false;':'';
+      return '<button onclick="'+o.action+closeAction+'rerender()" style="width:100%;display:flex;align-items:center;gap:12px;padding:12px 14px;background:none;border:none;border-bottom:1px solid var(--md-outline-variant);cursor:pointer;text-align:left;">'
+        +'<div style="width:36px;height:36px;border-radius:10px;background:'+o.color+'18;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon(o.icon,18,o.color)+'</div>'
+        +'<span style="font-size:14px;font-weight:600;color:var(--md-on-surface);">'+o.label+'</span>'
+      +'</button>';
+    }
+    // Which sub-form (if any) is currently active inside the sheet
+    var activeFormLabel=(typeof bfOpen!=='undefined'&&bfOpen)?'New breeding record'
+      :(typeof usOpen!=='undefined'&&usOpen)?'New ultrasound entry'
+      :(typeof foalOpen!=='undefined'&&foalOpen)?'Record foaling'
+      :null;
+    var sheetInner=activeFormLabel
+      ? ((typeof bfOpen!=='undefined'&&bfOpen)?addForm:(typeof usOpen!=='undefined'&&usOpen)?usAddForm:foalAddForm)
+      : ('<div style="width:36px;height:4px;border-radius:2px;background:var(--md-outline-variant);margin:0 auto 14px;"></div>'
+          +(logOpts.length?'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;padding:0 14px 8px;">Log Health Data</div>'+logOpts.map(healthOptRow).join(''):'')
+          +(breedOpts.length?'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;padding:14px 14px 8px;">Breeding &amp; Reproduction</div>'+breedOpts.map(healthOptRow).join(''):''));
+    var sheetPadding=activeFormLabel?'padding:16px;':'padding-top:12px;padding-bottom:24px;';
+    healthAddSheet='<div onclick="S.healthAddSheetOpen=false;'
+        +'if(window._breedingFormOpen)window._breedingFormOpen[\''+h.id+'\']=false;'
+        +'if(window._usFormOpen)window._usFormOpen[\''+h.id+'\']=false;'
+        +'if(window._foalFormOpen)window._foalFormOpen[\''+h.id+'\']=false;'
+        +'rerender()" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:400;display:flex;flex-direction:column;justify-content:flex-end;">'
+      +'<div onclick="event.stopPropagation()" style="background:var(--md-surface);border-radius:20px 20px 0 0;'+sheetPadding+'max-height:85vh;overflow-y:auto;">'
+        +(activeFormLabel?'':'<div style="width:36px;height:4px;border-radius:2px;background:var(--md-outline-variant);margin:0 auto 14px;"></div>')
+        +sheetInner
+      +'</div>'
+    +'</div>';
+  }
 
   var healthTab=healthAddSheet+healthFab+'<div style="padding:14px;">'+reproHistorySection+breedingSection+ultrasoundSection+foalSection+vitalsSection+immunizationsSection+examsSection+labsSection+visitsSection+'</div>';
 
