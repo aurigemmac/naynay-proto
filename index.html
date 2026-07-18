@@ -374,11 +374,12 @@ function mdSecBlock(title,children){
 }
 
 // --- ROLE CYCLE -----------------------------------------------
-const ROLE_LABELS_MAP={'staff':'Staff','manager':'Manager','vet':'Vet','trainer':'Trainer','owner':'Owner'};
+const ROLE_LABELS_MAP={'staff':'Staff','manager':'Manager','vet':'Vet','trainer':'Trainer','owner':'Owner','breeder':'Breeder'};
 const ROLE_COMBOS=[
   {label:'Staff',                    roles:['staff'],                         subtitle:'Barn hand / groom',                name:'Marcus',    face:'face_4',  color:'var(--md-secondary)'},
   {label:'Manager',                  roles:['manager'],                       subtitle:'Barn manager',                     name:'Charlene',  face:'face_3',  color:'var(--md-primary)'},
   {label:'Trainer',                  roles:['trainer'],                       subtitle:'Riding instructor',                name:'Alyse',     face:'face_5',  color:'var(--md-tertiary)'},
+  {label:'Breeder',                  roles:['breeder'],                       subtitle:'Broodmare breeder',                name:'Patricia',  face:'face_5',  color:'var(--md-tertiary)'},
   {label:'Vet',                      roles:['vet'],                           subtitle:'Visiting veterinarian',            name:'Dr. Matthew',face:'face_6', color:'var(--md-secondary)'},
   {label:'Owner',                    roles:['owner'],                         subtitle:'Horse owner',                      name:'Emily',     face:'face_2',  color:'#C04A6A'},
   {label:'Owner + Trainer',          roles:['owner','trainer'],               subtitle:'Competing owner-rider',            name:'Riley',     face:'face_2',  color:'#C04A6A'},
@@ -390,7 +391,7 @@ const ROLE_COMBOS=[
 function hasRole(r){return S.roles.includes(r);}
 function anyRole(){var args=Array.prototype.slice.call(arguments);return args.some(function(r){return S.roles.includes(r);});}
 function allRoles(){var args=Array.prototype.slice.call(arguments);return args.every(function(r){return S.roles.includes(r);});}
-function primaryRole(){var order=['vet','manager','trainer','staff','owner'];for(var i=0;i<order.length;i++){if(S.roles.includes(order[i]))return order[i];}return S.roles[0]||'staff';}
+function primaryRole(){var order=['vet','manager','trainer','breeder','staff','owner'];for(var i=0;i<order.length;i++){if(S.roles.includes(order[i]))return order[i];}return S.roles[0]||'staff';}
 function comboLabel(){var c=ROLE_COMBOS[S.roleComboIdx];return c?c.label:S.roles.map(function(r){return ROLE_LABELS_MAP[r]||r;}).join(' + ');}
 function openRolePicker(){S.showRolePicker=!S.showRolePicker;rerender();}
 function selectRoleCombo(idx){
@@ -1277,6 +1278,7 @@ function obComplete(){
   if(roles.includes('manager'))S.role='manager';
   else if(roles.includes('vet'))S.role='vet';
   else if(roles.includes('trainer'))S.role='trainer';
+  else if(roles.includes('breeder'))S.role='breeder';
   else if(roles.includes('owner'))S.role='owner';
   else S.role=roles[0];
   S.roleComboIdx=ROLE_COMBOS.findIndex(function(c){
@@ -1609,6 +1611,7 @@ function rOnboarding(){
       {id:'manager', icon:'home',              label:'Barn Manager',  sub:'I manage a barn or facility'},
       {id:'vet',     icon:'medical_services',  label:'Veterinarian',  sub:'I provide veterinary care'},
       {id:'trainer', icon:'sports',            label:'Trainer',       sub:'I train horses or riders'},
+      {id:'breeder', icon:'egg_alt',          label:'Breeder',       sub:'I breed and raise horses'},
       {id:'staff',   icon:'person',            label:'Barn Staff',    sub:'I work at a barn'},
     ];
     var OTHER_PRO_TYPES=['Farrier','Dentist','Chiropractor','Other'];
@@ -2320,7 +2323,7 @@ function rOnboarding(){
   if(ob.step==='role_transition'){
     var doneRole=ob._doneRole||'owner';
     var nextRole=ob._nextRole||'trainer';
-    var RLA={owner:'Horse Owner',manager:'Barn Manager',vet:'Veterinarian',trainer:'Trainer',staff:'Barn Staff'};
+    var RLA={owner:'Horse Owner',manager:'Barn Manager',vet:'Veterinarian',trainer:'Trainer',staff:'Barn Staff',breeder:'Breeder'};
     var RIA={owner:'favorite',manager:'home',vet:'medical_services',trainer:'fitness_center',staff:'person'};
     var rl=RLA[doneRole]||doneRole;
     var nl=RLA[nextRole]||nextRole;
@@ -2461,7 +2464,7 @@ function getContent(isVet,isMgr,showHorse){
   if(S.roles.length>1&&S.activeTab==='home'&&S.mgrView!=='assignments'&&!S.quickAction&&!S.ownerEventPass&&!S.bookingVisitId&&!showHorse) return rMultiRoleHome();
   if(S.roles.length>1&&S.activeTab==='setup'&&!showHorse){
     if(anyRole('vet'))return rVetSetup();
-    if(anyRole('trainer'))return rTrainerSetup();
+    if(anyRole('trainer')||anyRole('breeder'))return rTrainerSetup();
     if(anyRole('manager'))return rMgrSetup();
     if(anyRole('staff'))return rStaffSetup();
     return rOwnerSetup();
@@ -2475,7 +2478,7 @@ function getContent(isVet,isMgr,showHorse){
     if(S.vetView==='messages')return rMessages('vet');if(S.vetView==='setup')return rVetSetup();
     if(S.vetView==='vaxform')return rVaxForm();return rVetHome();
   }
-  if(S.role==='trainer'){
+  if(S.role==='trainer'||S.role==='breeder'){
     if(showHorse)return rHorseDetail(HORSES_ALL.find(function(h){return h.id===S.selectedHorse;})||HORSES.find(function(h){return h.id===S.selectedHorse;}));
     if(S.quickAction==='document-observation')return rObservationForm();
     if(S.quickAction==='request-barn-visit')return rScheduleVisitForm();
@@ -2484,7 +2487,7 @@ function getContent(isVet,isMgr,showHorse){
     if(S.activeTab==='horses')return S.showAddHorse?rAddHorse():rHorseList();
     if(S.activeTab==='messages')return rMessages('trainer');
     if(S.activeTab==='setup')return rTrainerSetup();
-    return rTrainerHome();
+    return S.role==='breeder'?rBreederHome():rTrainerHome();
   }
   if(S.role==='owner'){
     if(showHorse)return rHorseDetail(HORSES_ALL.find(function(h){return h.id===S.selectedHorse;})||HORSES.find(function(h){return h.id===S.selectedHorse;}));
@@ -3569,7 +3572,7 @@ function rServicesTab(){
     Wellness:{color:'var(--md-secondary)',bg:'var(--md-secondary-container)'},
   };
 
-  var ownSvcs=anyRole('trainer')&&!anyRole('vet')?trainerServices
+  var ownSvcs=(anyRole('trainer')||anyRole('breeder'))&&!anyRole('vet')?trainerServices
     :anyRole('manager')&&!anyRole('vet')&&!anyRole('trainer')?mgrServices
     :vetServices;
 
@@ -6135,6 +6138,142 @@ const TRAINER_HORSE_PROGRESS=[
   },
 ];
 
+function rBreederHome(){
+  var t=TH;
+
+  // Ensure repro data seeded for every mare in the barn (mirrors rHorseDetail seeding)
+  function ensureReproSeed(h){
+    if(!window._pregnancyState) window._pregnancyState={};
+    if(!window._pregnancyState[h.id]){
+      window._pregnancyState[h.id]=(h.id==='rv')?{pregnant:true,breedDate:'2025-07-20',foalWatch:{}}
+        :(h.id==='h3')?{pregnant:true,breedDate:'2026-05-20',foalWatch:{}}
+        :{pregnant:false,breedDate:'',foalWatch:{}};
+    }
+    if(!window.BREEDING_RECORDS) window.BREEDING_RECORDS={};
+    if(!window.BREEDING_RECORDS[h.id]){
+      window.BREEDING_RECORDS[h.id]=(h.id==='rv')?[{id:'br1',stallionName:'Contango',method:'Fresh AI',date:'2025-07-20'}]
+        :(h.id==='h3')?[{id:'br2',stallionName:'Baltic VDL',method:'Chilled AI',date:'2026-05-20'}]
+        :(h.id==='h4')?[{id:'br3',stallionName:'Furstenball',method:'Frozen AI',date:'2026-04-02'}]
+        :(h.id==='h6')?[{id:'br4',stallionName:'Vitalis',method:'Frozen AI',date:'2024-05-13'}]
+        :[];
+    }
+    if(!window.FOAL_RECORDS) window.FOAL_RECORDS={};
+    if(!window.FOAL_RECORDS[h.id]){
+      window.FOAL_RECORDS[h.id]=(h.id==='h6')?[{id:'fl1',foalName:'Bellamy',sex:'Colt',birthDate:'2025-04-18',sireStallion:'Vitalis'}]:[];
+    }
+    if(!window.REPRO_ULTRASOUNDS) window.REPRO_ULTRASOUNDS={};
+    if(!window.REPRO_ULTRASOUNDS[h.id]) window.REPRO_ULTRASOUNDS[h.id]=[];
+  }
+
+  var mares=HORSES.filter(function(h){return h.sex==='Mare'||h.sex==='Filly';});
+  mares.forEach(ensureReproSeed);
+
+  var TODAY=new Date('2026-06-10');
+  function daysPregnant(bd){return Math.floor((TODAY-new Date(bd))/86400000);}
+  function fmtDate(d){return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]+' '+d.getDate();}
+  function goToHorse(hid,tab){return "S.selectedHorse='"+hid+"';S.horseTab='"+(tab||'overview')+"';rerender()";}
+
+  var inFoal=mares.filter(function(h){return window._pregnancyState[h.id].pregnant;});
+  var cycling=mares.filter(function(h){return !window._pregnancyState[h.id].pregnant && (window.BREEDING_RECORDS[h.id]||[]).length;});
+  var openMares=mares.filter(function(h){return !window._pregnancyState[h.id].pregnant && !(window.BREEDING_RECORDS[h.id]||[]).length;});
+  var foalsThisYear=[];
+  mares.forEach(function(h){
+    (window.FOAL_RECORDS[h.id]||[]).forEach(function(fl){
+      var yr=new Date(fl.birthDate).getFullYear();
+      if(yr===2025||yr===2026) foalsThisYear.push(Object.assign({},fl,{damName:h.name,damId:h.id}));
+    });
+  });
+
+  // ── Header ──────────────────────────────────────────────────────────────────
+  var header='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">'
+    +'<div><div style="font-size:18px;font-weight:700;color:var(--md-on-surface);">Good morning, Patricia</div>'
+    +'<div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:1px;">Sunrise Stables \xb7 Breeding season 2026</div></div>'
+    +'<div style="width:38px;height:38px;border-radius:50%;background:var(--md-tertiary)22;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon('egg_alt',20,'var(--md-tertiary)')+'</div>'
+  +'</div>';
+
+  // ── Stat tiles ──────────────────────────────────────────────────────────────
+  var statsRow='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;">'
+    +[{n:inFoal.length,l:'In foal',c:'var(--md-error)'},{n:cycling.length,l:'Cycling',c:'var(--md-primary)'},{n:foalsThisYear.length,l:'Foals (YTD)',c:'var(--md-secondary)'}].map(function(s){
+      return '<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:12px;text-align:center;">'
+        +'<div style="font-size:24px;font-weight:800;color:'+s.c+';">'+s.n+'</div>'
+        +'<div style="font-size:10px;color:var(--md-on-surface-dim);font-weight:600;margin-top:2px;">'+s.l+'</div>'
+      +'</div>';
+    }).join('')
+  +'</div>';
+
+  // ── Mares in Foal ───────────────────────────────────────────────────────────
+  var inFoalCard='';
+  if(inFoal.length){
+    inFoalCard='<div style="margin-bottom:16px;">'
+      +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">'+msiIcon('favorite',15,'var(--md-error)')+'<span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Mares in Foal</span></div>'
+      +inFoal.map(function(h){
+        var bd=window._pregnancyState[h.id].breedDate;
+        var days=daysPregnant(bd);
+        var progress=Math.min(100,Math.round(days/340*100));
+        var isSafe=days>=320;
+        var dueDate=new Date(bd);dueDate.setDate(dueDate.getDate()+340);
+        return '<div onclick="'+goToHorse(h.id,'overview')+'" style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:12px 14px;margin-bottom:8px;cursor:pointer;">'
+          +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">'
+            +'<div style="display:flex;align-items:center;gap:9px;">'
+              +'<div style="width:34px;height:34px;border-radius:50%;background:'+(h.avatar?h.avatar.bg:'var(--md-primary)')+'33;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--md-primary);flex-shrink:0;">'+h.name.charAt(0)+'</div>'
+              +'<div><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+h.name+'</div>'
+              +'<div style="font-size:10px;color:var(--md-on-surface-dim);">Day '+days+' of 340</div></div>'
+            +'</div>'
+            +(isSafe?'<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;background:var(--md-secondary)18;color:var(--md-secondary);">Safe to foal</span>':'<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;background:var(--md-surface-variant);color:var(--md-on-surface-dim);">Due '+fmtDate(dueDate)+'</span>')
+          +'</div>'
+          +'<div style="height:5px;background:var(--md-outline-variant);border-radius:20px;overflow:hidden;">'
+            +'<div style="height:100%;width:'+progress+'%;background:'+(isSafe?'var(--md-secondary)':'var(--md-error)')+';border-radius:20px;"></div>'
+          +'</div>'
+        +'</div>';
+      }).join('')
+    +'</div>';
+  }
+
+  // ── Mares Cycling ───────────────────────────────────────────────────────────
+  var cyclingCard='';
+  if(cycling.length){
+    cyclingCard='<div style="margin-bottom:16px;">'
+      +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">'+msiIcon('sync',15,'var(--md-primary)')+'<span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Mares Cycling</span></div>'
+      +cycling.map(function(h){
+        var br=window.BREEDING_RECORDS[h.id][window.BREEDING_RECORDS[h.id].length-1];
+        var us=(window.REPRO_ULTRASOUNDS[h.id]||[]).slice().sort(function(a,b){return new Date(b.date)-new Date(a.date);})[0];
+        return '<div onclick="'+goToHorse(h.id,'health')+'" style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:12px 14px;margin-bottom:8px;cursor:pointer;">'
+          +'<div style="display:flex;align-items:center;gap:9px;margin-bottom:'+(us?'6px':'0')+';">'
+            +'<div style="width:34px;height:34px;border-radius:50%;background:'+(h.avatar?h.avatar.bg:'var(--md-primary)')+'33;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--md-primary);flex-shrink:0;">'+h.name.charAt(0)+'</div>'
+            +'<div><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+h.name+'</div>'
+            +'<div style="font-size:10px;color:var(--md-on-surface-dim);">Last bred to '+br.stallionName+' \xb7 '+br.method+'</div></div>'
+          +'</div>'
+          +(us?'<div style="font-size:11px;color:var(--md-on-surface-dim);padding-top:6px;border-top:1px solid var(--md-outline-variant);">'+msiIcon('monitor_heart',11,'var(--md-primary)')+' '+us.date+' \u2014 '+(us.phase==='cycle'?('L '+us.follicleL+'mm/R '+us.follicleR+'mm'):'Pregnancy check')+'</div>':'')
+        +'</div>';
+      }).join('')
+    +'</div>';
+  }
+
+  // ── Foals on the Ground ──────────────────────────────────────────────────────
+  var foalsCard='';
+  if(foalsThisYear.length){
+    foalsCard='<div style="margin-bottom:16px;">'
+      +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">'+msiIcon('cruelty_free',15,'var(--md-secondary)')+'<span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Foals on the Ground</span></div>'
+      +foalsThisYear.map(function(fl){
+        var ageDays=Math.floor((TODAY-new Date(fl.birthDate))/86400000);
+        var ageStr=ageDays<60?ageDays+' days old':Math.floor(ageDays/30)+' months old';
+        var sexColor=fl.sex==='Colt'?'var(--md-primary)':'var(--md-error)';
+        return '<div onclick="'+goToHorse(fl.damId,'health')+'" style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:12px 14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:10px;">'
+          +'<div style="width:34px;height:34px;border-radius:50%;background:'+sexColor+'18;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon('cruelty_free',16,sexColor)+'</div>'
+          +'<div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+fl.foalName+'<span style="font-size:10px;font-weight:700;color:'+sexColor+';margin-left:6px;">'+fl.sex+'</span></div>'
+          +'<div style="font-size:10px;color:var(--md-on-surface-dim);">Out of '+fl.damName+' \xb7 '+ageStr+'</div></div>'
+        +'</div>';
+      }).join('')
+    +'</div>';
+  }
+
+  var emptyState=(!inFoal.length&&!cycling.length&&!foalsThisYear.length)
+    ?'<div style="background:var(--md-surface-variant);border-radius:var(--md-shape-md);padding:24px;text-align:center;">'+msiIcon('egg_alt',28,'var(--md-outline-variant)')+'<div style="font-size:13px;font-weight:600;color:var(--md-on-surface);margin-top:8px;">No active breeding season yet</div><div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:3px;">Log a breeding record on a mare\'s Health tab to get started.</div></div>'
+    :'';
+
+  return header+statsRow+inFoalCard+cyclingCard+foalsCard+emptyState;
+}
+
 function rTrainerHome(){
   const t=TH;
   const trainAssigns=getTrainingAssign(TODAY);
@@ -7765,60 +7904,149 @@ function rHorseDetail(h){
   var prosCard_ov=(h.pros&&h.pros.length)?'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);overflow:hidden;margin-bottom:12px;"><div style="padding:10px 13px;border-bottom:1px solid var(--md-outline-variant);font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;">Upcoming appointments</div>'+h.pros.map(function(p,i){return '<div style="display:flex;align-items:center;gap:9px;padding:9px 13px;'+(i<h.pros.length-1?'border-bottom:1px solid var(--md-outline-variant)':'')+';"><div style="width:32px;height:32px;border-radius:8px;background:var(--md-surface-variant);display:flex;align-items:center;justify-content:center;">'+msiIcon(p.role==='Farrier'?'build':p.role==='Dentist'?'medical_services':'groups',15,'var(--md-on-surface-dim)')+'</div><div style="flex:1;"><div style="font-size:12px;font-weight:600;color:var(--md-on-surface);">'+p.name+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+p.role+'</div></div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+p.next+'</div></div>';}).join('')+'</div>':'';
 
 
-  // ── Pregnancy indicator (Mares/Fillies only) ─────────────────────────────
+// ── Pregnancy dashboard (Mares/Fillies only) ────────────────────────────────
   var isMare=h.sex==='Mare'||h.sex==='Filly';
   var pregCard_ov='';
   if(isMare){
     if(!window._pregnancyState) window._pregnancyState={};
-    var ps=window._pregnancyState[h.id]||(window._pregnancyState[h.id]={pregnant:false,breedDate:''});
-    var pregDaysCalc='';
-    var pregWeeks=0;
-    var pregTrimester='';
-    var pregProgress=0;
-    if(ps.pregnant&&ps.breedDate){
-      var bd=new Date(ps.breedDate);
-      var now=new Date('2026-03-27');
-      var diffMs=now-bd;
-      var diffDays=Math.max(0,Math.floor(diffMs/(1000*60*60*24)));
-      pregWeeks=Math.floor(diffDays/7);
-      // Equine gestation ~340 days (11.2 months)
-      var totalDays=340;
-      pregProgress=Math.min(100,Math.round(diffDays/totalDays*100));
-      if(diffDays<=113) pregTrimester='1st trimester (days 1–113)';
-      else if(diffDays<=226) pregTrimester='2nd trimester (days 114–226)';
-      else pregTrimester='3rd trimester (days 227–340)';
-      var daysLeft=Math.max(0,totalDays-diffDays);
-      pregDaysCalc='<div style="margin-top:10px;">'
-        +'<div style="display:flex;justify-content:space-between;margin-bottom:5px;">'
-        +'<span style="font-size:12px;font-weight:700;color:var(--md-on-surface);">'+pregWeeks+' weeks along</span>'
-        +'<span style="font-size:11px;color:var(--md-on-surface-dim);">'+daysLeft+' days to go</span>'
-        +'</div>'
-        +'<div style="height:6px;background:var(--md-outline-variant);border-radius:10px;overflow:hidden;margin-bottom:6px;">'
-        +'<div style="height:100%;width:'+pregProgress+'%;background:var(--md-error);border-radius:10px;transition:width 0.3s;"></div>'
-        +'</div>'
-        +'<div style="font-size:11px;color:var(--md-error);font-weight:600;">'+pregTrimester+'</div>'
-        +(diffDays>0?'<div style="font-size:10px;color:var(--md-on-surface-dim);margin-top:2px;">Day '+diffDays+' of 340 · Est. foal date: '+(function(){var d=new Date(bd);d.setDate(d.getDate()+totalDays);return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]+' '+d.getDate()+', '+d.getFullYear();}())+'</div>':'')
-        +'</div>';
+    if(!window._pregnancyState[h.id]){
+      // Seed demo pregnancy for Rivendell so the dashboard is visible by default
+      window._pregnancyState[h.id]=(h.id==='rv')
+        ?{pregnant:true,breedDate:'2025-07-20',foalWatch:{}}
+        :(h.id==='h3')
+        ?{pregnant:true,breedDate:'2026-05-20',foalWatch:{}}
+        :{pregnant:false,breedDate:'',foalWatch:{}};
     }
-    pregCard_ov='<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);overflow:hidden;margin-bottom:12px;">'
+    var ps=window._pregnancyState[h.id];
+    var pcContent='';
+    if(ps.pregnant&&ps.breedDate){
+      var TODAY=new Date('2026-06-10');
+      var bd=new Date(ps.breedDate);
+      var diffMs=Math.max(0,TODAY-bd);
+      var daysPrg=Math.floor(diffMs/(1000*60*60*24));
+      var GESTATION=340,SAFE_DAY=320;
+      var progress=Math.min(100,Math.round(daysPrg/GESTATION*100));
+      var daysToSafe=Math.max(0,SAFE_DAY-daysPrg);
+      var daysToDue=Math.max(0,GESTATION-daysPrg);
+      var isSafe=daysPrg>=SAFE_DAY;
+      var isPast=daysPrg>GESTATION;
+      var addDaysFn=function(d,n){var r=new Date(d);r.setDate(r.getDate()+n);return r;};
+      var fmtDateFn=function(d){return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]+' '+d.getDate();};
+      var safeDate=addDaysFn(bd,SAFE_DAY);
+      var dueDate=addDaysFn(bd,GESTATION);
+      var trimLabel=daysPrg<=113?'1st trimester':daysPrg<=226?'2nd trimester':'3rd trimester';
+      var trimColor=daysPrg<=113?'var(--md-secondary)':daysPrg<=226?'var(--md-primary)':'var(--md-error)';
+      var barColor=isSafe?'var(--md-secondary)':'var(--md-error)';
+      var vacSchedule=[
+        {name:'EHV-1 Booster #1',day:150},
+        {name:'EHV-1 Booster #2',day:210},
+        {name:'EHV-1 Booster #3',day:270},
+        {name:'Pre-foaling vaccines',day:300},
+      ];
+      var vg=ps.vaccinesGiven||{};
+      var nextVacStr='<div style="margin-top:10px;">'
+        +'<div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Pregnancy vaccines</div>'
+        +vacSchedule.map(function(v,vi){
+          var given=!!vg[vi];
+          var vacDate=addDaysFn(bd,v.day);
+          var daysToVac=v.day-daysPrg;
+          var isNext=!given&&daysToVac>0&&vacSchedule.slice(0,vi).every(function(pv,pi){return !!vg[pi]||pv.day<=daysPrg;});
+          var isOverdue=!given&&daysToVac<=0;
+          var urgent=!given&&daysToVac>0&&daysToVac<=14;
+          var rowBg=given?'transparent':urgent?'var(--md-warning)12':isOverdue?'var(--md-error)10':'transparent';
+          return '<label style="display:flex;align-items:center;gap:9px;padding:6px 7px;border-radius:8px;background:'+rowBg+';cursor:pointer;">'
+            +'<input type="checkbox" '+(given?'checked':'')+' onchange="(function(el,hid,vi2){var ps2=window._pregnancyState[hid];if(!ps2.vaccinesGiven)ps2.vaccinesGiven={};ps2.vaccinesGiven[vi2]=el.checked?new Date().toISOString().slice(0,10):false;rerender();})(this,\''+h.id+'\','+vi+')" style="width:16px;height:16px;accent-color:var(--md-secondary);flex-shrink:0;cursor:pointer;"/>'
+            +'<div style="flex:1;min-width:0;">'
+              +'<div style="font-size:12px;font-weight:'+(given?'400':'700')+';color:'+(given?'var(--md-on-surface-dim)':'var(--md-on-surface)')+';'+(given?'text-decoration:line-through;':'')+'">'+v.name+'</div>'
+              +'<div style="font-size:10px;color:'+(isOverdue?'var(--md-error)':'var(--md-on-surface-dim)')+';">'
+                +(given?'Given '+fmtDateFn(new Date(vg[vi])):fmtDateFn(vacDate)+(isOverdue?' \xb7 overdue':daysToVac<=14?' \xb7 in '+daysToVac+' days':''))
+              +'</div>'
+            +'</div>'
+            +(!given&&(isNext||isOverdue)?'<span style="font-size:9px;font-weight:700;color:'+(isOverdue?'var(--md-error)':'var(--md-warning)')+';background:'+(isOverdue?'var(--md-error)18':'var(--md-warning)18')+';padding:2px 7px;border-radius:20px;flex-shrink:0;">'+(isOverdue?'Overdue':'Next')+'</span>':'')
+            +(given?msiIcon('check_circle',15,'var(--md-secondary)'):'')
+          +'</label>';
+        }).join('')
+      +'</div>';
+      var foalingWatch='';
+      if(daysPrg>=300){
+        var watchItems=[{l:'Waxing on teats',k:'wax'},{l:'Vulva relaxation',k:'vulva'},{l:'Milk calcium tested',k:'calcium'},{l:'Foaling kit ready',k:'bag'}];
+        var fw=ps.foalWatch||{};
+        foalingWatch='<div style="margin-top:10px;background:var(--md-error)08;border:1.5px solid var(--md-error)33;border-radius:10px;padding:9px 11px;">'
+          +'<div style="font-size:11px;font-weight:700;color:var(--md-error);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;display:flex;align-items:center;gap:5px;">'+msiIcon('warning',12,'var(--md-error)')+' Foaling watch</div>'
+          +'<div style="display:flex;flex-direction:column;gap:7px;">'
+          +watchItems.map(function(item){
+            var checked=!!fw[item.k];
+            return '<label style="display:flex;align-items:center;gap:9px;cursor:pointer;">'
+              +'<input type="checkbox" '+(checked?'checked':'')+' onchange="(function(el,hid,k){var ps2=window._pregnancyState[hid];if(!ps2.foalWatch)ps2.foalWatch={};ps2.foalWatch[k]=el.checked;})(this,\''+h.id+'\',\''+item.k+'\')" style="width:16px;height:16px;accent-color:var(--md-secondary);flex-shrink:0;cursor:pointer;"/>'
+              +'<span style="font-size:12px;color:'+(checked?'var(--md-secondary)':'var(--md-on-surface-dim)')+';font-weight:'+(checked?'700':'400')+';'+(checked?'text-decoration:line-through;':'')+'">'+item.l+'</span>'
+            +'</label>';
+          }).join('')
+          +'</div></div>';
+      }
+      pcContent=''
+        +'<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;">'
+          +'<div>'
+            +'<div style="display:flex;align-items:baseline;gap:6px;">'
+              +'<span style="font-size:36px;font-weight:800;color:'+(isSafe?'var(--md-secondary)':'var(--md-error)')+';">'+daysPrg+'</span>'
+              +'<span style="font-size:14px;color:var(--md-on-surface-dim);font-weight:600;">days pregnant</span>'
+            +'</div>'
+            +'<span style="font-size:11px;font-weight:700;color:'+trimColor+';background:'+trimColor+'18;padding:2px 8px;border-radius:20px;display:inline-block;margin-top:4px;">'+trimLabel+'</span>'
+          +'</div>'
+          +(isSafe
+            ?'<div style="text-align:center;background:var(--md-secondary-container);border-radius:10px;padding:8px 12px;flex-shrink:0;">'
+              +msiIcon('check_circle',20,'var(--md-secondary)')
+              +'<div style="font-size:10px;font-weight:700;color:var(--md-secondary);margin-top:3px;">Safe to foal</div>'
+            +'</div>'
+            :'<div style="text-align:center;background:var(--md-surface-variant);border-radius:10px;padding:8px 12px;flex-shrink:0;">'
+              +'<div style="font-size:20px;font-weight:800;color:var(--md-on-surface);">'+daysToSafe+'</div>'
+              +'<div style="font-size:10px;color:var(--md-on-surface-dim);white-space:nowrap;">days to safe</div>'
+            +'</div>')
+        +'</div>'
+        +'<div style="margin-bottom:12px;">'
+          +'<div style="height:8px;background:var(--md-outline-variant);border-radius:20px;overflow:visible;position:relative;margin-bottom:4px;">'
+            +'<div style="height:100%;width:'+progress+'%;background:linear-gradient(90deg,var(--md-error),'+barColor+');border-radius:20px;"></div>'
+            +'<div style="position:absolute;top:-2px;bottom:-2px;left:94.1%;width:2px;background:var(--md-secondary);border-radius:2px;"></div>'
+          +'</div>'
+          +'<div style="display:flex;justify-content:space-between;">'
+            +'<span style="font-size:10px;color:var(--md-on-surface-dim);">Day 1</span>'
+            +'<span style="font-size:10px;color:var(--md-secondary);font-weight:600;">Safe \u25bc Day 320</span>'
+            +'<span style="font-size:10px;color:var(--md-on-surface-dim);">Due Day 340</span>'
+          +'</div>'
+        +'</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;">'
+          +'<div style="background:'+(isSafe?'var(--md-secondary-container)':'var(--md-surface-variant)')+';border-radius:10px;padding:9px 12px;">'
+            +'<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;">'+msiIcon('check_circle',12,isSafe?'var(--md-secondary)':'var(--md-outline-variant)')+'<span style="font-size:10px;color:var(--md-on-surface-dim);">Safe to foal</span></div>'
+            +'<div style="font-size:14px;font-weight:800;color:'+(isSafe?'var(--md-secondary)':'var(--md-on-surface)')+';">'+(isSafe?'Now \u2713':fmtDateFn(safeDate))+'</div>'
+            +(!isSafe?'<div style="font-size:11px;color:var(--md-on-surface-dim);">in '+daysToSafe+' days</div>':'')
+          +'</div>'
+          +'<div style="background:var(--md-surface-variant);border-radius:10px;padding:9px 12px;">'
+            +'<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;">'+msiIcon('event',12,'var(--md-primary)')+'<span style="font-size:10px;color:var(--md-on-surface-dim);">Due date</span></div>'
+            +'<div style="font-size:14px;font-weight:800;color:var(--md-on-surface);">'+fmtDateFn(dueDate)+'</div>'
+            +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+(isPast?'Past due':'in '+daysToDue+' days')+'</div>'
+          +'</div>'
+        +'</div>'
+        +nextVacStr
+        +foalingWatch
+        +(isSafe?'<button onclick="S.horseTab=\'health\';window._foalFormOpen=window._foalFormOpen||{};window._foalFormOpen[\''+h.id+'\']=true;rerender()" style="width:100%;margin-top:10px;background:var(--md-secondary);color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;">'+msiIcon('cruelty_free',16,'#fff')+' Record foaling</button>':'');
+    }
+    pregCard_ov='<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid '+(ps.pregnant?'var(--md-error)33':'var(--md-outline-variant)')+';overflow:hidden;margin-bottom:12px;">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 13px;">'
-      +'<div style="display:flex;align-items:center;gap:8px;">'+msiIcon('favorite',15,'var(--md-error)')
-      +'<span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Pregnancy</span>'
-      +'<span style="font-size:10px;color:var(--md-on-surface-dim);">Mare</span>'
-      +'</div>'
-      +mdToggle(ps.pregnant,'if(!window._pregnancyState)window._pregnancyState={};if(!window._pregnancyState[\''+h.id+'\'])window._pregnancyState[\''+h.id+'\']={pregnant:false,breedDate:\'\'};window._pregnancyState[\''+h.id+'\'].pregnant=!window._pregnancyState[\''+h.id+'\'].pregnant;rerender()')
+        +'<div style="display:flex;align-items:center;gap:8px;">'+msiIcon('favorite',15,ps.pregnant?'var(--md-error)':'var(--md-outline-variant)')
+        +'<span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Pregnancy</span>'
+        +(ps.pregnant&&ps.breedDate?'<span style="font-size:10px;font-weight:700;color:var(--md-error);background:var(--md-error)15;padding:1px 7px;border-radius:20px;">Active</span>':'')
+        +'</div>'
+        +mdToggle(ps.pregnant,'if(!window._pregnancyState)window._pregnancyState={};if(!window._pregnancyState[\''+h.id+'\'])window._pregnancyState[\''+h.id+'\']={pregnant:false,breedDate:\'\',foalWatch:{}};window._pregnancyState[\''+h.id+'\'].pregnant=!window._pregnancyState[\''+h.id+'\'].pregnant;rerender()')
       +'</div>'
       +(ps.pregnant
-        ?'<div style="padding:0 13px 12px;border-top:1px solid var(--md-outline-variant);padding-top:10px;">'
-          +'<div style="margin-bottom:8px;"><label style="font-size:9px;font-weight:700;color:var(--md-error);text-transform:uppercase;letter-spacing:0.6px;display:block;margin-bottom:4px;">Breeding / cover date</label>'
-          +'<input type="date" value="'+(ps.breedDate||'')+'" oninput="window._pregnancyState[\''+h.id+'\']&&(window._pregnancyState[\''+h.id+'\'].breedDate=this.value)" onblur="rerender()" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-error)44;border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/>'
+        ?'<div style="padding:0 13px 13px;border-top:1px solid var(--md-outline-variant);padding-top:11px;">'
+          +'<div style="margin-bottom:12px;"><label style="font-size:9px;font-weight:700;color:var(--md-error);text-transform:uppercase;letter-spacing:0.6px;display:block;margin-bottom:4px;">Breeding / conception date</label>'
+          +'<input type="date" value="'+(ps.breedDate||'')+'" oninput="window._pregnancyState[\''+h.id+'\']&&(window._pregnancyState[\''+h.id+'\'].breedDate=this.value)" onblur="rerender()" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/>'
           +'</div>'
-          +pregDaysCalc
-          +'</div>'
+          +pcContent
+        +'</div>'
         :'')
       +'</div>';
   }
-
   const overviewTab='<div style="padding:14px;">'+alertBanner_ov+statGrid_ov+pregCard_ov+noteCard_ov+medCard_ov+glanceRow_ov+passCard_ov+prosCard_ov+'</div>'
 
   // Training stub -- reuse trainer progress if available
@@ -7987,6 +8215,87 @@ function rHorseDetail(h){
   if(canImaging) actionBtns.push('<button onclick="S.quickAction=\'upload-imaging\';S.selectedHorse=null;rerender()" style="flex:1;background:var(--md-tertiary-container);border:none;border-radius:10px;padding:9px 8px;font-family:\'DM Sans\',sans-serif;font-size:11px;font-weight:700;color:var(--md-tertiary);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">'+msiIcon('radiology',18,'var(--md-tertiary)')+'<span>Imaging</span></button>');
   var actionBar=actionBtns.length?'<div style="display:flex;gap:6px;margin-bottom:14px;">'+actionBtns.join('')+'</div>':'';
 
+
+  // ── Breeding record (Mares/Fillies only) ────────────────────────────────────
+  var breedingSection='';
+  if(h.sex==='Mare'||h.sex==='Filly'){
+    if(!window.BREEDING_RECORDS) window.BREEDING_RECORDS={};
+    if(!window.BREEDING_RECORDS[h.id]){
+      window.BREEDING_RECORDS[h.id]=(h.id==='rv')
+        ?[{id:'br1',stallionName:'Contango',method:'Fresh AI',date:'2025-07-20',semenSource:'Cedar Ridge Stud Farm',notes:'Confirmed ovulation 24hrs prior to insemination.'}]
+        :(h.id==='h3')
+        ?[{id:'br2',stallionName:'Baltic VDL',method:'Chilled AI',date:'2026-05-20',semenSource:'Meadow View Farm',notes:'Bred same-day as ovulation confirmation.'}]
+        :(h.id==='h4')
+        ?[{id:'br3',stallionName:'Furstenball',method:'Frozen AI',date:'2026-04-02',semenSource:'Elite Sport Horse AI',notes:'First attempt, no pregnancy confirmed. Recycling for next attempt.'}]
+        :(h.id==='h6')
+        ?[{id:'br4',stallionName:'Vitalis',method:'Frozen AI',date:'2024-05-13',semenSource:'Select Sires Equine',notes:'Uncomplicated conception, single attempt.'}]
+        :[];
+    }
+    var breedRecs=window.BREEDING_RECORDS[h.id];
+    if(!window._breedingFormOpen) window._breedingFormOpen={};
+    if(!window._breedingForm) window._breedingForm={};
+    var bfOpen=!!window._breedingFormOpen[h.id];
+    var bf=window._breedingForm[h.id]||(window._breedingForm[h.id]={stallionName:'',method:'Fresh AI',date:'',semenSource:'',notes:''});
+
+    var methodOptions=['Live Cover','Fresh AI','Chilled AI','Frozen AI'];
+    var methodColors={'Live Cover':'var(--md-tertiary)','Fresh AI':'var(--md-primary)','Chilled AI':'var(--md-secondary)','Frozen AI':'var(--md-error)'};
+
+    var activeBreedDate=(window._pregnancyState&&window._pregnancyState[h.id]&&window._pregnancyState[h.id].pregnant)?window._pregnancyState[h.id].breedDate:'';
+
+    var recRows=breedRecs.length?breedRecs.slice().reverse().map(function(r){
+      var isActive=r.date&&r.date===activeBreedDate;
+      var mc=methodColors[r.method]||'var(--md-on-surface-dim)';
+      return '<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid '+(isActive?'var(--md-error)44':'var(--md-outline-variant)')+';padding:11px 14px;margin-bottom:8px;">'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">'
+          +'<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">'
+            +'<span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+r.stallionName+'</span>'
+            +'<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:'+mc+'18;color:'+mc+';">'+r.method+'</span>'
+            +(isActive?'<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:var(--md-error)15;color:var(--md-error);">'+msiIcon('favorite',9,'var(--md-error)')+' Active pregnancy</span>':'')
+          +'</div>'
+        +'</div>'
+        +'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-bottom:'+(r.semenSource||r.notes?'4px':'0')+';">'+msiIcon('event',11,'var(--md-on-surface-dim)')+' '+r.date+'</div>'
+        +(r.semenSource?'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-bottom:'+(r.notes?'4px':'0')+';">'+msiIcon('local_shipping',11,'var(--md-on-surface-dim)')+' '+r.semenSource+'</div>':'')
+        +(r.notes?'<div style="font-size:11px;color:var(--md-on-surface-variant);line-height:1.5;margin-top:5px;padding-top:5px;border-top:1px solid var(--md-outline-variant);">'+r.notes+'</div>':'')
+        +(!isActive?'<button onclick="if(!window._pregnancyState)window._pregnancyState={};if(!window._pregnancyState[\''+h.id+'\'])window._pregnancyState[\''+h.id+'\']={pregnant:false,breedDate:\'\',foalWatch:{},vaccinesGiven:{}};window._pregnancyState[\''+h.id+'\'].pregnant=true;window._pregnancyState[\''+h.id+'\'].breedDate=\''+r.date+'\';rerender()" style="margin-top:8px;background:none;border:1.5px solid var(--md-error)44;color:var(--md-error);border-radius:8px;padding:5px 11px;font-size:11px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Mark as active pregnancy</button>':'')
+      +'</div>';
+    }).join('') : '<div style="font-size:12px;color:var(--md-on-surface-dim);padding:10px 2px;">No breeding records yet.</div>';
+
+    var addForm='';
+    if(bfOpen){
+      var INPB='width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
+      var LBLB='font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.6px;display:block;margin-bottom:4px;';
+      addForm='<div style="background:var(--md-surface-variant);border-radius:var(--md-shape-md);border:1.5px solid var(--md-primary)33;padding:12px 13px;margin-bottom:10px;">'
+        +'<div style="font-size:12px;font-weight:700;color:var(--md-on-surface);margin-bottom:10px;">New breeding record</div>'
+        +'<div style="margin-bottom:9px;"><label style="'+LBLB+'">Stallion name</label>'
+          +'<input type="text" value="'+bf.stallionName+'" oninput="window._breedingForm[\''+h.id+'\'].stallionName=this.value" placeholder="e.g. Contango" style="'+INPB+'"/></div>'
+        +'<div style="margin-bottom:9px;"><label style="'+LBLB+'">Method</label>'
+          +'<select oninput="window._breedingForm[\''+h.id+'\'].method=this.value;rerender()" style="'+INPB+'">'
+          +methodOptions.map(function(mo){return '<option value="'+mo+'"'+(bf.method===mo?' selected':'')+'>'+mo+'</option>';}).join('')
+          +'</select></div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px;">'
+          +'<div><label style="'+LBLB+'">Date bred</label><input type="date" value="'+bf.date+'" oninput="window._breedingForm[\''+h.id+'\'].date=this.value" style="'+INPB+'"/></div>'
+          +'<div><label style="'+LBLB+'">Semen source</label><input type="text" value="'+bf.semenSource+'" oninput="window._breedingForm[\''+h.id+'\'].semenSource=this.value" placeholder="Stud farm" style="'+INPB+'"/></div>'
+        +'</div>'
+        +'<div style="margin-bottom:11px;"><label style="'+LBLB+'">Notes (optional)</label>'
+          +'<textarea oninput="window._breedingForm[\''+h.id+'\'].notes=this.value" rows="2" placeholder="Ovulation timing, cycle notes\u2026" style="'+INPB+'resize:none;">'+bf.notes+'</textarea></div>'
+        +'<div style="display:flex;gap:8px;">'
+          +'<button onclick="window._breedingFormOpen[\''+h.id+'\']=false;rerender()" style="padding:9px 13px;background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:9px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);">Cancel</button>'
+          +'<button onclick="(function(){var bfx=window._breedingForm[\''+h.id+'\'];if(!bfx.stallionName||!bfx.date)return;window.BREEDING_RECORDS[\''+h.id+'\'].push({id:\'br\'+Date.now(),stallionName:bfx.stallionName,method:bfx.method,date:bfx.date,semenSource:bfx.semenSource,notes:bfx.notes});window._breedingForm[\''+h.id+'\']={stallionName:\'\',method:\'Fresh AI\',date:\'\',semenSource:\'\',notes:\'\'};window._breedingFormOpen[\''+h.id+'\']=false;rerender();})()" style="flex:1;background:var(--md-primary);color:#fff;border:none;border-radius:9px;padding:9px 13px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Save record</button>'
+        +'</div>'
+      +'</div>';
+    }
+
+    breedingSection='<div style="margin-bottom:14px;">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
+        +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Breeding records</div>'
+        +(!bfOpen?'<button onclick="window._breedingFormOpen[\''+h.id+'\']=true;rerender()" style="font-size:11px;font-weight:600;color:var(--md-primary);background:none;border:none;cursor:pointer;font-family:\'DM Sans\',sans-serif;display:flex;align-items:center;gap:3px;">'+msiIcon('add',13,'var(--md-primary)')+' Add record</button>':'')
+      +'</div>'
+      +addForm
+      +recRows
+    +'</div>';
+  }
+
+
   // Immunizations section (collapsible)
   var vaxData=hh.vaccinations&&typeof hh.vaccinations==='object'&&!Array.isArray(hh.vaccinations)?hh.vaccinations:{core:Array.isArray(hh.vaccinations)?hh.vaccinations:[],riskBased:[]};
   var allVax=[...vaxData.core,...vaxData.riskBased];
@@ -8053,7 +8362,302 @@ function rHorseDetail(h){
   // Visit history
   var visitsSection=hh.visits&&hh.visits.length?'<div><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Visit history</div>'+hh.visits.map(function(v){return '<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:11px 14px;margin-bottom:7px;"><div style="font-size:13px;font-weight:600;color:var(--md-on-surface);margin-bottom:2px;">'+v.type+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);margin-bottom:4px;">'+v.date+' · '+v.vet+'</div><div style="font-size:12px;color:var(--md-on-surface-variant);font-style:italic;">'+v.outcome+'</div></div>';}).join('')+'</div>':'';
 
-  var healthTab='<div style="padding:14px;">'+actionBar+vitalsSection+immunizationsSection+examsSection+labsSection+visitsSection+'</div>';
+
+  // ── Reproductive ultrasound log (Mares/Fillies only) ────────────────────────
+  var ultrasoundSection='';
+  if(h.sex==='Mare'||h.sex==='Filly'){
+    if(!window.REPRO_ULTRASOUNDS) window.REPRO_ULTRASOUNDS={};
+    if(!window.REPRO_ULTRASOUNDS[h.id]){
+      window.REPRO_ULTRASOUNDS[h.id]=(h.id==='rv')
+        ?[
+          {id:'us1',date:'2025-07-21',phase:'cycle',follicleL:38,follicleR:22,edemaScore:3,cervixTone:'Relaxed',ovulationConfirmed:false,findings:'Dominant follicle on left ovary, breeding recommended within 24-48hrs.',vetName:'Dr. Konstantine Goudz'},
+          {id:'us2',date:'2025-08-04',phase:'pregnancy',gestationDay:15,heartbeatDetected:true,twins:false,cystNoted:false,findings:'Single embryonic vesicle confirmed, heartbeat visible and regular.',vetName:'Dr. Konstantine Goudz'},
+          {id:'us3',date:'2025-09-03',phase:'pregnancy',gestationDay:45,heartbeatDetected:true,twins:false,cystNoted:false,findings:'Fetus developing normally, sex not yet determinable.',vetName:'Dr. Konstantine Goudz'},
+        ]
+        :(h.id==='h3')
+        ?[
+          {id:'us4',date:'2026-05-20',phase:'cycle',follicleL:41,follicleR:19,edemaScore:2,cervixTone:'Relaxed',ovulationConfirmed:true,findings:'Ovulation confirmed on left ovary. Bred same day via chilled AI.',vetName:'Dr. Konstantine Goudz'},
+          {id:'us5',date:'2026-06-04',phase:'pregnancy',gestationDay:15,heartbeatDetected:true,twins:false,cystNoted:false,findings:'Single pregnancy confirmed, good vesicle growth.',vetName:'Dr. Konstantine Goudz'},
+        ]
+        :(h.id==='h4')
+        ?[
+          {id:'us6',date:'2026-05-28',phase:'cycle',follicleL:24,follicleR:35,edemaScore:1,cervixTone:'Tight',ovulationConfirmed:false,findings:'Right follicle growing, edema score low — likely 3-4 days from ovulation. Recheck advised.',vetName:'Dr. Konstantine Goudz'},
+        ]
+        :[];
+    }
+    var usRecs=window.REPRO_ULTRASOUNDS[h.id];
+    if(!window._usFormOpen) window._usFormOpen={};
+    if(!window._usForm) window._usForm={};
+    var usOpen=!!window._usFormOpen[h.id];
+    var uf=window._usForm[h.id]||(window._usForm[h.id]={phase:'cycle',date:'',follicleL:'',follicleR:'',edemaScore:'1',cervixTone:'Relaxed',ovulationConfirmed:false,heartbeatDetected:false,twins:false,cystNoted:false,cystDetail:'',findings:'',gestationDayInput:''});
+
+    var isPregnantNow=window._pregnancyState&&window._pregnancyState[h.id]&&window._pregnancyState[h.id].pregnant;
+    var breedDateForCalc=isPregnantNow?window._pregnancyState[h.id].breedDate:'';
+
+    function usRowSummary(r){
+      if(r.phase==='cycle'){
+        return 'L '+r.follicleL+'mm \xb7 R '+r.follicleR+'mm \xb7 Edema '+r.edemaScore+(r.ovulationConfirmed?' \xb7 Ovulation confirmed':'');
+      }
+      return 'Day '+r.gestationDay+(r.heartbeatDetected?' \xb7 Heartbeat confirmed':' \xb7 No heartbeat yet')+(r.twins?' \xb7 Twins':'')+(r.cystNoted?' \xb7 Cyst noted':'');
+    }
+
+    var usRows=usRecs.length?usRecs.slice().reverse().map(function(r){
+      var isPregPhase=r.phase==='pregnancy';
+      var badgeColor=isPregPhase?'var(--md-error)':'var(--md-primary)';
+      return '<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:11px 14px;margin-bottom:8px;">'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">'
+          +'<div style="display:flex;align-items:center;gap:7px;">'
+            +msiIcon('monitor_heart',14,badgeColor)
+            +'<span style="font-size:12px;font-weight:700;color:var(--md-on-surface);">'+r.date+'</span>'
+            +'<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;background:'+badgeColor+'18;color:'+badgeColor+';">'+(isPregPhase?'Pregnancy check':'Cycle check')+'</span>'
+          +'</div>'
+        +'</div>'
+        +'<div style="font-size:12px;color:var(--md-on-surface-variant);margin-bottom:'+(r.findings?'6px':'0')+';">'+usRowSummary(r)+'</div>'
+        +(r.findings?'<div style="font-size:11px;color:var(--md-on-surface-dim);line-height:1.5;padding-top:6px;border-top:1px solid var(--md-outline-variant);">'+r.findings+'</div>':'')
+        +(r.vetName?'<div style="font-size:10px;color:var(--md-on-surface-dim);margin-top:5px;">'+msiIcon('medical_services',10,'var(--md-on-surface-dim)')+' '+r.vetName+'</div>':'')
+      +'</div>';
+    }).join('') : '<div style="font-size:12px;color:var(--md-on-surface-dim);padding:10px 2px;">No ultrasounds logged yet.</div>';
+
+    var usAddForm='';
+    if(usOpen){
+      var INPU='width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
+      var LBLU='font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.6px;display:block;margin-bottom:4px;';
+
+      var phaseToggle='<div style="display:flex;gap:8px;margin-bottom:11px;">'
+        +['cycle','pregnancy'].map(function(ph){
+          var sel=uf.phase===ph;
+          var lbl=ph==='cycle'?'Cycle check':'Pregnancy check';
+          return '<button onclick="window._usForm[\''+h.id+'\'].phase=\''+ph+'\';rerender()" style="flex:1;padding:8px 10px;border-radius:9px;border:1.5px solid '+(sel?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(sel?'var(--md-primary-container)':'var(--md-surface)')+';font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:'+(sel?'var(--md-primary)':'var(--md-on-surface-dim)')+';">'+lbl+'</button>';
+        }).join('')
+      +'</div>';
+
+      var cycleFields=uf.phase==='cycle'?(
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px;">'
+          +'<div><label style="'+LBLU+'">Left follicle (mm)</label><input type="number" value="'+uf.follicleL+'" oninput="window._usForm[\''+h.id+'\'].follicleL=this.value" style="'+INPU+'"/></div>'
+          +'<div><label style="'+LBLU+'">Right follicle (mm)</label><input type="number" value="'+uf.follicleR+'" oninput="window._usForm[\''+h.id+'\'].follicleR=this.value" style="'+INPU+'"/></div>'
+        +'</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px;">'
+          +'<div><label style="'+LBLU+'">Edema score</label><select oninput="window._usForm[\''+h.id+'\'].edemaScore=this.value" style="'+INPU+'">'
+            +['0','1','2','3','4'].map(function(sc){return '<option value="'+sc+'"'+(uf.edemaScore===sc?' selected':'')+'>'+sc+'</option>';}).join('')
+          +'</select></div>'
+          +'<div><label style="'+LBLU+'">Cervix tone</label><select oninput="window._usForm[\''+h.id+'\'].cervixTone=this.value" style="'+INPU+'">'
+            +['Tight','Relaxed','Very relaxed'].map(function(ct){return '<option value="'+ct+'"'+(uf.cervixTone===ct?' selected':'')+'>'+ct+'</option>';}).join('')
+          +'</select></div>'
+        +'</div>'
+        +'<label style="display:flex;align-items:center;gap:8px;margin-bottom:11px;cursor:pointer;"><input type="checkbox" '+(uf.ovulationConfirmed?'checked':'')+' onchange="window._usForm[\''+h.id+'\'].ovulationConfirmed=this.checked" style="width:16px;height:16px;accent-color:var(--md-secondary);"/><span style="font-size:12px;color:var(--md-on-surface);">Ovulation confirmed</span></label>'
+      ):(
+        '<div style="margin-bottom:9px;"><label style="'+LBLU+'">Day of gestation</label>'
+          +'<input type="number" value="'+uf.gestationDayInput+'" oninput="window._usForm[\''+h.id+'\'].gestationDayInput=this.value" placeholder="'+(breedDateForCalc?'auto-calculated':'e.g. 25')+'" style="'+INPU+'"/></div>'
+        +'<label style="display:flex;align-items:center;gap:8px;margin-bottom:9px;cursor:pointer;"><input type="checkbox" '+(uf.heartbeatDetected?'checked':'')+' onchange="window._usForm[\''+h.id+'\'].heartbeatDetected=this.checked" style="width:16px;height:16px;accent-color:var(--md-secondary);"/><span style="font-size:12px;color:var(--md-on-surface);">Heartbeat detected</span></label>'
+        +'<label style="display:flex;align-items:center;gap:8px;margin-bottom:9px;cursor:pointer;"><input type="checkbox" '+(uf.twins?'checked':'')+' onchange="window._usForm[\''+h.id+'\'].twins=this.checked" style="width:16px;height:16px;accent-color:var(--md-warning);"/><span style="font-size:12px;color:var(--md-on-surface);">Twins detected</span></label>'
+        +'<label style="display:flex;align-items:center;gap:8px;margin-bottom:11px;cursor:pointer;"><input type="checkbox" '+(uf.cystNoted?'checked':'')+' onchange="window._usForm[\''+h.id+'\'].cystNoted=this.checked;rerender()" style="width:16px;height:16px;accent-color:var(--md-error);"/><span style="font-size:12px;color:var(--md-on-surface);">Cyst noted</span></label>'
+        +(uf.cystNoted?'<div style="margin-bottom:11px;"><label style="'+LBLU+'">Cyst detail</label><input type="text" value="'+uf.cystDetail+'" oninput="window._usForm[\''+h.id+'\'].cystDetail=this.value" placeholder="Location, size" style="'+INPU+'"/></div>':'')
+      );
+
+      usAddForm='<div style="background:var(--md-surface-variant);border-radius:var(--md-shape-md);border:1.5px solid var(--md-primary)33;padding:12px 13px;margin-bottom:10px;">'
+        +'<div style="font-size:12px;font-weight:700;color:var(--md-on-surface);margin-bottom:10px;">New ultrasound entry</div>'
+        +phaseToggle
+        +'<div style="margin-bottom:9px;"><label style="'+LBLU+'">Date</label><input type="date" value="'+uf.date+'" oninput="window._usForm[\''+h.id+'\'].date=this.value" style="'+INPU+'"/></div>'
+        +cycleFields
+        +'<div style="margin-bottom:9px;"><label style="'+LBLU+'">Video / image</label>'
+          +'<button onclick="showToast(\'Attach from camera roll\',\'videocam\',\'info\')" style="width:100%;background:var(--md-surface);border:1.5px dashed var(--md-outline);border-radius:9px;padding:10px;font-size:12px;font-weight:600;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);display:flex;align-items:center;justify-content:center;gap:6px;">'+msiIcon('videocam',15,'var(--md-on-surface-dim)')+' Attach ultrasound video/photo</button></div>'
+        +'<div style="margin-bottom:11px;"><label style="'+LBLU+'">Findings</label>'
+          +'<textarea oninput="window._usForm[\''+h.id+'\'].findings=this.value" rows="2" placeholder="Notes on this ultrasound\u2026" style="'+INPU+'resize:none;">'+uf.findings+'</textarea></div>'
+        +'<div style="display:flex;gap:8px;">'
+          +'<button onclick="window._usFormOpen[\''+h.id+'\']=false;rerender()" style="padding:9px 13px;background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:9px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);">Cancel</button>'
+          +'<button onclick="(function(){'
+            +'var ufx=window._usForm[\''+h.id+'\'];if(!ufx.date)return;'
+            +'var entry={id:\'us\'+Date.now(),date:ufx.date,phase:ufx.phase,findings:ufx.findings,vetName:(anyRole(\'vet\')?(vetSetup.firstName+\' \'+vetSetup.lastName):\'\')};'
+            +'if(ufx.phase===\'cycle\'){entry.follicleL=ufx.follicleL;entry.follicleR=ufx.follicleR;entry.edemaScore=ufx.edemaScore;entry.cervixTone=ufx.cervixTone;entry.ovulationConfirmed=ufx.ovulationConfirmed;}'
+            +'else{entry.gestationDay=ufx.gestationDayInput||((window._pregnancyState&&window._pregnancyState[\''+h.id+'\']&&window._pregnancyState[\''+h.id+'\'].breedDate)?Math.floor((new Date(ufx.date)-new Date(window._pregnancyState[\''+h.id+'\'].breedDate))/86400000):\'\');entry.heartbeatDetected=ufx.heartbeatDetected;entry.twins=ufx.twins;entry.cystNoted=ufx.cystNoted;entry.cystDetail=ufx.cystDetail;}'
+            +'window.REPRO_ULTRASOUNDS[\''+h.id+'\'].push(entry);'
+            +'window._usForm[\''+h.id+'\']={phase:\'cycle\',date:\'\',follicleL:\'\',follicleR:\'\',edemaScore:\'1\',cervixTone:\'Relaxed\',ovulationConfirmed:false,heartbeatDetected:false,twins:false,cystNoted:false,cystDetail:\'\',findings:\'\',gestationDayInput:\'\'};'
+            +'window._usFormOpen[\''+h.id+'\']=false;rerender();'
+          +'})()" style="flex:1;background:var(--md-primary);color:#fff;border:none;border-radius:9px;padding:9px 13px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Save entry</button>'
+        +'</div>'
+      +'</div>';
+    }
+
+    ultrasoundSection='<div style="margin-bottom:14px;">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
+        +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Reproductive ultrasounds</div>'
+        +(!usOpen?'<button onclick="window._usFormOpen[\''+h.id+'\']=true;rerender()" style="font-size:11px;font-weight:600;color:var(--md-primary);background:none;border:none;cursor:pointer;font-family:\'DM Sans\',sans-serif;display:flex;align-items:center;gap:3px;">'+msiIcon('add',13,'var(--md-primary)')+' Add entry</button>':'')
+      +'</div>'
+      +usAddForm
+      +usRows
+    +'</div>';
+  }
+
+
+  // ── Foal records (Mares/Fillies only) ────────────────────────────────────────
+  var foalSection='';
+  if(h.sex==='Mare'||h.sex==='Filly'){
+    if(!window.FOAL_RECORDS) window.FOAL_RECORDS={};
+    if(!window.FOAL_RECORDS[h.id]){
+      window.FOAL_RECORDS[h.id]=(h.id==='h6')
+        ?[{id:'fl1',foalName:'Bellamy',sex:'Colt',birthDate:'2025-04-18',birthTime:'03:40',weight:'112',color:'Bay',iggResult:'Pass',meconiumPassed:true,navelTreated:true,studbookStatus:'Registered',notes:'Healthy, uneventful foaling. Standing and nursing within 45 minutes.',sireStallion:'Vitalis',sireMethod:'Frozen AI'}]
+        :[];
+    }
+    var foalRecs=window.FOAL_RECORDS[h.id];
+    if(!window._foalFormOpen) window._foalFormOpen={};
+    if(!window._foalForm) window._foalForm={};
+    var foalOpen=!!window._foalFormOpen[h.id];
+    var ff=window._foalForm[h.id]||(window._foalForm[h.id]={foalName:'',sex:'Colt',birthDate:'',birthTime:'',weight:'',color:'',iggResult:'Pending',meconiumPassed:false,navelTreated:false,studbookStatus:'Not started',notes:''});
+
+    var latestBreedRec=(window.BREEDING_RECORDS&&window.BREEDING_RECORDS[h.id]&&window.BREEDING_RECORDS[h.id].length)?window.BREEDING_RECORDS[h.id][window.BREEDING_RECORDS[h.id].length-1]:null;
+
+    var foalRows=foalRecs.length?foalRecs.slice().reverse().map(function(r){
+      var sexColor=r.sex==='Colt'?'var(--md-primary)':'var(--md-error)';
+      var iggColor=r.iggResult==='Pass'?'var(--md-secondary)':r.iggResult==='Fail'?'var(--md-error)':'var(--md-warning)';
+      return '<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:12px 14px;margin-bottom:8px;">'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">'
+          +'<div style="display:flex;align-items:center;gap:8px;">'
+            +msiIcon('cruelty_free',16,sexColor)
+            +'<span style="font-size:14px;font-weight:800;color:var(--md-on-surface);">'+r.foalName+'</span>'
+            +'<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:'+sexColor+'18;color:'+sexColor+';">'+r.sex+'</span>'
+          +'</div>'
+        +'</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">'
+          +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+msiIcon('event',11,'var(--md-on-surface-dim)')+' '+r.birthDate+(r.birthTime?' '+r.birthTime:'')+'</div>'
+          +(r.weight?'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+msiIcon('monitor_weight',11,'var(--md-on-surface-dim)')+' '+r.weight+' lbs</div>':'<div></div>')
+          +(r.color?'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+msiIcon('palette',11,'var(--md-on-surface-dim)')+' '+r.color+'</div>':'<div></div>')
+          +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+msiIcon('family_restroom',11,'var(--md-on-surface-dim)')+' Sire: '+(r.sireStallion||'Unknown')+'</div>'
+        +'</div>'
+        +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:'+(r.notes?'7px':'0')+';">'
+          +'<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;background:'+iggColor+'18;color:'+iggColor+';">IgG: '+r.iggResult+'</span>'
+          +(r.meconiumPassed?'<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;background:var(--md-secondary)18;color:var(--md-secondary);">Meconium passed</span>':'')
+          +(r.navelTreated?'<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;background:var(--md-secondary)18;color:var(--md-secondary);">Navel treated</span>':'')
+          +'<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;background:var(--md-surface-variant);color:var(--md-on-surface-dim);">'+r.studbookStatus+'</span>'
+        +'</div>'
+        +(r.notes?'<div style="font-size:11px;color:var(--md-on-surface-variant);line-height:1.5;padding-top:7px;border-top:1px solid var(--md-outline-variant);">'+r.notes+'</div>':'')
+      +'</div>';
+    }).join('') : '<div style="font-size:12px;color:var(--md-on-surface-dim);padding:10px 2px;">No foals recorded yet.</div>';
+
+    var foalAddForm='';
+    if(foalOpen){
+      var INPF='width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
+      var LBLF='font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.6px;display:block;margin-bottom:4px;';
+      foalAddForm='<div style="background:var(--md-surface-variant);border-radius:var(--md-shape-md);border:1.5px solid var(--md-primary)33;padding:12px 13px;margin-bottom:10px;">'
+        +'<div style="font-size:12px;font-weight:700;color:var(--md-on-surface);margin-bottom:10px;">Record foaling</div>'
+        +(latestBreedRec?'<div style="font-size:11px;color:var(--md-on-surface-dim);background:var(--md-surface);border-radius:8px;padding:7px 10px;margin-bottom:11px;">'+msiIcon('family_restroom',12,'var(--md-on-surface-dim)')+' Sire: <strong style="color:var(--md-on-surface);">'+latestBreedRec.stallionName+'</strong> ('+latestBreedRec.method+')</div>':'')
+        +'<div style="display:grid;grid-template-columns:2fr 1fr;gap:9px;margin-bottom:9px;">'
+          +'<div><label style="'+LBLF+'">Foal name</label><input type="text" value="'+ff.foalName+'" oninput="window._foalForm[\''+h.id+'\'].foalName=this.value" placeholder="e.g. Bellamy" style="'+INPF+'"/></div>'
+          +'<div><label style="'+LBLF+'">Sex</label><select oninput="window._foalForm[\''+h.id+'\'].sex=this.value" style="'+INPF+'">'
+            +['Colt','Filly'].map(function(sx){return '<option value="'+sx+'"'+(ff.sex===sx?' selected':'')+'>'+sx+'</option>';}).join('')
+          +'</select></div>'
+        +'</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px;">'
+          +'<div><label style="'+LBLF+'">Birth date</label><input type="date" value="'+ff.birthDate+'" oninput="window._foalForm[\''+h.id+'\'].birthDate=this.value" style="'+INPF+'"/></div>'
+          +'<div><label style="'+LBLF+'">Birth time</label><input type="time" value="'+ff.birthTime+'" oninput="window._foalForm[\''+h.id+'\'].birthTime=this.value" style="'+INPF+'"/></div>'
+        +'</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px;">'
+          +'<div><label style="'+LBLF+'">Weight (lbs)</label><input type="number" value="'+ff.weight+'" oninput="window._foalForm[\''+h.id+'\'].weight=this.value" placeholder="e.g. 110" style="'+INPF+'"/></div>'
+          +'<div><label style="'+LBLF+'">Color</label><input type="text" value="'+ff.color+'" oninput="window._foalForm[\''+h.id+'\'].color=this.value" placeholder="e.g. Bay" style="'+INPF+'"/></div>'
+        +'</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px;">'
+          +'<div><label style="'+LBLF+'">IgG test</label><select oninput="window._foalForm[\''+h.id+'\'].iggResult=this.value" style="'+INPF+'">'
+            +['Pending','Pass','Fail'].map(function(ig){return '<option value="'+ig+'"'+(ff.iggResult===ig?' selected':'')+'>'+ig+'</option>';}).join('')
+          +'</select></div>'
+          +'<div><label style="'+LBLF+'">Studbook status</label><select oninput="window._foalForm[\''+h.id+'\'].studbookStatus=this.value" style="'+INPF+'">'
+            +['Not started','Pending','Registered'].map(function(sb){return '<option value="'+sb+'"'+(ff.studbookStatus===sb?' selected':'')+'>'+sb+'</option>';}).join('')
+          +'</select></div>'
+        +'</div>'
+        +'<label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer;"><input type="checkbox" '+(ff.meconiumPassed?'checked':'')+' onchange="window._foalForm[\''+h.id+'\'].meconiumPassed=this.checked" style="width:16px;height:16px;accent-color:var(--md-secondary);"/><span style="font-size:12px;color:var(--md-on-surface);">Meconium passed</span></label>'
+        +'<label style="display:flex;align-items:center;gap:8px;margin-bottom:11px;cursor:pointer;"><input type="checkbox" '+(ff.navelTreated?'checked':'')+' onchange="window._foalForm[\''+h.id+'\'].navelTreated=this.checked" style="width:16px;height:16px;accent-color:var(--md-secondary);"/><span style="font-size:12px;color:var(--md-on-surface);">Navel treated</span></label>'
+        +'<div style="margin-bottom:11px;"><label style="'+LBLF+'">Notes</label>'
+          +'<textarea oninput="window._foalForm[\''+h.id+'\'].notes=this.value" rows="2" placeholder="Foaling notes, complications, etc.\u2026" style="'+INPF+'resize:none;">'+ff.notes+'</textarea></div>'
+        +'<div style="display:flex;gap:8px;">'
+          +'<button onclick="window._foalFormOpen[\''+h.id+'\']=false;rerender()" style="padding:9px 13px;background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:9px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);">Cancel</button>'
+          +'<button onclick="(function(){'
+            +'var ffx=window._foalForm[\''+h.id+'\'];if(!ffx.foalName||!ffx.birthDate)return;'
+            +'var lbr=(window.BREEDING_RECORDS&&window.BREEDING_RECORDS[\''+h.id+'\']&&window.BREEDING_RECORDS[\''+h.id+'\'].length)?window.BREEDING_RECORDS[\''+h.id+'\'][window.BREEDING_RECORDS[\''+h.id+'\'].length-1]:null;'
+            +'window.FOAL_RECORDS[\''+h.id+'\'].push({id:\'fl\'+Date.now(),foalName:ffx.foalName,sex:ffx.sex,birthDate:ffx.birthDate,birthTime:ffx.birthTime,weight:ffx.weight,color:ffx.color,iggResult:ffx.iggResult,meconiumPassed:ffx.meconiumPassed,navelTreated:ffx.navelTreated,studbookStatus:ffx.studbookStatus,notes:ffx.notes,sireStallion:lbr?lbr.stallionName:\'\',sireMethod:lbr?lbr.method:\'\'});'
+            +'if(window._pregnancyState&&window._pregnancyState[\''+h.id+'\'])window._pregnancyState[\''+h.id+'\'].pregnant=false;'
+            +'window._foalForm[\''+h.id+'\']={foalName:\'\',sex:\'Colt\',birthDate:\'\',birthTime:\'\',weight:\'\',color:\'\',iggResult:\'Pending\',meconiumPassed:false,navelTreated:false,studbookStatus:\'Not started\',notes:\'\'};'
+            +'window._foalFormOpen[\''+h.id+'\']=false;'
+            +'showToast(\'Foal recorded!\',\'cruelty_free\',\'success\');'
+            +'rerender();'
+          +'})()" style="flex:1;background:var(--md-primary);color:#fff;border:none;border-radius:9px;padding:9px 13px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Save foal record</button>'
+        +'</div>'
+      +'</div>';
+    }
+
+    foalSection='<div style="margin-bottom:14px;">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
+        +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Foal records</div>'
+        +(!foalOpen?'<button onclick="window._foalFormOpen[\''+h.id+'\']=true;rerender()" style="font-size:11px;font-weight:600;color:var(--md-primary);background:none;border:none;cursor:pointer;font-family:\'DM Sans\',sans-serif;display:flex;align-items:center;gap:3px;">'+msiIcon('add',13,'var(--md-primary)')+' Add record</button>':'')
+      +'</div>'
+      +foalAddForm
+      +foalRows
+    +'</div>';
+  }
+
+    // ── Reproductive history timeline (Mares/Fillies only) ──────────────────────
+  var reproHistorySection='';
+  if(h.sex==='Mare'||h.sex==='Filly'){
+    var brAll=(window.BREEDING_RECORDS&&window.BREEDING_RECORDS[h.id])?window.BREEDING_RECORDS[h.id].slice():[];
+    var usAll=(window.REPRO_ULTRASOUNDS&&window.REPRO_ULTRASOUNDS[h.id])?window.REPRO_ULTRASOUNDS[h.id].slice():[];
+    var flAll=(window.FOAL_RECORDS&&window.FOAL_RECORDS[h.id])?window.FOAL_RECORDS[h.id].slice():[];
+
+    if(brAll.length||usAll.length||flAll.length){
+      var sortedBr=brAll.slice().sort(function(a,b){return new Date(a.date)-new Date(b.date);});
+      var seasons=sortedBr.map(function(br,idx){
+        var seasonStart=new Date(br.date);
+        var seasonEnd=idx<sortedBr.length-1?new Date(sortedBr[idx+1].date):new Date(seasonStart.getTime()+400*86400000);
+        var seasonUs=usAll.filter(function(u){var ud=new Date(u.date);return ud>=seasonStart&&ud<seasonEnd;}).sort(function(a,b){return new Date(a.date)-new Date(b.date);});
+        var seasonFoal=flAll.find(function(fl){var fd=new Date(fl.birthDate);return fd>=seasonStart&&fd<seasonEnd;});
+        return {br:br,ultrasounds:seasonUs,foal:seasonFoal};
+      }).reverse(); // most recent season first
+
+      var yearHeader=function(d){return new Date(d).getFullYear();};
+
+      var seasonCards=seasons.map(function(season){
+        var br=season.br,us=season.ultrasounds,foal=season.foal;
+        var isCurrentPreg=window._pregnancyState&&window._pregnancyState[h.id]&&window._pregnancyState[h.id].pregnant&&window._pregnancyState[h.id].breedDate===br.date;
+        var outcomeChip='';
+        if(foal){
+          outcomeChip='<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:var(--md-secondary)18;color:var(--md-secondary);">'+msiIcon('cruelty_free',10,'var(--md-secondary)')+' Foaled '+foal.foalName+'</span>';
+        } else if(isCurrentPreg){
+          outcomeChip='<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:var(--md-error)18;color:var(--md-error);">'+msiIcon('favorite',10,'var(--md-error)')+' In progress</span>';
+        } else if(us.some(function(u){return u.phase==='pregnancy';})){
+          outcomeChip='<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:var(--md-warning)18;color:var(--md-warning);">Pregnancy not carried to term</span>';
+        } else {
+          outcomeChip='<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:var(--md-surface-variant);color:var(--md-on-surface-dim);">No pregnancy confirmed</span>';
+        }
+
+        var usSummary=us.length?'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--md-outline-variant);">'
+          +'<div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">'+us.length+' ultrasound'+(us.length>1?'s':'')+' this season</div>'
+          +us.map(function(u){
+            var uc=u.phase==='pregnancy'?'var(--md-error)':'var(--md-primary)';
+            var summ=u.phase==='cycle'
+              ?('L '+u.follicleL+'mm/R '+u.follicleR+'mm'+(u.ovulationConfirmed?' \u00b7 Ovulation confirmed':''))
+              :('Day '+u.gestationDay+(u.heartbeatDetected?' \u00b7 Heartbeat confirmed':''));
+            return '<div style="display:flex;align-items:center;gap:7px;padding:4px 0;">'
+              +'<div style="width:5px;height:5px;border-radius:50%;background:'+uc+';flex-shrink:0;"></div>'
+              +'<span style="font-size:11px;color:var(--md-on-surface-dim);">'+u.date+' \u2014 '+summ+'</span>'
+            +'</div>';
+          }).join('')
+        +'</div>':'';
+
+        return '<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:12px 14px;margin-bottom:8px;">'
+          +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">'
+            +'<div style="font-size:13px;font-weight:800;color:var(--md-on-surface);">'+yearHeader(br.date)+' \u00b7 Bred to '+br.stallionName+'</div>'
+          +'</div>'
+          +'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-bottom:7px;">'+msiIcon('event',11,'var(--md-on-surface-dim)')+' '+br.date+' \u00b7 '+br.method+'</div>'
+          +outcomeChip
+          +usSummary
+        +'</div>';
+      }).join('');
+
+      reproHistorySection='<div style="margin-bottom:14px;">'
+        +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Reproductive history</div>'
+        +seasonCards
+      +'</div>';
+    }
+  }
+
+
+  var healthTab='<div style="padding:14px;">'+actionBar+reproHistorySection+breedingSection+ultrasoundSection+foalSection+vitalsSection+immunizationsSection+examsSection+labsSection+visitsSection+'</div>';
 
   var sessions=(HORSE_TRAINING_HISTORY[h.id]||[]);
 
@@ -8717,7 +9321,14 @@ function rHorseDetail(h){
       // Merge logged sessions and history sessions for list
       var allLogs=trainingLogs.slice();
       logContent='<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);overflow:hidden;">'
-        +(allLogs.length?allLogs.map(richSessionRow).join(''):sessions.map(sessionRow).join(''))
+        +(allLogs.length?allLogs.map(richSessionRow).join(''):sessions.map(function(ss){
+          var tc2=typeColor(ss.type);
+          return '<div style="display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid var(--md-outline-variant);">'
+            +'<div style="width:32px;height:32px;border-radius:8px;background:'+tc2+'22;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon(typeIcon(ss.type),15,tc2)+'</div>'
+            +'<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+ss.type+'</div>'
+            +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+(ss.date||'')+' \xb7 '+(ss.duration||0)+' min'+(ss.tqs?' \xb7 TQS '+ss.tqs:'')+'</div></div>'
+          +'</div>';
+        }).join(''))
         +'</div>';
     }
     sessionLogSection=sectionHeader+logContent;
@@ -9480,7 +10091,6 @@ function obUpdatePwField(){
     createBtn.style.cursor=canCreate?'pointer':'not-allowed';
   }
 }
-
 </script>
 </body>
 </html>
