@@ -641,6 +641,18 @@ const HORSES_ALL=[
    discipline:'Hunter',level:'Children\'s',
    pros:[{role:'Farrier',name:'Mike Farrell',next:'Apr 4'},{role:'Dentist',name:'Dr. Nair',next:'Apr 2026'}],
   },
+  {id:'bellamy',photo:'https://images.pexels.com/photos/1996337/pexels-photo-1996337.jpeg?w=400&h=400&fit=crop',name:'Bellamy',  breed:'Paint',            color:'Bay Tobiano', age:'1 year',   sex:'Colt',
+   barn:'sunrise', stall:'D2',
+   owners:[{name:'Emma S.',userId:'owner-emma',share:'Full'},{name:'Claire B.',userId:'owner-claire',share:'Half-lease'}],
+   trainer:'Jordan M.',vet:'Dr. Goudz',
+   avatar:{bg:'#6A3A18',mane:'#F5EDE0',sock:'#F5EDE0',marking:'star'},
+   note:'Weanling, out of Duchess by Vitalis. Halter training underway.',
+   alerts:[],passId:null,
+   lastVisit:'May 2',nextVaccine:'Sep 2026',coggins:'Apr 2027',
+   lastVitals:'May 2',lastObs:'May 20',
+   discipline:'In-hand / Young horse',level:'Weanling',
+   pros:[{role:'Farrier',name:'Mike Farrell',next:'Jul 10'}],
+  },
   {id:'h7',photo:'https://images.pexels.com/photos/1289671/pexels-photo-1289671.jpeg?w=400&h=400&fit=crop',name:'Comet',    breed:'Thoroughbred',     color:'Gray',        age:'4 years', sex:'Gelding',
    barn:'sunrise', stall:'D2',
    owners:[{name:'Emma S.',userId:'owner-emma',share:'Full'}],
@@ -7651,6 +7663,40 @@ const HORSE_MEDIA={
 };
 
 const HORSE_PEDIGREE={
+  'h6':{
+    sire:{name:'Painted Ridge',breed:'Paint',color:'Overo',country:'United States',born:2005,
+      achievements:'APHA Champion. Regional Halter and Performance titles.',
+      progenyNote:'Reliable, correct movers with excellent temperament for young riders.',
+      sport:'Hunter',avatar:{bg:'#B87333',mane:'#F5EDE0',sock:'#F5EDE0',marking:'blaze'},
+      offspring:[{name:'Duchess',note:'This horse \u2014 Children\'s Hunter',isSelf:true},
+                 {name:'Ridge Whisper',note:'APHA Youth Hunter finalist'}]},
+    dam:{name:'Calico Rose',breed:'Paint',color:'Tobiano',country:'United States',born:2000,
+      achievements:'Local circuit champion. Broodmare, dam of 5 foals.',
+      progenyNote:'Consistent tobiano producer with kind, willing dispositions.',
+      sport:'Hunter',avatar:{bg:'#8A5A30',mane:'#F5EDE0',sock:'#F5EDE0',marking:'star'},
+      offspring:[{name:'Duchess',note:'This horse',isSelf:true}]},
+    siblings:[
+      {name:'Ridge Whisper',relation:'Half sibling (Painted Ridge)',sport:'Hunter',achievement:'APHA Youth Hunter finalist',avatar:{bg:'#B87333',mane:'#F5EDE0',sock:'#F5EDE0',marking:'blaze'}},
+    ],
+    sirePerformance:{avgScore:null,totalOffspring:28,winRate:0.55,disciplines:['Hunter','Halter']},
+    damPerformance:{avgScore:null,offspring:5,disciplines:['Hunter'],winRate:0.48},
+  },
+  'bellamy':{
+    sire:{name:'Vitalis',breed:'Paint',color:'Bay Overo',country:'United States',born:2012,
+      achievements:'APHA Reserve World Champion Halter. Frozen semen in high demand nationally.',
+      progenyNote:'Passes strong bone, correct movement, and bold tobiano/overo markings.',
+      sport:'Halter / Hunter',avatar:{bg:'#6A3A18',mane:'#2A1A08',sock:'#F5EDE0',marking:'blaze'},
+      offspring:[{name:'Bellamy',note:'This horse \u2014 weanling, halter training',isSelf:true},
+                 {name:'Vital Legacy',note:'APHA Yearling Halter champion'}]},
+    dam:{name:'Duchess',breed:'Paint',color:'Tobiano',country:'United States',born:2016,
+      achievements:'Children\'s Hunter competitor. First foal.',
+      progenyNote:'',
+      sport:'Hunter',avatar:{bg:'#8A5A30',mane:'#F5EDE0',sock:'#F5EDE0',marking:'star'},
+      offspring:[{name:'Bellamy',note:'This horse',isSelf:true}]},
+    siblings:[],
+    sirePerformance:{avgScore:null,totalOffspring:41,winRate:0.60,disciplines:['Halter','Hunter']},
+    damPerformance:{avgScore:null,offspring:1,disciplines:['Hunter'],winRate:null},
+  },
   'h1':{
     sire:{name:'Don Schufro',breed:'Hanoverian',color:'Bay',country:'Germany',born:1993,died:2018,
       achievements:'2008 Olympic team silver. Leading dressage sire. WBFSH Sire Rankings top 10 for 8 consecutive years.',
@@ -8075,11 +8121,16 @@ function rHorseDetail(h){
     var dead=person.died?'\u2020'+person.died:'';
     var bornStr=person.born?(person.born+(dead?' \u2013 '+dead:'')):'';
     var scoreStr=person.sirePerformance?('Avg '+person.sirePerformance.avgScore+'% \u00b7 '+person.sirePerformance.totalOffspring+' offspring'):'';
-    return '<div style="background:var(--md-surface);border-radius:14px;border:1.5px solid '+(isSelf?'var(--md-primary)':'var(--md-outline-variant)')+';padding:0;overflow:hidden;min-width:0;">'
-      +'<div style="background:'+(isSelf?'var(--md-primary-container)':'var(--md-surface-variant)')+';padding:9px 12px;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--md-outline-variant)22;">'
+    var linkedHorse=isSelf?null:HORSES_ALL.find(function(hh){return hh.name.toLowerCase()===person.name.toLowerCase()&&hh.barn===h.barn;});
+    var cardOnclick=linkedHorse?(' onclick="S.selectedHorse=\''+linkedHorse.id+'\';S.horseTab=\'overview\';rerender()" style2="cursor:pointer;"'):'';
+    return '<div'+(linkedHorse?' onclick="S.selectedHorse=\''+linkedHorse.id+'\';S.horseTab=\'overview\';rerender()"':'')+' style="background:var(--md-surface);border-radius:14px;border:1.5px solid '+(isSelf?'var(--md-primary)':linkedHorse?'var(--md-secondary)':'var(--md-outline-variant)')+';padding:0;overflow:hidden;min-width:0;'+(linkedHorse?'cursor:pointer;':'')+'">'
+      +'<div style="background:'+(isSelf?'var(--md-primary-container)':linkedHorse?'var(--md-secondary-container)':'var(--md-surface-variant)')+';padding:9px 12px;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--md-outline-variant)22;">'
       +rHorseAvatarMini(av,38,person.name)
       +'<div style="flex:1;min-width:0;">'
-      +'<div style="font-size:11px;font-weight:700;color:'+(isSelf?'var(--md-primary)':'var(--md-on-surface-dim)')+';text-transform:uppercase;letter-spacing:0.5px;">'+roleLabel+'</div>'
+      +'<div style="display:flex;align-items:center;gap:5px;">'
+      +'<div style="font-size:11px;font-weight:700;color:'+(isSelf?'var(--md-primary)':linkedHorse?'var(--md-secondary)':'var(--md-on-surface-dim)')+';text-transform:uppercase;letter-spacing:0.5px;">'+roleLabel+'</div>'
+      +(linkedHorse?'<span style="font-size:9px;font-weight:700;color:var(--md-secondary);background:var(--md-surface);padding:1px 6px;border-radius:20px;">'+msiIcon('link',9,'var(--md-secondary)')+' In barn</span>':'')
+      +'</div>'
       +'<div style="font-size:14px;font-weight:700;color:var(--md-on-surface);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+person.name+'</div>'
       +'<div style="font-size:10px;color:var(--md-on-surface-dim);">'+person.breed+' \u00b7 '+person.color+(person.country?' \u00b7 '+person.country:'')+(bornStr?' \u00b7 b.'+bornStr:'')+'</div>'
       +'</div></div>'
@@ -8089,9 +8140,10 @@ function rHorseDetail(h){
       +(person.offspring&&person.offspring.length?'<div style="margin-top:4px;">'
         +'<div style="font-size:9px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Known offspring</div>'
         +person.offspring.map(function(o){
-          return '<div style="font-size:11px;color:'+(o.isSelf?'var(--md-primary)':'var(--md-on-surface-variant)')+';padding:3px 0;border-bottom:1px solid var(--md-outline-variant)22;display:flex;align-items:center;gap:5px;">'
-            +(o.isSelf?msiIcon('star',10,'var(--md-primary)'):'<span style="font-size:8px;color:var(--md-on-surface-dim);">\u25cf</span>')
-            +'<span style="font-weight:'+(o.isSelf?'700':'400')+';">'+o.name+'</span>'
+          var linkedFoal=o.isSelf?null:HORSES_ALL.find(function(hh){return hh.name.toLowerCase()===o.name.toLowerCase()&&hh.barn===h.barn;});
+          return '<div'+(linkedFoal?' onclick="event.stopPropagation();S.selectedHorse=\''+linkedFoal.id+'\';S.horseTab=\'overview\';rerender()"':'')+' style="font-size:11px;color:'+(o.isSelf?'var(--md-primary)':linkedFoal?'var(--md-secondary)':'var(--md-on-surface-variant)')+';padding:3px 0;border-bottom:1px solid var(--md-outline-variant)22;display:flex;align-items:center;gap:5px;'+(linkedFoal?'cursor:pointer;':'')+'">'
+            +(o.isSelf?msiIcon('star',10,'var(--md-primary)'):linkedFoal?msiIcon('link',10,'var(--md-secondary)'):'<span style="font-size:8px;color:var(--md-on-surface-dim);">\u25cf</span>')
+            +'<span style="font-weight:'+(o.isSelf||linkedFoal?'700':'400')+';">'+o.name+'</span>'
             +(o.note?'<span style="color:var(--md-on-surface-dim);"> \u2014 '+o.note+'</span>':'')
             +'</div>';
         }).join('')
@@ -8197,6 +8249,37 @@ function rHorseDetail(h){
 
     pedigreeTab='<div style="padding-top:14px;">'+familyTree+siblingsSection+analyticsSection+'</div>';
   }
+
+  // ── Offspring (produce record) — pulls from Foal Records ────────────────────
+  var offspringSection='';
+  if(h.sex==='Mare'||h.sex==='Filly'){
+    if(!window.FOAL_RECORDS) window.FOAL_RECORDS={};
+    if(!window.FOAL_RECORDS[h.id]){
+      window.FOAL_RECORDS[h.id]=(h.id==='h6')
+        ?[{id:'fl1',foalName:'Bellamy',sex:'Colt',birthDate:'2025-04-18',birthTime:'03:40',weight:'112',color:'Bay',iggResult:'Pass',meconiumPassed:true,navelTreated:true,studbookStatus:'Registered',notes:'Healthy, uneventful foaling. Standing and nursing within 45 minutes.',sireStallion:'Vitalis',sireMethod:'Frozen AI'}]
+        :[];
+    }
+    var thisMareFoals=window.FOAL_RECORDS[h.id];
+    if(thisMareFoals.length){
+      offspringSection='<div style="padding:14px;'+(pd?'padding-top:0;':'')+'">'
+        +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Offspring</div>'
+        +thisMareFoals.slice().sort(function(a,b){return new Date(b.birthDate)-new Date(a.birthDate);}).map(function(fl){
+          var sexColor=fl.sex==='Colt'?'var(--md-primary)':'var(--md-error)';
+          var linkedFoalHorse=HORSES_ALL.find(function(hh){return hh.name.toLowerCase()===fl.foalName.toLowerCase()&&hh.barn===h.barn;});
+          return '<div'+(linkedFoalHorse?' onclick="S.selectedHorse=\''+linkedFoalHorse.id+'\';S.horseTab=\'overview\';rerender()"':'')+' style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid '+(linkedFoalHorse?'var(--md-secondary)44':'var(--md-outline-variant)')+';padding:11px 14px;margin-bottom:8px;display:flex;align-items:center;gap:11px;'+(linkedFoalHorse?'cursor:pointer;':'')+'">'
+            +'<div style="width:38px;height:38px;border-radius:50%;background:'+sexColor+'18;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon('cruelty_free',18,sexColor)+'</div>'
+            +'<div style="flex:1;min-width:0;">'
+              +'<div style="display:flex;align-items:center;gap:7px;"><span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+fl.foalName+'</span>'
+              +'<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:'+sexColor+'18;color:'+sexColor+';">'+fl.sex+'</span></div>'
+              +'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:2px;">Out of <strong style="color:var(--md-on-surface);">'+h.name+'</strong> by <strong style="color:var(--md-on-surface);">'+(fl.sireStallion||'Unknown')+'</strong> \xb7 '+fl.birthDate+'</div>'
+            +'</div>'
+            +(linkedFoalHorse?msiIcon('chevron_right',18,'var(--md-on-surface-dim)'):'')
+          +'</div>';
+        }).join('')
+      +'</div>';
+    }
+  }
+  pedigreeTab=pedigreeTab+offspringSection;
 
   // Health tab — role-aware with full immunizations, exams, imaging, vitals
 
