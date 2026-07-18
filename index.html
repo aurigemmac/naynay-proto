@@ -653,6 +653,18 @@ const HORSES_ALL=[
    discipline:'In-hand / Young horse',level:'Weanling',
    pros:[{role:'Farrier',name:'Mike Farrell',next:'Jul 10'}],
   },
+  {id:'juniper',photo:'https://images.pexels.com/photos/54455/pexels-photo-54455.jpeg?w=400&h=400&fit=crop',name:'Juniper', breed:'Morgan',           color:'Chestnut',    age:'12 years', sex:'Gelding',
+   barn:'sunrise', stall:'E1',
+   owners:[{name:'Patricia',userId:'owner-patricia',share:'Full'}],
+   trainer:'Jordan M.',vet:'Dr. Goudz',
+   avatar:{bg:'#7A3A1A',mane:'#3A1A08',sock:null,marking:null},
+   note:'Patricia\'s personal trail horse. Not part of the breeding program.',
+   alerts:[],passId:null,
+   lastVisit:'Apr 22',nextVaccine:'Oct 2026',coggins:'Aug 2026',
+   lastVitals:'Apr 22',lastObs:'May 1',
+   discipline:'Trail / Pleasure',level:'Seasoned',
+   pros:[{role:'Farrier',name:'Mike Farrell',next:'Jul 18'}],
+  },
   {id:'h7',photo:'https://images.pexels.com/photos/1289671/pexels-photo-1289671.jpeg?w=400&h=400&fit=crop',name:'Comet',    breed:'Thoroughbred',     color:'Gray',        age:'4 years', sex:'Gelding',
    barn:'sunrise', stall:'D2',
    owners:[{name:'Emma S.',userId:'owner-emma',share:'Full'}],
@@ -832,6 +844,21 @@ function getHorsesForUser(){
       if(!rel) result.push({horse:h,rel:'manage',barn:BARNS[h.barn]});
     });
   }
+  if(hasRole('breeder')){
+    // Breeder sees the mares/foals from her breeding program, plus her personal horse
+    var breedingProgramIds=['rv','h3','h4','h6','bellamy'];
+    HORSES_ALL.forEach(function(h){
+      if(breedingProgramIds.indexOf(h.id)>=0){
+        var rel=result.find(function(r){return r.horse.id===h.id;});
+        if(!rel) result.push({horse:h,rel:'breed',barn:BARNS[h.barn]});
+      }
+      if(h.owners.some(function(o){return o.userId==='owner-patricia';})){
+        var rel2=result.find(function(r){return r.horse.id===h.id;});
+        if(!rel2) result.push({horse:h,rel:'own',barn:BARNS[h.barn]});
+        else rel2.rel='own';
+      }
+    });
+  }
   if(hasRole('owner')){
     // Owner (Sarah K.) sees horses she owns or leases
     var myId='owner-sarah';
@@ -962,7 +989,7 @@ let S={
   trainingAssignments:{[TODAY]:todayTrainingAssign},
   mgrView:'home',assignDate:TODAY,expandedAssign:null,expandedTrainingAssign:null,
   mgrAssignTab:'tasks',
-  selectedHorse:null,mgrInviteSheet:null,scheduleVisitSheet:null,vetApptSheet:null,trainingView:'list',trainingFabOpen:false,trainingCalMonth:null,trainingLogSheet:null,taskFilter:'all',
+  selectedHorse:null,mgrInviteSheet:null,scheduleVisitSheet:null,vetApptSheet:null,healthAddSheetOpen:false,trainingView:'list',trainingFabOpen:false,trainingCalMonth:null,trainingLogSheet:null,taskFilter:'all',
   vetSignedIn:false,vetView:'confirmation',vetSetupTab:'account',trainerSetupTab:'account',mgrSetupTab:'tasks',staffSetupTab:'account',ownerSetupTab:'account',taskScheduleExpanded:false,editingTaskId:null,aiScheduleDismissed:{},aiScheduleAdded:{},
   vetConfirmPage:false,vetEditMode:false,prevVetView:null,
   feedCardExpanded:false,feedCardHorse:null,
@@ -8298,6 +8325,38 @@ function rHorseDetail(h){
   if(canImaging) actionBtns.push('<button onclick="S.quickAction=\'upload-imaging\';S.selectedHorse=null;rerender()" style="flex:1;background:var(--md-tertiary-container);border:none;border-radius:10px;padding:9px 8px;font-family:\'DM Sans\',sans-serif;font-size:11px;font-weight:700;color:var(--md-tertiary);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">'+msiIcon('radiology',18,'var(--md-tertiary)')+'<span>Imaging</span></button>');
   var actionBar=actionBtns.length?'<div style="display:flex;gap:6px;margin-bottom:14px;">'+actionBtns.join('')+'</div>':'';
 
+  // ── Health tab: consolidated Add sheet ───────────────────────────────────────
+  var isMareForHealth=h.sex==='Mare'||h.sex==='Filly';
+  var healthAddOptions=[];
+  if(canExam) healthAddOptions.push({group:'log',icon:'assignment',label:'Document Exam',color:'var(--md-secondary)',action:"S.quickAction='document-exam';S.selectedHorse=null;"});
+  if(canVaccine) healthAddOptions.push({group:'log',icon:'vaccines',label:'Document Vaccine',color:'var(--md-primary)',action:"S.quickAction='document-vaccine';S.selectedHorse=null;"});
+  if(canVitals) healthAddOptions.push({group:'log',icon:'monitor_heart',label:'Document Vitals',color:'var(--md-on-surface-variant)',action:"S.quickAction='document-vitals';S.selectedHorse=null;"});
+  if(canImaging) healthAddOptions.push({group:'log',icon:'radiology',label:'Upload Imaging',color:'var(--md-tertiary)',action:"S.quickAction='upload-imaging';S.selectedHorse=null;"});
+  if(isMareForHealth) healthAddOptions.push({group:'breed',icon:'family_restroom',label:'Breeding Record',color:'var(--md-primary)',action:"window._breedingFormOpen=window._breedingFormOpen||{};window._breedingFormOpen['"+h.id+"']=true;"});
+  if(isMareForHealth) healthAddOptions.push({group:'breed',icon:'monitor_heart',label:'Ultrasound Entry',color:'var(--md-error)',action:"window._usFormOpen=window._usFormOpen||{};window._usFormOpen['"+h.id+"']=true;"});
+  if(isMareForHealth) healthAddOptions.push({group:'breed',icon:'cruelty_free',label:'Foal Record',color:'var(--md-secondary)',action:"window._foalFormOpen=window._foalFormOpen||{};window._foalFormOpen['"+h.id+"']=true;"});
+
+  var healthAddSheet='';
+  if(S.healthAddSheetOpen&&healthAddOptions.length){
+    var logOpts=healthAddOptions.filter(function(o){return o.group==='log';});
+    var breedOpts=healthAddOptions.filter(function(o){return o.group==='breed';});
+    function healthOptRow(o){
+      return '<button onclick="'+o.action+'S.healthAddSheetOpen=false;rerender()" style="width:100%;display:flex;align-items:center;gap:12px;padding:12px 14px;background:none;border:none;border-bottom:1px solid var(--md-outline-variant);cursor:pointer;text-align:left;">'
+        +'<div style="width:36px;height:36px;border-radius:10px;background:'+o.color+'18;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon(o.icon,18,o.color)+'</div>'
+        +'<span style="font-size:14px;font-weight:600;color:var(--md-on-surface);">'+o.label+'</span>'
+      +'</button>';
+    }
+    healthAddSheet='<div onclick="S.healthAddSheetOpen=false;rerender()" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:400;display:flex;flex-direction:column;justify-content:flex-end;">'
+      +'<div onclick="event.stopPropagation()" style="background:var(--md-surface);border-radius:20px 20px 0 0;padding-top:12px;padding-bottom:24px;max-height:80vh;overflow-y:auto;">'
+        +'<div style="width:36px;height:4px;border-radius:2px;background:var(--md-outline-variant);margin:0 auto 14px;"></div>'
+        +(logOpts.length?'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;padding:0 14px 8px;">Log Health Data</div>'+logOpts.map(healthOptRow).join(''):'')
+        +(breedOpts.length?'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;padding:14px 14px 8px;">Breeding &amp; Reproduction</div>'+breedOpts.map(healthOptRow).join(''):'')
+      +'</div>'
+    +'</div>';
+  }
+  var healthFab=healthAddOptions.length?'<button onclick="S.healthAddSheetOpen=true;rerender()" style="position:fixed;bottom:80px;right:20px;z-index:200;width:54px;height:54px;border-radius:50%;background:var(--md-primary);border:none;box-shadow:0 4px 14px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;cursor:pointer;">'+msiIcon('add',26,'#fff')+'</button>':'';
+
+
 
   // ── Breeding record (Mares/Fillies only) ────────────────────────────────────
   var breedingSection='';
@@ -8371,7 +8430,7 @@ function rHorseDetail(h){
     breedingSection='<div style="margin-bottom:14px;">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
         +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Breeding records</div>'
-        +(!bfOpen?'<button onclick="window._breedingFormOpen[\''+h.id+'\']=true;rerender()" style="font-size:11px;font-weight:600;color:var(--md-primary);background:none;border:none;cursor:pointer;font-family:\'DM Sans\',sans-serif;display:flex;align-items:center;gap:3px;">'+msiIcon('add',13,'var(--md-primary)')+' Add record</button>':'')
+        +''
       +'</div>'
       +addForm
       +recRows
@@ -8564,7 +8623,7 @@ function rHorseDetail(h){
     ultrasoundSection='<div style="margin-bottom:14px;">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
         +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Reproductive ultrasounds</div>'
-        +(!usOpen?'<button onclick="window._usFormOpen[\''+h.id+'\']=true;rerender()" style="font-size:11px;font-weight:600;color:var(--md-primary);background:none;border:none;cursor:pointer;font-family:\'DM Sans\',sans-serif;display:flex;align-items:center;gap:3px;">'+msiIcon('add',13,'var(--md-primary)')+' Add entry</button>':'')
+        +''
       +'</div>'
       +usAddForm
       +usRows
@@ -8668,7 +8727,7 @@ function rHorseDetail(h){
     foalSection='<div style="margin-bottom:14px;">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
         +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Foal records</div>'
-        +(!foalOpen?'<button onclick="window._foalFormOpen[\''+h.id+'\']=true;rerender()" style="font-size:11px;font-weight:600;color:var(--md-primary);background:none;border:none;cursor:pointer;font-family:\'DM Sans\',sans-serif;display:flex;align-items:center;gap:3px;">'+msiIcon('add',13,'var(--md-primary)')+' Add record</button>':'')
+        +''
       +'</div>'
       +foalAddForm
       +foalRows
@@ -8740,7 +8799,7 @@ function rHorseDetail(h){
   }
 
 
-  var healthTab='<div style="padding:14px;">'+actionBar+reproHistorySection+breedingSection+ultrasoundSection+foalSection+vitalsSection+immunizationsSection+examsSection+labsSection+visitsSection+'</div>';
+  var healthTab=healthAddSheet+healthFab+'<div style="padding:14px;">'+reproHistorySection+breedingSection+ultrasoundSection+foalSection+vitalsSection+immunizationsSection+examsSection+labsSection+visitsSection+'</div>';
 
   var sessions=(HORSE_TRAINING_HISTORY[h.id]||[]);
 
