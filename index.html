@@ -1883,7 +1883,7 @@ function rOnboarding(){
     var inpStyle='width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:12px;padding:12px 13px;font-size:14px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
     var barnResults=filtered.map(function(b){
       var sel=ob.barnFound&&ob.barnFound.id===b.id;
-      return '<div onclick="window._ob.barnFound='+JSON.stringify(b)+';rerender()" style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--md-surface);border-radius:12px;border:2px solid '+(sel?'var(--md-primary)':'var(--md-outline-variant)')+';margin-bottom:8px;cursor:pointer;">'
+      return '<div onclick="window._ob.barnFound='+JSON.stringify(b).replace(/"/g,'&quot;')+';rerender()" style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--md-surface);border-radius:12px;border:2px solid '+(sel?'var(--md-primary)':'var(--md-outline-variant)')+';margin-bottom:8px;cursor:pointer;">'
         +'<div style="width:40px;height:40px;border-radius:10px;background:var(--md-primary-container);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon('home',20,'var(--md-primary)')+'</div>'
         +'<div style="flex:1;"><div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">'+b.name+'</div>'
         +'<div style="font-size:12px;color:var(--md-on-surface-dim);">'+b.location+' · '+b.horses+' horses · '+b.manager+'</div></div>'
@@ -2301,7 +2301,7 @@ function rOnboarding(){
     var bFiltered=bSearch.length>0?DEMO_BARNS2.filter(function(b){return b.name.toLowerCase().includes(bSearch.toLowerCase());}):[];
     var bResults=bFiltered.map(function(b){
       var sel=bFound&&bFound.id===b.id;
-      return '<div onclick="window._ob.staffBarnFound='+JSON.stringify(b)+';rerender()" style="display:flex;align-items:center;gap:12px;padding:11px 13px;background:var(--md-surface);border-radius:12px;border:2px solid '+(sel?'var(--md-primary)':'var(--md-outline-variant)')+';margin-bottom:8px;cursor:pointer;">'
+      return '<div onclick="window._ob.staffBarnFound='+JSON.stringify(b).replace(/"/g,'&quot;')+';rerender()" style="display:flex;align-items:center;gap:12px;padding:11px 13px;background:var(--md-surface);border-radius:12px;border:2px solid '+(sel?'var(--md-primary)':'var(--md-outline-variant)')+';margin-bottom:8px;cursor:pointer;">'
         +'<div style="width:38px;height:38px;border-radius:9px;background:var(--md-primary-container);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon('home',19,'var(--md-primary)')+'</div>'
         +'<div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+b.name+'</div>'
         +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+b.location+' · Mgr: '+b.manager+'</div></div>'
@@ -2511,7 +2511,7 @@ function getContent(isVet,isMgr,showHorse){
   if(anyRole('manager')&&S.mgrView==='assignments') return rAssignments();
   if(isVet){
     if(!S.vetSignedIn){if(S.vetConfirmPage==='confirmed')return rVetConfirmedPage();if(S.vetConfirmPage==='declined')return rVetDeclinedPage();return rVetUnauth();}
-    if(S.selectedHorse)return rHorseDetail(HORSES_ALL.find(function(h){return h.id===S.selectedHorse;}));
+    if(S.selectedHorse&&!S.quickAction)return rHorseDetail(HORSES_ALL.find(function(h){return h.id===S.selectedHorse;}));
     if(S.quickAction==='request-barn-visit')return rRequestVisitForm();
     if(S.quickAction==='schedule-appointment')return rVetScheduleAppt();if(S.quickAction)return rQuickActionForm(S.quickAction);
     if(S.vetView==='home')return rVetHome();if(S.vetView==='horses')return S.showAddHorse?rAddHorse():rHorseList();
@@ -2519,7 +2519,7 @@ function getContent(isVet,isMgr,showHorse){
     if(S.vetView==='vaxform')return rVaxForm();return rVetHome();
   }
   if(S.role==='trainer'||S.role==='breeder'){
-    if(showHorse)return rHorseDetail(HORSES_ALL.find(function(h){return h.id===S.selectedHorse;})||HORSES.find(function(h){return h.id===S.selectedHorse;}));
+    if(showHorse&&!S.quickAction)return rHorseDetail(HORSES_ALL.find(function(h){return h.id===S.selectedHorse;})||HORSES.find(function(h){return h.id===S.selectedHorse;}));
     if(S.quickAction==='document-observation')return rObservationForm();
     if(S.quickAction==='request-barn-visit')return rScheduleVisitForm();
     if(S.quickAction==='create-regimen')return rCreateRegimenForm();
@@ -2530,7 +2530,7 @@ function getContent(isVet,isMgr,showHorse){
     return S.role==='breeder'?rBreederHome():rTrainerHome();
   }
   if(S.role==='owner'){
-    if(showHorse)return rHorseDetail(HORSES_ALL.find(function(h){return h.id===S.selectedHorse;})||HORSES.find(function(h){return h.id===S.selectedHorse;}));
+    if(showHorse&&!S.quickAction)return rHorseDetail(HORSES_ALL.find(function(h){return h.id===S.selectedHorse;})||HORSES.find(function(h){return h.id===S.selectedHorse;}));
     if(S.bookingVisitId)return rBookAppointment(S.bookingVisitId);
     if(S.ownerEventPass)return rEventPass(S.ownerEventPass);
     if(S.quickAction==='request-appointment')return rRequestAppointmentForm();
@@ -2540,7 +2540,7 @@ function getContent(isVet,isMgr,showHorse){
     if(S.activeTab==='setup')return rOwnerSetup();
     return rOwnerHome();
   }
-  if(showHorse)return rHorseDetail(HORSES_ALL.find(function(h){return h.id===S.selectedHorse;})||HORSES.find(function(h){return h.id===S.selectedHorse;}));
+  if(showHorse&&!S.quickAction)return rHorseDetail(HORSES_ALL.find(function(h){return h.id===S.selectedHorse;})||HORSES.find(function(h){return h.id===S.selectedHorse;}));
   if(S.quickAction==='request-barn-visit')return rScheduleVisitForm();
   if(S.quickAction==='document-observation')return rObservationForm();
   if(S.quickAction)return rQuickActionForm(S.quickAction);
@@ -3070,7 +3070,7 @@ function rBarnConnectFlow(role){
 
   // ── Search + map list ─────────────────────────────────────────────────
   var barnCards=filtered.map(function(b){
-    return '<div onclick="S.barnConnectFlow.selected='+JSON.stringify(b)+';rerender()" style="display:flex;align-items:center;gap:12px;padding:11px 13px;background:var(--md-surface);border-radius:12px;border:1.5px solid var(--md-outline-variant);margin-bottom:8px;cursor:pointer;">'
+    return '<div onclick="S.barnConnectFlow.selected='+JSON.stringify(b).replace(/"/g,'&quot;')+';rerender()" style="display:flex;align-items:center;gap:12px;padding:11px 13px;background:var(--md-surface);border-radius:12px;border:1.5px solid var(--md-outline-variant);margin-bottom:8px;cursor:pointer;">'
       +'<div style="width:42px;height:42px;border-radius:10px;background:var(--md-surface-variant);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="'+color+'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 22V12h6v10" stroke="'+color+'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
       +'<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+b.name+'</div>'
       +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+b.location+' \xb7 '+b.horses+' horses \xb7 '+b.manager+'</div>'
@@ -3925,7 +3925,7 @@ function rProSetupConnections(role){
   +'</div>';
 
   // ── FAB → existing rBarnConnectFlow ───────────────────────────────────────
-  var fab='<button onclick="S.barnConnectFlow={role:\''+role+'\',step:\'search\',query:\'\',selected:null,sent:false};rerender()" style="position:fixed;bottom:80px;right:20px;z-index:200;width:54px;height:54px;border-radius:50%;background:'+roleColor+';border:none;box-shadow:0 4px 14px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;cursor:pointer;">'+msiIcon('add',26,'#fff')+'</button>';
+  var fab='<button onclick="S.barnConnectFlow={role:\''+role+'\',step:\'search\',query:\'\',selected:null,sent:false};rerender()" style="position:fixed;bottom:80px;right:20px;z-index:200;width:54px;height:54px;border-radius:50%;background:'+roleColor+';border:none;box-shadow:0 4px 14px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;cursor:pointer;">'+msiIcon('add_link',26,'#fff')+'</button>';
 
   // If barn connect flow is active, delegate to existing function
   if(S.barnConnectFlow&&S.barnConnectFlow.role===role) return rBarnConnectFlow(role);
@@ -4750,10 +4750,11 @@ function rQuickActionForm(actionId){
   const action=QUICK_ACTIONS[actionId];
   if(!action)return '';
   const backBtn=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
-    <button onclick="S.quickAction=null;rerender()" style="background:none;border:none;padding:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M14 5L8 11l6 6" stroke="var(--md-on-surface)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button onclick="window._prefillVaccine=null;S.quickAction=null;rerender()" style="background:none;border:none;padding:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M14 5L8 11l6 6" stroke="var(--md-on-surface)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <div style="display:flex;align-items:center;gap:7px;"><div style="width:28px;height:28px;border-radius:7px;background:${action.bg};display:flex;align-items:center;justify-content:center;color:${action.color};">${action.icon.replace('width="20" height="20"','width="15" height="15"')}</div><span style="font-size:15px;font-weight:700;color:var(--md-on-surface);">${action.label}</span></div>
   </div>`;
-  const horseSelect=`<div style="margin-bottom:12px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Horse</label><select style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"><option value="">Select a horse…</option>${HORSES.map(h=>`<option value="${h.id}">${h.name} — ${h.breed}</option>`).join('')}</select></div>`;
+  const _prefillV=window._prefillVaccine||null;
+  const horseSelect=`<div style="margin-bottom:12px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Horse</label><select style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"><option value="">Select a horse…</option>${HORSES.map(h=>`<option value="${h.id}" ${_prefillV&&_prefillV.horseId===h.id?'selected':''}>${h.name} — ${h.breed}</option>`).join('')}</select></div>`;
   const dateField=`<div style="margin-bottom:12px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Date</label><input type="date" value="${TODAY}" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>`;
   const notesField=`<div style="margin-bottom:14px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Notes</label><textarea placeholder="Add notes…" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;resize:none;min-height:72px;box-sizing:border-box;"></textarea></div>`;
   const saveBtn=`<button onclick="S.quickAction=null;rerender()" style="width:100%;background:${action.color};color:#fff;border:none;padding:13px;border-radius:var(--md-shape-md);font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;">Save</button>`;
@@ -4761,7 +4762,8 @@ function rQuickActionForm(actionId){
   let formBody='';
   if(actionId==='document-vaccine'){
     formBody=horseSelect+dateField+`
-      <div style="margin-bottom:12px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Vaccine name</label><input type="text" placeholder="e.g. Fluvac Innovator EWT" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>
+      <div style="margin-bottom:12px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Vaccine name</label><input type="text" value="${(_prefillV&&_prefillV.vaccineName)||''}" placeholder="e.g. Fluvac Innovator EWT" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>
+      ${_prefillV?`<div style="background:var(--md-primary-container);border-radius:9px;padding:8px 11px;margin-bottom:12px;font-size:11px;color:var(--md-on-surface);">Prefilled from the pregnancy vaccine schedule.</div>`:''}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
         <div><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Lot number</label><input type="text" placeholder="e.g. A2241-EW" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>
         <div><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Expiry</label><input type="text" placeholder="MM-YYYY" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>
@@ -8028,8 +8030,8 @@ function rHorseDetail(h){
           var isOverdue=!given&&daysToVac<=0;
           var urgent=!given&&daysToVac>0&&daysToVac<=14;
           var rowBg=given?'transparent':urgent?'var(--md-warning)12':isOverdue?'var(--md-error)10':'transparent';
-          return '<label style="display:flex;align-items:center;gap:9px;padding:6px 7px;border-radius:8px;background:'+rowBg+';cursor:pointer;">'
-            +'<input type="checkbox" '+(given?'checked':'')+' onchange="(function(el,hid,vi2){var ps2=window._pregnancyState[hid];if(!ps2.vaccinesGiven)ps2.vaccinesGiven={};ps2.vaccinesGiven[vi2]=el.checked?new Date().toISOString().slice(0,10):false;rerender();})(this,\''+h.id+'\','+vi+')" style="width:16px;height:16px;accent-color:var(--md-secondary);flex-shrink:0;cursor:pointer;"/>'
+          return '<div onclick="'+(given?'':'window._prefillVaccine={horseId:\''+h.id+'\',vaccineName:\''+v.name.replace(/'/g,"\\'")+'\'};S.quickAction=\'document-vaccine\';rerender();')+'" style="display:flex;align-items:center;gap:9px;padding:6px 7px;border-radius:8px;background:'+rowBg+';cursor:'+(given?'default':'pointer')+';">'
+            +(given?msiIcon('check_circle',18,'var(--md-secondary)'):msiIcon('radio_button_unchecked',18,'var(--md-outline-variant)'))
             +'<div style="flex:1;min-width:0;">'
               +'<div style="font-size:12px;font-weight:'+(given?'400':'700')+';color:'+(given?'var(--md-on-surface-dim)':'var(--md-on-surface)')+';'+(given?'text-decoration:line-through;':'')+'">'+v.name+'</div>'
               +'<div style="font-size:10px;color:'+(isOverdue?'var(--md-error)':'var(--md-on-surface-dim)')+';">'
@@ -8037,8 +8039,7 @@ function rHorseDetail(h){
               +'</div>'
             +'</div>'
             +(!given&&(isNext||isOverdue)?'<span style="font-size:9px;font-weight:700;color:'+(isOverdue?'var(--md-error)':'var(--md-warning)')+';background:'+(isOverdue?'var(--md-error)18':'var(--md-warning)18')+';padding:2px 7px;border-radius:20px;flex-shrink:0;">'+(isOverdue?'Overdue':'Next')+'</span>':'')
-            +(given?msiIcon('check_circle',15,'var(--md-secondary)'):'')
-          +'</label>';
+          +'</div>';
         }).join('')
       +'</div>';
       var foalingWatch='';
@@ -8101,27 +8102,25 @@ function rHorseDetail(h){
         +'</div>'
         +nextVacStr
         +foalingWatch
-        +(isSafe?'<button onclick="S.horseTab=\'health\';window._foalFormOpen=window._foalFormOpen||{};window._foalFormOpen[\''+h.id+'\']=true;rerender()" style="width:100%;margin-top:10px;background:var(--md-secondary);color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;">'+msiIcon('cruelty_free',16,'#fff')+' Record foaling</button>':'');
+        +(isSafe?'<button onclick="window._foalFormOpen=window._foalFormOpen||{};window._foalFormOpen[\''+h.id+'\']=true;rerender()" style="width:100%;margin-top:10px;background:var(--md-secondary);color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;">'+msiIcon('cruelty_free',16,'#fff')+' Record foaling</button>':'');
     }
     pregCard_ov='<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid '+(ps.pregnant?'var(--md-error)33':'var(--md-outline-variant)')+';overflow:hidden;margin-bottom:12px;">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 13px;">'
         +'<div style="display:flex;align-items:center;gap:8px;">'+msiIcon('favorite',15,ps.pregnant?'var(--md-error)':'var(--md-outline-variant)')
         +'<span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Pregnancy</span>'
-        +(ps.pregnant&&ps.breedDate?'<span style="font-size:10px;font-weight:700;color:var(--md-error);background:var(--md-error)15;padding:1px 7px;border-radius:20px;">Active</span>':'')
+        +(ps.pregnant&&ps.breedDate?'<span style="font-size:10px;font-weight:700;color:var(--md-error);background:var(--md-error)15;padding:1px 7px;border-radius:20px;">Active</span>':'<span style="font-size:10px;font-weight:600;color:var(--md-on-surface-dim);">Not pregnant</span>')
         +'</div>'
-        +mdToggle(ps.pregnant,'if(!window._pregnancyState)window._pregnancyState={};if(!window._pregnancyState[\''+h.id+'\'])window._pregnancyState[\''+h.id+'\']={pregnant:false,breedDate:\'\',foalWatch:{}};window._pregnancyState[\''+h.id+'\'].pregnant=!window._pregnancyState[\''+h.id+'\'].pregnant;rerender()')
       +'</div>'
       +(ps.pregnant
         ?'<div style="padding:0 13px 13px;border-top:1px solid var(--md-outline-variant);padding-top:11px;">'
-          +'<div style="margin-bottom:12px;"><label style="font-size:9px;font-weight:700;color:var(--md-error);text-transform:uppercase;letter-spacing:0.6px;display:block;margin-bottom:4px;">Breeding / conception date</label>'
-          +'<input type="date" value="'+(ps.breedDate||'')+'" oninput="window._pregnancyState[\''+h.id+'\']&&(window._pregnancyState[\''+h.id+'\'].breedDate=this.value)" onblur="rerender()" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/>'
-          +'</div>'
           +pcContent
         +'</div>'
-        :'')
+        :'<div style="padding:0 13px 13px;">'
+          +'<div style="font-size:12px;color:var(--md-on-surface-dim);line-height:1.5;">Pregnancy is set from the Health tab by marking a breeding record as an active pregnancy.</div>'
+        +'</div>')
       +'</div>';
   }
-  const overviewTab='<div style="padding:14px;">'+alertBanner_ov+statGrid_ov+pregCard_ov+noteCard_ov+medCard_ov+glanceRow_ov+passCard_ov+prosCard_ov+'</div>'
+  var overviewTab='<div style="padding:14px;">'+alertBanner_ov+statGrid_ov+pregCard_ov+noteCard_ov+medCard_ov+glanceRow_ov+passCard_ov+prosCard_ov;
 
   // Training stub -- reuse trainer progress if available
 
@@ -8315,8 +8314,8 @@ function rHorseDetail(h){
   var canExam=anyRole('vet');
   var canVitals=anyRole('vet','manager','staff','trainer');
   var canObs=anyRole('vet','manager','staff','trainer');
-  var canImaging=anyRole('vet','owner','trainer');
-  var canLab=anyRole('vet','owner');
+  var canImaging=true;
+  var canLab=true;
   var canGenDoc=anyRole('vet','owner');
 
   // Action bar
@@ -8335,9 +8334,9 @@ function rHorseDetail(h){
   if(canVitals) healthAddOptions.push({group:'log',icon:'monitor_heart',label:'Document Vitals',color:'var(--md-on-surface-variant)',action:"S.quickAction='document-vitals';S.selectedHorse=null;"});
   if(canImaging) healthAddOptions.push({group:'log',icon:'radiology',label:'Upload Imaging',color:'var(--md-tertiary)',action:"S.quickAction='upload-imaging';S.selectedHorse=null;"});
   if(canLab) healthAddOptions.push({group:'log',icon:'science',label:'Upload Lab Test',color:'var(--md-secondary)',action:"S.quickAction='upload-lab';S.selectedHorse=null;"});
-  if(isMareForHealth) healthAddOptions.push({group:'breed',icon:'family_restroom',label:'Breeding Record',color:'var(--md-primary)',action:"window._breedingFormOpen=window._breedingFormOpen||{};window._breedingFormOpen['"+h.id+"']=true;"});
+  var isPregnantForFab=isMareForHealth&&window._pregnancyState&&window._pregnancyState[h.id]&&window._pregnancyState[h.id].pregnant;
+  if(isMareForHealth) healthAddOptions.push({group:'breed',icon:'family_restroom',label:'Breeding Record',color:'var(--md-primary)',disabled:isPregnantForFab,action:isPregnantForFab?("showToast('"+h.name+" is already pregnant.','info','info');"):("window._breedingFormOpen=window._breedingFormOpen||{};window._breedingFormOpen['"+h.id+"']=true;")});
   if(isMareForHealth) healthAddOptions.push({group:'breed',icon:'monitor_heart',label:'Ultrasound Entry',color:'var(--md-error)',action:"window._usFormOpen=window._usFormOpen||{};window._usFormOpen['"+h.id+"']=true;"});
-  if(isMareForHealth) healthAddOptions.push({group:'breed',icon:'cruelty_free',label:'Foal Record',color:'var(--md-secondary)',action:"window._foalFormOpen=window._foalFormOpen||{};window._foalFormOpen['"+h.id+"']=true;"});
 
   var healthFab=healthAddOptions.length?'<button onclick="S.healthAddSheetOpen=true;rerender()" style="position:fixed;bottom:80px;right:20px;z-index:200;width:54px;height:54px;border-radius:50%;background:var(--md-primary);border:none;box-shadow:0 4px 14px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;cursor:pointer;">'+msiIcon('add',26,'#fff')+'</button>':'';
 
@@ -8362,12 +8361,15 @@ function rHorseDetail(h){
     if(!window._breedingFormOpen) window._breedingFormOpen={};
     if(!window._breedingForm) window._breedingForm={};
     var bfOpen=!!window._breedingFormOpen[h.id];
-    var bf=window._breedingForm[h.id]||(window._breedingForm[h.id]={stallionName:'',method:'Fresh AI',date:'',semenSource:'',notes:''});
+    var bf=window._breedingForm[h.id]||(window._breedingForm[h.id]={stallionName:'',method:'Fresh AI',date:'',semenSource:'',notes:'',addingStallion:false,newStallionName:'',newStallionBreed:'',newStallionColor:''});
 
     var methodOptions=['Live Cover','Fresh AI','Chilled AI','Frozen AI'];
     var methodColors={'Live Cover':'var(--md-tertiary)','Fresh AI':'var(--md-primary)','Chilled AI':'var(--md-secondary)','Frozen AI':'var(--md-error)'};
 
-    var activeBreedDate=(window._pregnancyState&&window._pregnancyState[h.id]&&window._pregnancyState[h.id].pregnant)?window._pregnancyState[h.id].breedDate:'';
+    var knownStallions=HORSES_ALL.filter(function(hh){return hh.sex==='Stallion';});
+
+    var isPregnantNow=window._pregnancyState&&window._pregnancyState[h.id]&&window._pregnancyState[h.id].pregnant;
+    var activeBreedDate=isPregnantNow?window._pregnancyState[h.id].breedDate:'';
 
     var recRows=breedRecs.length?breedRecs.slice().reverse().map(function(r){
       var isActive=r.date&&r.date===activeBreedDate;
@@ -8383,7 +8385,7 @@ function rHorseDetail(h){
         +'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-bottom:'+(r.semenSource||r.notes?'4px':'0')+';">'+msiIcon('event',11,'var(--md-on-surface-dim)')+' '+r.date+'</div>'
         +(r.semenSource?'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-bottom:'+(r.notes?'4px':'0')+';">'+msiIcon('local_shipping',11,'var(--md-on-surface-dim)')+' '+r.semenSource+'</div>':'')
         +(r.notes?'<div style="font-size:11px;color:var(--md-on-surface-variant);line-height:1.5;margin-top:5px;padding-top:5px;border-top:1px solid var(--md-outline-variant);">'+r.notes+'</div>':'')
-        +(!isActive?'<button onclick="if(!window._pregnancyState)window._pregnancyState={};if(!window._pregnancyState[\''+h.id+'\'])window._pregnancyState[\''+h.id+'\']={pregnant:false,breedDate:\'\',foalWatch:{},vaccinesGiven:{}};window._pregnancyState[\''+h.id+'\'].pregnant=true;window._pregnancyState[\''+h.id+'\'].breedDate=\''+r.date+'\';rerender()" style="margin-top:8px;background:none;border:1.5px solid var(--md-error)44;color:var(--md-error);border-radius:8px;padding:5px 11px;font-size:11px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Mark as active pregnancy</button>':'')
+        +(!isActive&&!isPregnantNow?'<button onclick="if(!window._pregnancyState)window._pregnancyState={};if(!window._pregnancyState[\''+h.id+'\'])window._pregnancyState[\''+h.id+'\']={pregnant:false,breedDate:\'\',foalWatch:{},vaccinesGiven:{}};window._pregnancyState[\''+h.id+'\'].pregnant=true;window._pregnancyState[\''+h.id+'\'].breedDate=\''+r.date+'\';showToast(\''+h.name+' marked pregnant!\',\'favorite\',\'success\');rerender()" style="margin-top:10px;width:100%;background:var(--md-error);color:#fff;border:none;border-radius:10px;padding:11px 13px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;">'+msiIcon('favorite',16,'#fff')+' Mark as Active Pregnancy</button>':'')
       +'</div>';
     }).join('') : '<div style="font-size:12px;color:var(--md-on-surface-dim);padding:10px 2px;">No breeding records yet.</div>';
 
@@ -8391,10 +8393,33 @@ function rHorseDetail(h){
     if(bfOpen){
       var INPB='width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
       var LBLB='font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.6px;display:block;margin-bottom:4px;';
+
+      var stallionField='';
+      if(bf.addingStallion){
+        stallionField='<div style="background:var(--md-surface);border:1.5px solid var(--md-primary)33;border-radius:9px;padding:10px;margin-bottom:9px;">'
+          +'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Add a new stallion</div>'
+          +'<div style="margin-bottom:7px;"><label style="'+LBLB+'">Name</label><input type="text" value="'+bf.newStallionName+'" oninput="window._breedingForm[\''+h.id+'\'].newStallionName=this.value" placeholder="Stallion name" style="'+INPB+'"/></div>'
+          +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px;">'
+            +'<div><label style="'+LBLB+'">Breed</label><input type="text" value="'+bf.newStallionBreed+'" oninput="window._breedingForm[\''+h.id+'\'].newStallionBreed=this.value" placeholder="Breed" style="'+INPB+'"/></div>'
+            +'<div><label style="'+LBLB+'">Color</label><input type="text" value="'+bf.newStallionColor+'" oninput="window._breedingForm[\''+h.id+'\'].newStallionColor=this.value" placeholder="Color" style="'+INPB+'"/></div>'
+          +'</div>'
+          +'<div style="display:flex;gap:7px;">'
+            +'<button onclick="window._breedingForm[\''+h.id+'\'].addingStallion=false;rerender()" style="padding:7px 11px;background:var(--md-surface-variant);border:1.5px solid var(--md-outline-variant);border-radius:8px;font-size:11px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);">Cancel</button>'
+            +'<button onclick="(function(){var bfx=window._breedingForm[\''+h.id+'\'];if(!bfx.newStallionName)return;var sid=\'stal_\'+Date.now();HORSES_ALL.push({id:sid,name:bfx.newStallionName,breed:bfx.newStallionBreed||\'Unknown\',color:bfx.newStallionColor||\'Unknown\',age:\'\',sex:\'Stallion\',barn:\''+h.barn+'\',stall:\'\',owners:[],trainer:\'\',vet:\'\',avatar:{bg:\'#6A3A18\',mane:\'#2A1A08\',sock:\'#F5EDE0\',marking:null},note:\'External stud\',alerts:[]});bfx.stallionName=bfx.newStallionName;bfx.newStallionName=\'\';bfx.newStallionBreed=\'\';bfx.newStallionColor=\'\';bfx.addingStallion=false;rerender();})()" style="flex:1;background:var(--md-primary);color:#fff;border:none;border-radius:8px;padding:7px 11px;font-size:11px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Add &amp; select</button>'
+          +'</div>'
+        +'</div>';
+      } else {
+        stallionField='<div style="margin-bottom:9px;"><label style="'+LBLB+'">Stallion</label>'
+          +'<select oninput="if(this.value===\'__add__\'){window._breedingForm[\''+h.id+'\'].addingStallion=true;}else{window._breedingForm[\''+h.id+'\'].stallionName=this.value;}rerender()" style="'+INPB+'">'
+          +'<option value="">Select stallion\u2026</option>'
+          +knownStallions.map(function(st){return '<option value="'+st.name+'"'+(bf.stallionName===st.name?' selected':'')+'>'+st.name+' ('+st.breed+')</option>';}).join('')
+          +'<option value="__add__">+ Add a horse\u2026</option>'
+          +'</select></div>';
+      }
+
       addForm='<div style="background:var(--md-surface-variant);border-radius:var(--md-shape-md);border:1.5px solid var(--md-primary)33;padding:12px 13px;margin-bottom:10px;">'
         +'<div style="font-size:12px;font-weight:700;color:var(--md-on-surface);margin-bottom:10px;">New breeding record</div>'
-        +'<div style="margin-bottom:9px;"><label style="'+LBLB+'">Stallion name</label>'
-          +'<input type="text" value="'+bf.stallionName+'" oninput="window._breedingForm[\''+h.id+'\'].stallionName=this.value" placeholder="e.g. Contango" style="'+INPB+'"/></div>'
+        +stallionField
         +'<div style="margin-bottom:9px;"><label style="'+LBLB+'">Method</label>'
           +'<select oninput="window._breedingForm[\''+h.id+'\'].method=this.value;rerender()" style="'+INPB+'">'
           +methodOptions.map(function(mo){return '<option value="'+mo+'"'+(bf.method===mo?' selected':'')+'>'+mo+'</option>';}).join('')
@@ -8407,7 +8432,7 @@ function rHorseDetail(h){
           +'<textarea oninput="window._breedingForm[\''+h.id+'\'].notes=this.value" rows="2" placeholder="Ovulation timing, cycle notes\u2026" style="'+INPB+'resize:none;">'+bf.notes+'</textarea></div>'
         +'<div style="display:flex;gap:8px;">'
           +'<button onclick="window._breedingFormOpen[\''+h.id+'\']=false;rerender()" style="padding:9px 13px;background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:9px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);">Cancel</button>'
-          +'<button onclick="(function(){var bfx=window._breedingForm[\''+h.id+'\'];if(!bfx.stallionName||!bfx.date)return;window.BREEDING_RECORDS[\''+h.id+'\'].push({id:\'br\'+Date.now(),stallionName:bfx.stallionName,method:bfx.method,date:bfx.date,semenSource:bfx.semenSource,notes:bfx.notes});window._breedingForm[\''+h.id+'\']={stallionName:\'\',method:\'Fresh AI\',date:\'\',semenSource:\'\',notes:\'\'};window._breedingFormOpen[\''+h.id+'\']=false;rerender();})()" style="flex:1;background:var(--md-primary);color:#fff;border:none;border-radius:9px;padding:9px 13px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Save record</button>'
+          +'<button onclick="(function(){var bfx=window._breedingForm[\''+h.id+'\'];if(!bfx.stallionName||!bfx.date)return;window.BREEDING_RECORDS[\''+h.id+'\'].push({id:\'br\'+Date.now(),stallionName:bfx.stallionName,method:bfx.method,date:bfx.date,semenSource:bfx.semenSource,notes:bfx.notes});window._breedingForm[\''+h.id+'\']={stallionName:\'\',method:\'Fresh AI\',date:\'\',semenSource:\'\',notes:\'\',addingStallion:false,newStallionName:\'\',newStallionBreed:\'\',newStallionColor:\'\'};window._breedingFormOpen[\''+h.id+'\']=false;rerender();})()" style="flex:1;background:var(--md-primary);color:#fff;border:none;border-radius:9px;padding:9px 13px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Save record</button>'
         +'</div>'
       +'</div>';
     }
@@ -8420,73 +8445,6 @@ function rHorseDetail(h){
       +recRows
     +'</div>';
   }
-
-
-  // Immunizations section (collapsible)
-  var vaxData=hh.vaccinations&&typeof hh.vaccinations==='object'&&!Array.isArray(hh.vaccinations)?hh.vaccinations:{core:Array.isArray(hh.vaccinations)?hh.vaccinations:[],riskBased:[]};
-  var allVax=[...vaxData.core,...vaxData.riskBased];
-  var alertVax=allVax.filter(function(v){return v.alert;});
-  var totalVax=allVax.length;
-  var expandedVax=S.expandedVax&&S.expandedVax[h.id];
-
-  function vaxRow(v,last){
-    var alertDot=v.alert?'<span style="width:7px;height:7px;border-radius:50%;background:var(--md-warning);display:inline-block;margin-left:4px;vertical-align:middle;"></span>':'';
-    var seal=v.confirmed?'<span style="font-size:9px;font-weight:700;color:var(--md-secondary);background:var(--md-secondary)22;padding:2px 6px;border-radius:10px;">✓ SEALED</span>':'';
-    if(!expandedVax){
-      return '<div style="padding:9px 14px;'+(last?'':'border-bottom:1px solid var(--md-outline-variant)')+';display:flex;align-items:center;gap:9px;">'
-        +'<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="'+(v.alert?'var(--md-warning)':'var(--md-secondary)')+'22" stroke="'+(v.alert?'var(--md-warning)':'var(--md-secondary)')+'" stroke-width="1.2"/><path d="M3.5 7l2.5 2.5 4.5-4.5" stroke="'+(v.alert?'var(--md-warning)':'var(--md-secondary)')+'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-        +'<div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--md-on-surface);">'+v.name+alertDot+'</div>'
-        +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+v.date+'</div></div>'
-        +'<div style="text-align:right;"><div style="font-size:10px;color:'+(v.alert?'var(--md-warning)':'var(--md-on-surface-dim)')+';">Next '+v.next+'</div>'+seal+'</div></div>';
-    }
-    return '<div style="padding:11px 14px;'+(last?'':'border-bottom:1px solid var(--md-outline-variant)')+';">'
-      +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;">'
-      +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+v.name+alertDot+'</div>'
-      +seal+'</div>'
-      +'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-bottom:3px;">'+v.brand+' · Lot: '+v.lot+'</div>'
-      +'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-bottom:3px;">Administered '+v.date+' · '+v.vet+'</div>'
-      +'<div style="font-size:11px;color:'+(v.alert?'var(--md-warning)':'var(--md-secondary)')+';">Next due: '+v.next+'</div></div>';
-  }
-
-  function catHeader(label,items){
-    return items.length?'<div style="padding:6px 14px;background:var(--md-surface-variant);font-size:9px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.6px;">'+label+'</div>':'';
-  }
-
-  var vaxSummary='<div style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;">'
-    +'<div style="display:flex;align-items:center;gap:8px;">'
-    +(alertVax.length?'<div style="width:8px;height:8px;border-radius:50%;background:var(--md-warning);flex-shrink:0;"></div>':'<div style="width:8px;height:8px;border-radius:50%;background:var(--md-secondary);flex-shrink:0;"></div>')
-    +'<div>'
-    +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+totalVax+' immunizations</div>'
-    +'<div style="font-size:11px;color:'+(alertVax.length?'var(--md-warning)':'var(--md-on-surface-dim)')+';">'+(alertVax.length?alertVax.length+' due soon · ':'All current · ')+( totalVax-alertVax.length)+' up to date</div></div></div>'
-    +'<button onclick="if(!S.expandedVax)S.expandedVax={};S.expandedVax[\''+h.id+'\']='+(expandedVax?'false':'true')+';rerender()" style="background:none;border:none;cursor:pointer;padding:4px;">'+msiIcon(expandedVax?'expand_less':'expand_more',20,'var(--md-on-surface-dim)')+'</button>'
-    +'</div>';
-
-  var vaxRows=expandedVax
-    ?(catHeader('Core vaccines',vaxData.core)+vaxData.core.map(function(v,i){return vaxRow(v,i===vaxData.core.length-1&&!vaxData.riskBased.length);}).join('')
-     +catHeader('Risk-based',vaxData.riskBased)+vaxData.riskBased.map(function(v,i){return vaxRow(v,i===vaxData.riskBased.length-1);}).join(''))
-    :allVax.slice(0,3).map(function(v,i){return vaxRow(v,i===Math.min(allVax.length,3)-1);}).join('');
-
-  var immunizationsSection='<div style="margin-bottom:14px;">'
-    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
-    +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Immunizations</div>'
-    +(canGenDoc?'<button onclick="generateHealthRecord(\''+h.id+'\');void 0" style="font-size:11px;font-weight:600;color:var(--md-primary);background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:3px;">'+msiIcon('description',14,'var(--md-primary)')+'Health record</button>':'')
-    +'</div>'
-    +'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);overflow:hidden;">'
-    +vaxSummary+vaxRows+'</div></div>';
-
-  // Vitals section
-  var vitalsSection=hh.vitals.length?'<div style="margin-bottom:14px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Latest vitals</div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:12px 14px;"><div style="font-size:11px;color:var(--md-on-surface-dim);margin-bottom:8px;">'+hh.vitals[0].date+'</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px;">'+[{l:'Heart rate',v:hh.vitals[0].HR+' bpm'},{l:'Resp. rate',v:hh.vitals[0].RR+' brpm'},{l:'Temp',v:hh.vitals[0].temp+'°F'},{l:'Gut sounds',v:hh.vitals[0].gut}].map(function(a){return '<div><div style="font-size:10px;color:var(--md-on-surface-dim);text-transform:uppercase;margin-bottom:1px;">'+a.l+'</div><div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">'+a.v+'</div></div>';}).join('')+'</div>'+(hh.vitals[0].notes?'<div style="font-size:12px;color:var(--md-on-surface-dim);font-style:italic;">'+hh.vitals[0].notes+'</div>':'')+'</div></div>':'';
-
-  // Exams section (vet-documented)
-  var examsSection=(hh.exams&&hh.exams.length)?'<div style="margin-bottom:14px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Exams</div>'
-    +hh.exams.map(function(e){return '<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:11px 14px;margin-bottom:7px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+e.type+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+e.date+'</div></div><div style="font-size:11px;color:var(--md-on-surface-dim);margin-bottom:4px;">'+e.vet+'</div><div style="font-size:12px;color:var(--md-on-surface-variant);font-style:italic;margin-bottom:4px;">'+e.findings+'</div>'+(e.treatment?'<div style="font-size:11px;color:var(--md-primary);">Rx: '+e.treatment+'</div>':'')+'</div>';}).join('')
-    +'</div>':'';
-
-  // Labs section
-  var labsSection=hh.labs&&hh.labs.length?'<div style="margin-bottom:14px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Lab tests</div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 14px;">'+hh.labs.map(function(l){return '<div style="font-size:13px;font-weight:600;color:var(--md-on-surface);">'+l.name+' — <span style="color:var(--md-secondary);">'+l.result+'</span></div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+l.date+' · '+l.lab+' · '+l.acc+'</div>';}).join('')+'</div></div>':'';
-
-  // Visit history
-  var visitsSection=hh.visits&&hh.visits.length?'<div><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Visit history</div>'+hh.visits.map(function(v){return '<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:11px 14px;margin-bottom:7px;"><div style="font-size:13px;font-weight:600;color:var(--md-on-surface);margin-bottom:2px;">'+v.type+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);margin-bottom:4px;">'+v.date+' · '+v.vet+'</div><div style="font-size:12px;color:var(--md-on-surface-variant);font-style:italic;">'+v.outcome+'</div></div>';}).join('')+'</div>':'';
 
 
   // ── Reproductive ultrasound log (Mares/Fillies only) ────────────────────────
@@ -8630,17 +8588,20 @@ function rHorseDetail(h){
     var ff=window._foalForm[h.id]||(window._foalForm[h.id]={foalName:'',sex:'Colt',birthDate:'',birthTime:'',weight:'',color:'',iggResult:'Pending',meconiumPassed:false,navelTreated:false,studbookStatus:'Not started',notes:''});
 
     var latestBreedRec=(window.BREEDING_RECORDS&&window.BREEDING_RECORDS[h.id]&&window.BREEDING_RECORDS[h.id].length)?window.BREEDING_RECORDS[h.id][window.BREEDING_RECORDS[h.id].length-1]:null;
+    var horseColorOptions=['Bay','Chestnut','Black','Gray','Dapple Gray','Palomino','Buckskin','Dun','Roan','Tobiano','Overo','Pinto','Sorrel','Cremello','Perlino','White'];
 
     var foalRows=foalRecs.length?foalRecs.slice().reverse().map(function(r){
       var sexColor=r.sex==='Colt'?'var(--md-primary)':'var(--md-error)';
       var iggColor=r.iggResult==='Pass'?'var(--md-secondary)':r.iggResult==='Fail'?'var(--md-error)':'var(--md-warning)';
-      return '<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:12px 14px;margin-bottom:8px;">'
+      var linkedFoalHorse=HORSES_ALL.find(function(hh){return hh.name.toLowerCase()===r.foalName.toLowerCase()&&hh.barn===h.barn;});
+      return '<div'+(linkedFoalHorse?' onclick="S.selectedHorse=\''+(linkedFoalHorse?linkedFoalHorse.id:'')+'\';S.horseTab=\'overview\';rerender()"':'')+' style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid '+(linkedFoalHorse?'var(--md-secondary)44':'var(--md-outline-variant)')+';padding:12px 14px;margin-bottom:8px;'+(linkedFoalHorse?'cursor:pointer;':'')+'">'
         +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">'
           +'<div style="display:flex;align-items:center;gap:8px;">'
             +msiIcon('cruelty_free',16,sexColor)
             +'<span style="font-size:14px;font-weight:800;color:var(--md-on-surface);">'+r.foalName+'</span>'
             +'<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:'+sexColor+'18;color:'+sexColor+';">'+r.sex+'</span>'
           +'</div>'
+          +(linkedFoalHorse?msiIcon('chevron_right',18,'var(--md-on-surface-dim)'):'')
         +'</div>'
         +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">'
           +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+msiIcon('event',11,'var(--md-on-surface-dim)')+' '+r.birthDate+(r.birthTime?' '+r.birthTime:'')+'</div>'
@@ -8677,7 +8638,9 @@ function rHorseDetail(h){
         +'</div>'
         +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px;">'
           +'<div><label style="'+LBLF+'">Weight (lbs)</label><input type="number" value="'+ff.weight+'" oninput="window._foalForm[\''+h.id+'\'].weight=this.value" placeholder="e.g. 110" style="'+INPF+'"/></div>'
-          +'<div><label style="'+LBLF+'">Color</label><input type="text" value="'+ff.color+'" oninput="window._foalForm[\''+h.id+'\'].color=this.value" placeholder="e.g. Bay" style="'+INPF+'"/></div>'
+          +'<div><label style="'+LBLF+'">Color</label><select oninput="window._foalForm[\''+h.id+'\'].color=this.value" style="'+INPF+'"><option value="">Select color\u2026</option>'
+            +horseColorOptions.map(function(cl){return '<option value="'+cl+'"'+(ff.color===cl?' selected':'')+'>'+cl+'</option>';}).join('')
+          +'</select></div>'
         +'</div>'
         +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px;">'
           +'<div><label style="'+LBLF+'">IgG test</label><select oninput="window._foalForm[\''+h.id+'\'].iggResult=this.value" style="'+INPF+'">'
@@ -8697,10 +8660,21 @@ function rHorseDetail(h){
             +'var ffx=window._foalForm[\''+h.id+'\'];if(!ffx.foalName||!ffx.birthDate)return;'
             +'var lbr=(window.BREEDING_RECORDS&&window.BREEDING_RECORDS[\''+h.id+'\']&&window.BREEDING_RECORDS[\''+h.id+'\'].length)?window.BREEDING_RECORDS[\''+h.id+'\'][window.BREEDING_RECORDS[\''+h.id+'\'].length-1]:null;'
             +'window.FOAL_RECORDS[\''+h.id+'\'].push({id:\'fl\'+Date.now(),foalName:ffx.foalName,sex:ffx.sex,birthDate:ffx.birthDate,birthTime:ffx.birthTime,weight:ffx.weight,color:ffx.color,iggResult:ffx.iggResult,meconiumPassed:ffx.meconiumPassed,navelTreated:ffx.navelTreated,studbookStatus:ffx.studbookStatus,notes:ffx.notes,sireStallion:lbr?lbr.stallionName:\'\',sireMethod:lbr?lbr.method:\'\'});'
+            +'var colorAvatarMap={Bay:\'#4A2A0A\',Chestnut:\'#7A3A1A\',Black:\'#1A1A1A\',Gray:\'#8A8A8A\',\'Dapple Gray\':\'#9A9A9A\',Palomino:\'#C8A840\',Buckskin:\'#B8925A\',Dun:\'#A8905A\',Roan:\'#8A6A5A\',Tobiano:\'#6A3A18\',Overo:\'#6A3A18\',Pinto:\'#6A3A18\',Sorrel:\'#8A4A20\',Cremello:\'#E8D8B8\',Perlino:\'#E8D8C8\',White:\'#F0F0F0\'};'
+            +'var foalAvBg=colorAvatarMap[ffx.color]||\'#6A3A18\';'
+            +'var foalId=\'foal_\'+Date.now();'
+            +'var sireHorse=HORSES_ALL.find(function(hh){return hh.name.toLowerCase()===((lbr?lbr.stallionName:\'\')||\'\').toLowerCase();});'
+            +'var newFoal={id:foalId,photo:'+JSON.stringify(h.photo||'').replace(/"/g,'&quot;')+',name:ffx.foalName,breed:'+JSON.stringify(h.breed||'').replace(/"/g,'&quot;')+',color:ffx.color||\'Unknown\',age:\'Newborn\',sex:ffx.sex,barn:'+JSON.stringify(h.barn||'sunrise').replace(/"/g,'&quot;')+',stall:'+JSON.stringify(h.stall||'').replace(/"/g,'&quot;')+',owners:'+JSON.stringify(h.owners||[]).replace(/"/g,'&quot;')+',trainer:'+JSON.stringify(h.trainer||'').replace(/"/g,'&quot;')+',vet:'+JSON.stringify(h.vet||'').replace(/"/g,'&quot;')+',avatar:{bg:foalAvBg,mane:\'#2A1A08\',sock:\'#F5EDE0\',marking:(sireHorse&&sireHorse.avatar)?sireHorse.avatar.marking:null},note:\'Foal of \'+'+JSON.stringify(h.name).replace(/"/g,'&quot;')+'+\', born \'+ffx.birthDate,alerts:[]};'
+            +'HORSES_ALL.push(newFoal);'
+            +'HORSE_PEDIGREE[foalId]={'
+              +'sire:sireHorse?{name:sireHorse.name,breed:sireHorse.breed,color:sireHorse.color,country:\'\',born:\'\',achievements:\'\',progenyNote:\'\',sport:\'\',avatar:sireHorse.avatar,offspring:[{name:ffx.foalName,note:\'This horse\',isSelf:false}]}:{name:(lbr?lbr.stallionName:\'Unknown\'),breed:\'\',color:\'\',country:\'\',born:\'\',achievements:\'\',progenyNote:\'\',sport:\'\',avatar:{bg:\'#6A3A18\',mane:\'#2A1A08\',sock:null,marking:null},offspring:[{name:ffx.foalName,note:\'This horse\',isSelf:false}]},'
+              +'dam:{name:'+JSON.stringify(h.name).replace(/"/g,'&quot;')+',breed:'+JSON.stringify(h.breed||'').replace(/"/g,'&quot;')+',color:'+JSON.stringify(h.color||'').replace(/"/g,'&quot;')+',country:\'\',born:\'\',achievements:\'\',progenyNote:\'\',sport:\'\',avatar:'+JSON.stringify(h.avatar||{bg:'#888',mane:'#444',sock:null,marking:null}).replace(/"/g,'&quot;')+',offspring:[{name:ffx.foalName,note:\'This horse\',isSelf:false}]},'
+              +'siblings:[],sirePerformance:{avgScore:null,totalOffspring:1,winRate:null,disciplines:[]},damPerformance:{avgScore:null,offspring:1,disciplines:[],winRate:null}'
+            +'};'
             +'if(window._pregnancyState&&window._pregnancyState[\''+h.id+'\'])window._pregnancyState[\''+h.id+'\'].pregnant=false;'
             +'window._foalForm[\''+h.id+'\']={foalName:\'\',sex:\'Colt\',birthDate:\'\',birthTime:\'\',weight:\'\',color:\'\',iggResult:\'Pending\',meconiumPassed:false,navelTreated:false,studbookStatus:\'Not started\',notes:\'\'};'
             +'window._foalFormOpen[\''+h.id+'\']=false;'
-            +'showToast(\'Foal recorded!\',\'cruelty_free\',\'success\');'
+            +'showToast(ffx.foalName+\' recorded and added to your horses!\',\'cruelty_free\',\'success\');'
             +'rerender();'
           +'})()" style="flex:1;background:var(--md-primary);color:#fff;border:none;border-radius:9px;padding:9px 13px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Save foal record</button>'
         +'</div>'
@@ -8716,7 +8690,8 @@ function rHorseDetail(h){
     +'</div>';
   }
 
-    // ── Reproductive history timeline (Mares/Fillies only) ──────────────────────
+
+  // ── Reproductive history timeline (Mares/Fillies only) ──────────────────────
   var reproHistorySection='';
   if(h.sex==='Mare'||h.sex==='Filly'){
     var brAll=(window.BREEDING_RECORDS&&window.BREEDING_RECORDS[h.id])?window.BREEDING_RECORDS[h.id].slice():[];
@@ -8787,10 +8762,12 @@ function rHorseDetail(h){
     var logOpts=healthAddOptions.filter(function(o){return o.group==='log';});
     var breedOpts=healthAddOptions.filter(function(o){return o.group==='breed';});
     function healthOptRow(o){
-      var closeAction=o.group==='log'?'S.healthAddSheetOpen=false;':'';
-      return '<button onclick="'+o.action+closeAction+'rerender()" style="width:100%;display:flex;align-items:center;gap:12px;padding:12px 14px;background:none;border:none;border-bottom:1px solid var(--md-outline-variant);cursor:pointer;text-align:left;">'
-        +'<div style="width:36px;height:36px;border-radius:10px;background:'+o.color+'18;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon(o.icon,18,o.color)+'</div>'
-        +'<span style="font-size:14px;font-weight:600;color:var(--md-on-surface);">'+o.label+'</span>'
+      var closeAction=(o.group==='log'||o.disabled)?'S.healthAddSheetOpen=false;':'';
+      var dimColor=o.disabled?'var(--md-on-surface-dim)':o.color;
+      return '<button onclick="'+o.action+closeAction+'rerender()" style="width:100%;display:flex;align-items:center;gap:12px;padding:12px 14px;background:none;border:none;border-bottom:1px solid var(--md-outline-variant);cursor:pointer;text-align:left;'+(o.disabled?'opacity:0.55;':'')+'">'
+        +'<div style="width:36px;height:36px;border-radius:10px;background:'+dimColor+'18;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon(o.icon,18,dimColor)+'</div>'
+        +'<span style="font-size:14px;font-weight:600;color:var(--md-on-surface);flex:1;">'+o.label+'</span>'
+        +(o.disabled?msiIcon('lock',15,'var(--md-on-surface-dim)'):'')
       +'</button>';
     }
     // Which sub-form (if any) is currently active inside the sheet
@@ -8816,7 +8793,74 @@ function rHorseDetail(h){
     +'</div>';
   }
 
-  var healthTab=healthAddSheet+healthFab+'<div style="padding:14px;">'+reproHistorySection+breedingSection+ultrasoundSection+foalSection+vitalsSection+immunizationsSection+examsSection+labsSection+visitsSection+'</div>';
+  // Immunizations section (collapsible)
+  var vaxData=hh.vaccinations&&typeof hh.vaccinations==='object'&&!Array.isArray(hh.vaccinations)?hh.vaccinations:{core:Array.isArray(hh.vaccinations)?hh.vaccinations:[],riskBased:[]};
+  var allVax=[...vaxData.core,...vaxData.riskBased];
+  var alertVax=allVax.filter(function(v){return v.alert;});
+  var totalVax=allVax.length;
+  var expandedVax=S.expandedVax&&S.expandedVax[h.id];
+
+  function vaxRow(v,last){
+    var alertDot=v.alert?'<span style="width:7px;height:7px;border-radius:50%;background:var(--md-warning);display:inline-block;margin-left:4px;vertical-align:middle;"></span>':'';
+    var seal=v.confirmed?'<span style="font-size:9px;font-weight:700;color:var(--md-secondary);background:var(--md-secondary)22;padding:2px 6px;border-radius:10px;">✓ SEALED</span>':'';
+    if(!expandedVax){
+      return '<div style="padding:9px 14px;'+(last?'':'border-bottom:1px solid var(--md-outline-variant)')+';display:flex;align-items:center;gap:9px;">'
+        +'<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="'+(v.alert?'var(--md-warning)':'var(--md-secondary)')+'22" stroke="'+(v.alert?'var(--md-warning)':'var(--md-secondary)')+'" stroke-width="1.2"/><path d="M3.5 7l2.5 2.5 4.5-4.5" stroke="'+(v.alert?'var(--md-warning)':'var(--md-secondary)')+'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+        +'<div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--md-on-surface);">'+v.name+alertDot+'</div>'
+        +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+v.date+'</div></div>'
+        +'<div style="text-align:right;"><div style="font-size:10px;color:'+(v.alert?'var(--md-warning)':'var(--md-on-surface-dim)')+';">Next '+v.next+'</div>'+seal+'</div></div>';
+    }
+    return '<div style="padding:11px 14px;'+(last?'':'border-bottom:1px solid var(--md-outline-variant)')+';">'
+      +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+v.name+alertDot+'</div>'
+      +seal+'</div>'
+      +'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-bottom:3px;">'+v.brand+' · Lot: '+v.lot+'</div>'
+      +'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-bottom:3px;">Administered '+v.date+' · '+v.vet+'</div>'
+      +'<div style="font-size:11px;color:'+(v.alert?'var(--md-warning)':'var(--md-secondary)')+';">Next due: '+v.next+'</div></div>';
+  }
+
+  function catHeader(label,items){
+    return items.length?'<div style="padding:6px 14px;background:var(--md-surface-variant);font-size:9px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.6px;">'+label+'</div>':'';
+  }
+
+  var vaxSummary='<div style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;">'
+    +'<div style="display:flex;align-items:center;gap:8px;">'
+    +(alertVax.length?'<div style="width:8px;height:8px;border-radius:50%;background:var(--md-warning);flex-shrink:0;"></div>':'<div style="width:8px;height:8px;border-radius:50%;background:var(--md-secondary);flex-shrink:0;"></div>')
+    +'<div>'
+    +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+totalVax+' immunizations</div>'
+    +'<div style="font-size:11px;color:'+(alertVax.length?'var(--md-warning)':'var(--md-on-surface-dim)')+';">'+(alertVax.length?alertVax.length+' due soon · ':'All current · ')+( totalVax-alertVax.length)+' up to date</div></div></div>'
+    +'<button onclick="if(!S.expandedVax)S.expandedVax={};S.expandedVax[\''+h.id+'\']='+(expandedVax?'false':'true')+';rerender()" style="background:none;border:none;cursor:pointer;padding:4px;">'+msiIcon(expandedVax?'expand_less':'expand_more',20,'var(--md-on-surface-dim)')+'</button>'
+    +'</div>';
+
+  var vaxRows=expandedVax
+    ?(catHeader('Core vaccines',vaxData.core)+vaxData.core.map(function(v,i){return vaxRow(v,i===vaxData.core.length-1&&!vaxData.riskBased.length);}).join('')
+     +catHeader('Risk-based',vaxData.riskBased)+vaxData.riskBased.map(function(v,i){return vaxRow(v,i===vaxData.riskBased.length-1);}).join(''))
+    :allVax.slice(0,3).map(function(v,i){return vaxRow(v,i===Math.min(allVax.length,3)-1);}).join('');
+
+  var immunizationsSection='<div style="margin-bottom:14px;">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
+    +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">Immunizations</div>'
+    +(canGenDoc?'<button onclick="generateHealthRecord(\''+h.id+'\');void 0" style="font-size:11px;font-weight:600;color:var(--md-primary);background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:3px;">'+msiIcon('description',14,'var(--md-primary)')+'Health record</button>':'')
+    +'</div>'
+    +'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);overflow:hidden;">'
+    +vaxSummary+vaxRows+'</div></div>';
+
+  // Vitals section
+  var vitalsSection=hh.vitals.length?'<div style="margin-bottom:14px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Latest vitals</div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:12px 14px;"><div style="font-size:11px;color:var(--md-on-surface-dim);margin-bottom:8px;">'+hh.vitals[0].date+'</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px;">'+[{l:'Heart rate',v:hh.vitals[0].HR+' bpm'},{l:'Resp. rate',v:hh.vitals[0].RR+' brpm'},{l:'Temp',v:hh.vitals[0].temp+'°F'},{l:'Gut sounds',v:hh.vitals[0].gut}].map(function(a){return '<div><div style="font-size:10px;color:var(--md-on-surface-dim);text-transform:uppercase;margin-bottom:1px;">'+a.l+'</div><div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">'+a.v+'</div></div>';}).join('')+'</div>'+(hh.vitals[0].notes?'<div style="font-size:12px;color:var(--md-on-surface-dim);font-style:italic;">'+hh.vitals[0].notes+'</div>':'')+'</div></div>':'';
+
+  // Exams section (vet-documented)
+  var examsSection=(hh.exams&&hh.exams.length)?'<div style="margin-bottom:14px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Exams</div>'
+    +hh.exams.map(function(e){return '<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:11px 14px;margin-bottom:7px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+e.type+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+e.date+'</div></div><div style="font-size:11px;color:var(--md-on-surface-dim);margin-bottom:4px;">'+e.vet+'</div><div style="font-size:12px;color:var(--md-on-surface-variant);font-style:italic;margin-bottom:4px;">'+e.findings+'</div>'+(e.treatment?'<div style="font-size:11px;color:var(--md-primary);">Rx: '+e.treatment+'</div>':'')+'</div>';}).join('')
+    +'</div>':'';
+
+  // Labs section
+  var labsSection=hh.labs&&hh.labs.length?'<div style="margin-bottom:14px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Lab tests</div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 14px;">'+hh.labs.map(function(l){return '<div style="font-size:13px;font-weight:600;color:var(--md-on-surface);">'+l.name+' — <span style="color:var(--md-secondary);">'+l.result+'</span></div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+l.date+' · '+l.lab+' · '+l.acc+'</div>';}).join('')+'</div></div>':'';
+
+  // Visit history
+  var visitsSection=hh.visits&&hh.visits.length?'<div><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Visit history</div>'+hh.visits.map(function(v){return '<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:11px 14px;margin-bottom:7px;"><div style="font-size:13px;font-weight:600;color:var(--md-on-surface);margin-bottom:2px;">'+v.type+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);margin-bottom:4px;">'+v.date+' · '+v.vet+'</div><div style="font-size:12px;color:var(--md-on-surface-variant);font-style:italic;">'+v.outcome+'</div></div>';}).join('')+'</div>':'';
+
+  var healthTab=healthAddSheet+healthFab+'<div style="padding:14px;">'+reproHistorySection+breedingSection+ultrasoundSection+vitalsSection+immunizationsSection+examsSection+labsSection+visitsSection+'</div>';
+  overviewTab=overviewTab+foalSection+'</div>';
 
   var sessions=(HORSE_TRAINING_HISTORY[h.id]||[]);
 
@@ -9816,7 +9860,19 @@ function rHorseDetail(h){
 
 
   const content={overview:overviewTab,pedigree:pedigreeTab,health:healthTab,training:trainingTab,competitions:competitionsTab,connections:connectionsTab,media:mediaTab,feed:feedTab}[tab]||overviewTab;
-  return logSheet+trainingFab+feedFab+'<div style="display:flex;flex-direction:column;height:100%;">'+hero+tabBar+'<div id="horse-tab-body" style="flex:1;overflow-y:auto;">'+content+'</div></div>';
+
+  // ── Global "Record foaling" overlay (works from any tab, e.g. Overview) ─────
+  var overviewFoalSheet='';
+  if(window._foalFormOpen&&window._foalFormOpen[h.id]&&typeof foalAddForm!=='undefined'&&!(S.horseTab==='health'&&S.healthAddSheetOpen)){
+    overviewFoalSheet='<div onclick="window._foalFormOpen[\''+h.id+'\']=false;rerender()" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:400;display:flex;flex-direction:column;justify-content:flex-end;">'
+      +'<div onclick="event.stopPropagation()" style="background:var(--md-surface);border-radius:20px 20px 0 0;padding:16px;max-height:85vh;overflow-y:auto;">'
+        +'<div style="width:36px;height:4px;border-radius:2px;background:var(--md-outline-variant);margin:0 auto 14px;"></div>'
+        +foalAddForm
+      +'</div>'
+    +'</div>';
+  }
+
+  return overviewFoalSheet+logSheet+trainingFab+feedFab+'<div style="display:flex;flex-direction:column;height:100%;">'+hero+tabBar+'<div id="horse-tab-body" style="flex:1;overflow-y:auto;">'+content+'</div></div>';
 }
 
 // --- BARN PROFESSIONALS DATA ---------------------------------
