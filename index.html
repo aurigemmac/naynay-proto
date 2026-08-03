@@ -382,6 +382,7 @@ const ROLE_COMBOS=[
   {label:'Breeder',                  roles:['breeder'],                       subtitle:'Broodmare breeder',                name:'Patricia',  face:'face_5',  color:'var(--md-tertiary)'},
   {label:'Vet',                      roles:['vet'],                           subtitle:'Visiting veterinarian',            name:'Dr. Matthew',face:'face_6', color:'var(--md-secondary)'},
   {label:'Owner',                    roles:['owner'],                         subtitle:'Horse owner',                      name:'Emily',     face:'face_2',  color:'#C04A6A'},
+  {label:'New Owner',                roles:['owner'],                         subtitle:'First-time owner (onboarding demo)',name:'Nadia',    face:'face_2',  color:'#C04A6A', isNewOwnerDemo:true},
   {label:'Owner + Trainer',          roles:['owner','trainer'],               subtitle:'Competing owner-rider',            name:'Riley',     face:'face_2',  color:'#C04A6A'},
   {label:'Owner + Manager',          roles:['owner','manager'],               subtitle:'Owner who runs the barn',          name:'Dana',      face:'face_2',  color:'#C04A6A'},
   {label:'Owner + Vet',              roles:['owner','vet'],                   subtitle:'Owner who is also a vet',          name:'Dr. Claire',face:'face_2',  color:'#C04A6A'},
@@ -406,6 +407,19 @@ function selectRoleCombo(idx){
   window.vitalsState={horseId:'',date:'',time:'',activeField:null,hr:'',rr:'',temp:'',bcs:'',hg:'',bl:'',notes:''};
   window.regimenState={horseId:'',type:'Flat',duration:45,intensity:3,days:[],timesPerDay:1,times:[''],dateFrom:'',dateTo:'',submitted:false};
   window.reqApptState={horseId:'',proType:'',proId:'',description:'',preferredDate:'',preferredTime:'',submitted:false};
+  // ── "New Owner" demo persona ─────────────────────────────────────────────
+  // This combo represents a brand-new owner who just finished onboarding:
+  // zero horses, zero appointments, zero events. Rather than mutating the
+  // real OWNER_HORSES/OWNER_APPOINTMENTS/OWNER_EVENTS consts (which would
+  // corrupt the data for the regular "Owner" (Emily) persona on switch-back),
+  // S.newOwnerDemo is checked by ownerScopedHorses()/ownerScopedAppointments()/
+  // ownerScopedEvents() (see definitions near OWNER_HORSES) to substitute
+  // empty arrays for display purposes only, everywhere those are used
+  // (rOwnerHome, rOwnerHorses, rEventPassSection). It also surfaces the
+  // first-login welcome bottom sheet, same as a real freshly-onboarded owner
+  // would see.
+  S.newOwnerDemo=!!combo.isNewOwnerDemo;
+  if(S.newOwnerDemo){S.showWelcomeSheet=true;S.welcomeSeen=false;}
   rerender();
 }
 
@@ -485,6 +499,19 @@ let trainerServices=[
   {id:'ts1', name:'Training Session',         category:'Regimens',  subCategory:'Training', duration:60,  price:150,  addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true,  roles:['Trainer']},
 ];
 
+let breederServices=[
+  {id:'bs1',name:'Breeding Consultation',              category:'Consultation',subCategory:'Consult',   duration:45,  price:100, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true,  roles:['Breeder']},
+  {id:'bs2',name:'Live Cover Breeding',                category:'Breeding',    subCategory:'Live Cover',duration:null,price:500, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:false, roles:['Breeder']},
+  {id:'bs3',name:'Artificial Insemination Coordination',category:'Breeding',   subCategory:'AI',        duration:60,  price:350, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:false, roles:['Breeder']},
+  {id:'bs4',name:'Mare Cycle Monitoring',              category:'Breeding',    subCategory:'Cycle Check',duration:30, price:75,  addonPrice:null, canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:true,  roles:['Breeder']},
+  {id:'bs5',name:'Reproductive Ultrasound',            category:'Breeding',    subCategory:'Ultrasound',duration:30,  price:120, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true,  roles:['Breeder']},
+  {id:'bs6',name:'Newborn Foal Exam',                  category:'Foaling',     subCategory:'Exam',      duration:45,  price:150, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true,  roles:['Breeder']},
+  {id:'bs7',name:'Foaling Attendant (overnight)',      category:'Foaling',     subCategory:'Foal Watch',duration:null,price:200, addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Breeder']},
+  {id:'bs8',name:'Stallion Booking Coordination',      category:'Breeding',    subCategory:'Booking',   duration:null,price:50,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Breeder']},
+  {id:'bs9',name:'Pedigree & Bloodline Consultation',  category:'Consultation',subCategory:'Pedigree',  duration:30,  price:85,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Breeder']},
+  {id:'bs10',name:'Weanling/Yearling Evaluation',      category:'Consultation',subCategory:'Evaluation',duration:45,  price:100, addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Breeder']},
+];
+
 let mgrServices=[
   {id:'ms_board_full',    name:'Full Board',              category:'Board',    subCategory:'Full Care',    duration:null, price:1500, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:false, roles:['Manager']},
   {id:'ms_board_partial', name:'Partial Board',           category:'Board',    subCategory:'Partial',      duration:null, price:900,  addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:false, roles:['Manager']},
@@ -549,6 +576,12 @@ const BARNS={
   'sunrise':{id:'sunrise',name:'Sunrise Stables',   location:'Greenwich, CT'},
   'ridgeline':{id:'ridgeline',name:'Ridgeline Equestrian',location:'Bedford, NY'},
   'blueridge':{id:'blueridge',name:'Blue Ridge Farm',location:'Katonah, NY'},
+  // Placeholder for horses an owner creates before associating them with any
+  // barn (barn/stall assignment is a manager-only step during horse
+  // creation — see rAddHorse()). Having a real BARNS entry here means every
+  // place in the app that does BARNS[h.barn].name etc. stays safe instead of
+  // needing a null-check for this specific case.
+  'unassigned':{id:'unassigned',name:'Not yet assigned',location:''},
 };
 
 const HORSES_ALL=[
@@ -989,7 +1022,7 @@ let S={
   trainingAssignments:{[TODAY]:todayTrainingAssign},
   mgrView:'home',assignDate:TODAY,expandedAssign:null,expandedTrainingAssign:null,
   mgrAssignTab:'tasks',
-  selectedHorse:null,mgrInviteSheet:null,scheduleVisitSheet:null,vetApptSheet:null,healthAddSheetOpen:false,ingestLogSheet:null,ingestAddSheetOpen:false,showWelcomeSheet:false,welcomeSeen:false,trainingView:'list',trainingFabOpen:false,trainingCalMonth:null,trainingLogSheet:null,taskFilter:'all',
+  selectedHorse:null,mgrInviteSheet:null,scheduleVisitSheet:null,vetApptSheet:null,healthAddSheetOpen:false,ingestLogSheet:null,ingestAddSheetOpen:false,showWelcomeSheet:false,welcomeSeen:false,newOwnerDemo:false,quickActionsDrawerOpen:false,trainingView:'list',trainingFabOpen:false,trainingCalMonth:null,trainingLogSheet:null,taskFilter:'all',
   vetSignedIn:false,vetView:'confirmation',vetSetupTab:'account',trainerSetupTab:'account',mgrSetupTab:'tasks',staffSetupTab:'account',ownerSetupTab:'account',taskScheduleExpanded:false,editingTaskId:null,aiScheduleDismissed:{},aiScheduleAdded:{},
   vetConfirmPage:false,vetEditMode:false,prevVetView:null,
   feedCardExpanded:false,feedCardHorse:null,
@@ -2606,7 +2639,8 @@ function getContent(isVet,isMgr,showHorse){
     if(S.quickAction==='request-barn-visit')return rScheduleVisitForm();
     if(S.quickAction==='create-regimen')return rCreateRegimenForm();
     if(S.quickAction)return rQuickActionForm(S.quickAction);
-    if(S.activeTab==='horses')return S.showAddHorse?rAddHorse():rHorseList();
+    if(S.showAddHorse)return rAddHorse();
+    if(S.activeTab==='horses')return rHorseList();
     if(S.activeTab==='messages')return rMessages('trainer');
     if(S.activeTab==='setup')return rTrainerSetup();
     return S.role==='breeder'?rBreederHome():rTrainerHome();
@@ -2617,7 +2651,8 @@ function getContent(isVet,isMgr,showHorse){
     if(S.ownerEventPass)return rEventPass(S.ownerEventPass);
     if(S.quickAction==='request-appointment')return rRequestAppointmentForm();
     if(S.quickAction)return rQuickActionForm(S.quickAction);
-    if(S.activeTab==='horses')return S.showAddHorse?rAddHorse():rHorseList();
+    if(S.showAddHorse)return rAddHorse();
+    if(S.activeTab==='horses')return rHorseList();
     if(S.activeTab==='messages')return rMessages('owner');
     if(S.activeTab==='setup')return rOwnerSetup();
     return rOwnerHome();
@@ -2626,7 +2661,8 @@ function getContent(isVet,isMgr,showHorse){
   if(S.quickAction==='request-barn-visit')return rScheduleVisitForm();
   if(S.quickAction==='document-observation')return rObservationForm();
   if(S.quickAction)return rQuickActionForm(S.quickAction);
-  if(S.activeTab==='horses')return S.showAddHorse?rAddHorse():rHorseList();if(S.activeTab==='messages')return rMessages(S.role);
+  if(S.showAddHorse)return rAddHorse();
+    if(S.activeTab==='horses')return rHorseList();if(S.activeTab==='messages')return rMessages(S.role);
   if(isMgr){if(S.activeTab==='setup')return rMgrSetup();if(S.mgrView==='assignments')return rAssignments();return rMgrHome();}
   if(S.activeTab==='setup')return rStaffSetup();
   return rStaff();
@@ -3689,12 +3725,16 @@ function rServicesTab(){
     Medical:{color:'var(--md-error)',bg:'var(--md-error-container)'},
     Facility:{color:'var(--md-on-surface-dim)',bg:'var(--md-surface-variant)'},
     Handling:{color:'var(--md-on-surface-dim)',bg:'var(--md-surface-variant)'},
+    Breeding:{color:'var(--md-tertiary)',bg:'var(--md-tertiary-container)'},
+    Foaling:{color:'var(--md-secondary)',bg:'var(--md-secondary-container)'},
+    Consultation:{color:'var(--md-primary)',bg:'var(--md-primary-container)'},
     Farrier:{color:'var(--md-warning)',bg:'var(--md-warning-container)'},
     Dental:{color:'var(--md-error)',bg:'var(--md-error-container)'},
     Wellness:{color:'var(--md-secondary)',bg:'var(--md-secondary-container)'},
   };
 
-  var ownSvcs=(anyRole('trainer')||anyRole('breeder'))&&!anyRole('vet')?trainerServices
+  var ownSvcs=anyRole('breeder')&&!anyRole('vet')&&!anyRole('trainer')?breederServices
+    :anyRole('trainer')&&!anyRole('vet')?trainerServices
     :anyRole('manager')&&!anyRole('vet')&&!anyRole('trainer')?mgrServices
     :vetServices;
 
@@ -4100,16 +4140,33 @@ function quickActionsBar(role){
   var activeRoles=S.roles||[role];
   const allowed=Object.values(QUICK_ACTIONS).filter(a=>a.roles.some(function(r){return activeRoles.includes(r);}));
   if(!allowed.length)return '';
+  const open=!!S.quickActionsDrawerOpen;
   const cols=allowed.length<=2?allowed.length:2;
-  return `<div style="margin-bottom:14px;">
-    <div style="font-size:12px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;">Quick actions</div>
+  const toggleJs="S.quickActionsDrawerOpen=!S.quickActionsDrawerOpen;rerender()";
+  // Collapsed peek: a slim handle bar, tap to expand.
+  const collapsedBar=`<div onclick="${toggleJs}" style="position:fixed;left:12px;right:12px;bottom:80px;z-index:150;background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:16px;box-shadow:0 -2px 14px rgba(0,0,0,0.14);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+    <span style="font-size:12px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.4px;">Quick actions</span>
+    ${msiIcon('keyboard_arrow_up',20,'var(--md-on-surface-dim)')}
+  </div>`;
+  // Expanded panel: header + grid, tap the handle (or header) to collapse again.
+  const expandedPanel=`<div style="position:fixed;left:0;right:0;bottom:64px;z-index:150;background:var(--md-surface);border-top:1.5px solid var(--md-outline-variant);border-radius:18px 18px 0 0;box-shadow:0 -4px 20px rgba(0,0,0,0.18);padding:10px 14px 16px;max-height:52vh;overflow-y:auto;">
+    <div onclick="${toggleJs}" style="display:flex;flex-direction:column;align-items:center;cursor:pointer;padding-bottom:8px;">
+      <div style="width:36px;height:4px;border-radius:2px;background:var(--md-outline-variant);margin-bottom:10px;"></div>
+      <div style="width:100%;display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:12px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.4px;">Quick actions</span>
+        ${msiIcon('keyboard_arrow_down',20,'var(--md-on-surface-dim)')}
+      </div>
+    </div>
     <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:8px;">
-      ${allowed.map(a=>`<button onclick="S.quickAction='${a.id}';rerender()" style="font-family:'DM Sans',sans-serif;background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:12px;padding:12px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;gap:7px;">
+      ${allowed.map(a=>`<button onclick="S.quickActionsDrawerOpen=false;S.quickAction='${a.id}';rerender()" style="font-family:'DM Sans',sans-serif;background:var(--md-surface-variant);border:1.5px solid var(--md-outline-variant);border-radius:12px;padding:12px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;gap:7px;">
         <div style="width:34px;height:34px;border-radius:9px;background:${a.bg};display:flex;align-items:center;justify-content:center;color:${a.color};">${a.icon}</div>
         <span style="font-size:12px;font-weight:700;color:var(--md-on-surface);text-align:left;line-height:1.3;">${a.label}</span>
       </button>`).join('')}
     </div>
   </div>`;
+  // Backdrop while expanded, so tapping outside collapses it (does not block scrolling of the peek itself).
+  const backdrop=open?`<div onclick="${toggleJs}" style="position:fixed;inset:0;z-index:149;background:rgba(0,0,0,0.25);"></div>`:'';
+  return backdrop+(open?expandedPanel:collapsedBar);
 }
 
 // --- VITALS FORM ---------------------------------------------
@@ -5775,11 +5832,11 @@ function rVaxForm(){
 // --- SHARED HORSE/MESSAGES/SETUP ------------------------------
 // ── Add Horse Form ────────────────────────────────────────────────────────────
 if(!window._addHorseState) window._addHorseState={
-  name:'',breed:'',color:'',age:'',sex:'Gelding',discipline:'',level:'',
+  name:'',registeredName:'',breed:'',mixedBreed:false,secondaryBreed:'',color:'',
+  birthYear:'',birthMonth:'',birthDay:'',sex:'Gelding',discipline:'',level:'',
   barn:'sunrise',stall:'',photo:'',
-  ownerName:'',ownerEmail:'',ownerShare:'Full',
-  vetName:'',trainerName:'',
-  notes:'',step:1,submitted:false,
+  purchaseDate:'',heightHH:'',microchip:'',markings:[],
+  notes:'',step:1,submitted:false,showAdditional:false,
   horseOwnership:'barn',createdId:null,becameOwner:false
 };
 
@@ -5788,11 +5845,10 @@ function rAddHorse(){
   var st=window._addHorseState;
   var BREEDS=['Warmblood','Thoroughbred','Quarter Horse','Arabian','Friesian','Hanoverian','Dutch Warmblood','Oldenburg','Trakehner','Paint','Appaloosa','Morgan','Tennessee Walker','Mustang','Standardbred','Irish Sport Horse','Cleveland Bay','Andalusian','Lipizzaner','Other'];
   var COLORS=['Bay','Dark Bay','Black','Chestnut','Gray','Dapple Gray','Cremello','Palomino','Buckskin','Roan','Blue Roan','Dun','Pinto','Tobiano','Skewbald','Other'];
-  var SEXES=['Gelding','Stallion','Mare','Colt','Filly'];
   var DISCIPLINES=['Hunter/Jumper','Dressage','Eventing','Western Pleasure','Trail','Reining','Endurance','Polo','Driving','Breeding','Trail/Western','Other'];
   var LEVELS=['Green','Pre-green','Beginner Novice','Novice','Training Level','First Level','Second Level','Third Level','Amateur','Open','Children\'s','Short stirrup','Modified','PSG','Other'];
-  var SHARES=['Full','Half-lease','Training lease','Co-owner','Syndicate'];
-  var BARNS_LIST=Object.values(BARNS);
+  var MARKINGS_LIST=['Blaze','Star','Snip','Stripe','Bald Face','Sock(s)','Stocking(s)','Coronet','Ermine spots','None'];
+  var BARNS_LIST=Object.values(BARNS).filter(function(b){return b.id!=='unassigned';});
 
   // ── Current persona (for "My Horse" ownership assignment) ───────────────────
   var personaMatch=ROLE_COMBOS.find(function(c){return c.roles.length===1&&c.roles[0]===S.role;});
@@ -5800,10 +5856,64 @@ function rAddHorse(){
   var currentPersonaUserId='owner-'+currentPersonaName.toLowerCase().replace(/[^a-z]/g,'-');
   var isOwnerRole=(S.role==='owner');
   var mineMode=isOwnerRole||st.horseOwnership==='mine';
+  // Barn + stall assignment is a barn-management action, not part of an
+  // owner's "register my horse" flow — see the plan discussion this was
+  // built from. Only shown/settable when someone OTHER than the horse's
+  // owner (i.e. a manager or other barn-affiliated professional adding a
+  // "Barn Horse") is doing the creating.
+  var canAssignBarn=!mineMode;
 
-  function sel(label,key,opts,val){
+  // ── AGE-BRACKET SEX LOGIC (documented for future readers) ───────────────────
+  // Default sex is always 'Gelding' until the user changes it — geldings are
+  // the most common single category across a barn population, so it's a
+  // reasonable neutral default that never needs remapping (see below).
+  //
+  // The other two sex options are age-dependent TERMINOLOGY for the same
+  // underlying intact-male / female distinction:
+  //   - age < 4 years  -> 'Colt' (intact male) / 'Filly' (female)
+  //   - age >= 4 years, or no birth date given -> 'Stallion' / 'Mare'
+  // 4 years is the conventional horse-industry cutoff between "young stock"
+  // and adult terminology. If only a birth YEAR is supplied (no month/day),
+  // age is computed assuming Jan 1 of that year, per the product spec this
+  // was built from.
+  //
+  // When the computed bracket changes (e.g. the user edits the birth date
+  // and crosses the 4-year boundary), the CURRENTLY SELECTED sex is remapped
+  // to the equivalent term in the new bracket ONLY if it was one of the two
+  // age-dependent terms (Stallion<->Colt, Mare<->Filly). 'Gelding' is never
+  // touched by a bracket change, since gelding status has nothing to do with
+  // age. This is a relabeling of an already-made choice, not a silent
+  // override of a value the user explicitly picked outside that pair.
+  function computeAgeYears(){
+    if(!st.birthYear) return null;
+    var y=parseInt(st.birthYear,10); if(!y) return null;
+    var m=st.birthMonth?parseInt(st.birthMonth,10):1;
+    var d=st.birthDay?parseInt(st.birthDay,10):1;
+    var birth=new Date(y,m-1,d);
+    var today=new Date('2026-08-03'); // app's current date
+    var age=today.getFullYear()-birth.getFullYear();
+    var hadBirthdayThisYear=(today.getMonth()>birth.getMonth())||(today.getMonth()===birth.getMonth()&&today.getDate()>=birth.getDate());
+    if(!hadBirthdayThisYear) age--;
+    return age;
+  }
+  function sexBracket(){var age=computeAgeYears();return (age!==null&&age<4)?'young':'adult';}
+  function sexOptionsForBracket(bracket){return bracket==='young'?['Colt','Filly','Gelding']:['Stallion','Mare','Gelding'];}
+  // Called from the birth-date oninput handlers to keep st.sex correctly
+  // labeled when the age bracket flips. Safe to call even if sex hasn't
+  // been touched yet (defaults to Gelding, which this never changes).
+  window._remapSexForBracket=function(){
+    var bracket=sexBracket();
+    var map={Stallion:'Colt',Colt:'Stallion',Mare:'Filly',Filly:'Mare'};
+    if(bracket==='young'&&(st.sex==='Stallion'||st.sex==='Mare')) st.sex=map[st.sex];
+    else if(bracket==='adult'&&(st.sex==='Colt'||st.sex==='Filly')) st.sex=map[st.sex];
+  };
+  var currentBracket=sexBracket();
+  var sexOptions=sexOptionsForBracket(currentBracket);
+  if(!st.sex) st.sex='Gelding';
+
+  function sel(label,key,opts,val,onchangeExtra){
     return '<div style="margin-bottom:10px;"><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">'+label+'</label>'
-      +'<select oninput="window._addHorseState.'+key+'=this.value" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;">'
+      +'<select oninput="window._addHorseState.'+key+'=this.value;'+(onchangeExtra||'')+'rerender()" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;">'
       +opts.map(function(o){return '<option'+(o===val?' selected':'')+'>'+o+'</option>';}).join('')
       +'</select></div>';
   }
@@ -5812,24 +5922,19 @@ function rAddHorse(){
       +'<input type="'+(type||'text')+'" value="'+val+'" placeholder="'+(ph||'')+'" oninput="window._addHorseState.'+key+'=this.value" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>';
   }
   function row2(a,b){return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'+a+b+'</div>';}
+  function row3(a,b,c){return '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">'+a+b+c+'</div>';}
   function sectionHd(label){
     return '<div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;margin:16px 0 10px;padding-bottom:6px;border-bottom:1.5px solid var(--md-primary)33;">'+label+'</div>';
   }
 
-  var resetState="window._addHorseState={name:'',breed:'',color:'',age:'',sex:'Gelding',discipline:'',level:'',barn:'sunrise',stall:'',photo:'',ownerName:'',ownerEmail:'',ownerShare:'Full',vetName:'',trainerName:'',notes:'',step:1,submitted:false,horseOwnership:'barn',createdId:null,becameOwner:false};";
+  var resetState="window._addHorseState={name:'',registeredName:'',breed:'',mixedBreed:false,secondaryBreed:'',color:'',birthYear:'',birthMonth:'',birthDay:'',sex:'Gelding',discipline:'',level:'',barn:'sunrise',stall:'',photo:'',purchaseDate:'',heightHH:'',microchip:'',markings:[],notes:'',step:1,submitted:false,showAdditional:false,horseOwnership:'barn',createdId:null,becameOwner:false};";
 
-  if(st.submitted){
-    return '<div style="padding:14px;">'
-      +'<div style="text-align:center;padding:40px 20px;">'
-      +'<div style="width:56px;height:56px;border-radius:50%;background:var(--md-primary-container);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">'+msiIcon('check_circle',30,'var(--md-primary)')+'</div>'
-      +'<div style="font-size:18px;font-weight:700;color:var(--md-on-surface);margin-bottom:6px;">'+st.name+' added</div>'
-      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:'+(st.becameOwner?'14px':'24px')+';">Horse profile created. You can now add health records, training logs, and connections.</div>'
-      +(st.becameOwner?'<div style="background:var(--md-primary-container);border-radius:12px;padding:12px 16px;margin-bottom:24px;display:flex;align-items:center;gap:10px;text-align:left;">'+msiIcon('favorite',20,'var(--md-primary)')+'<div style="font-size:13px;color:var(--md-on-surface);"><strong>You\'re now also an Owner!</strong><br/>Switch roles anytime from your profile.</div></div>':'')
-      +'<button onclick="'+resetState+'S.showAddHorse=false;rerender()" style="background:var(--md-primary);color:#fff;border:none;border-radius:var(--md-shape-md);padding:12px 28px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Back to horses</button>'
-      +'</div></div>';
-  }
+  // ── Basic (minimum required + visible-optional) ──────────────────────────────
+  var currentYear=2026;
+  var yearOptions=['']; for(var yy=currentYear;yy>=currentYear-30;yy--) yearOptions.push(String(yy));
+  var monthOptions=['','01','02','03','04','05','06','07','08','09','10','11','12'];
+  var dayOptions=['']; for(var dd=1;dd<=31;dd++) dayOptions.push(dd<10?'0'+dd:String(dd));
 
-  // ── Barn Horse / My Horse toggle (non-owner roles only) ──────────────────────
   var ownershipToggle='';
   if(!isOwnerRole){
     ownershipToggle='<div style="display:flex;background:var(--md-surface-variant);border-radius:12px;padding:4px;margin-bottom:18px;">'
@@ -5838,44 +5943,63 @@ function rAddHorse(){
     +'</div>';
   }
 
-  var body='';
-  if(st.step===1){
-    body=(ownershipToggle)
-      +sectionHd('Basic information')
-      +inp('Horse name','name',st.name,'e.g. Apollo')
-      +row2(sel('Breed','breed',BREEDS,st.breed||'Warmblood'), sel('Color','color',COLORS,st.color||'Bay'))
-      +row2(inp('Age','age',st.age,'e.g. 7 years'), sel('Sex','sex',SEXES,st.sex))
-      +sectionHd('Barn & stall')
-      +sel('Barn','barn',BARNS_LIST.map(function(b){return b.name;}),BARNS_LIST.find(function(b){return b.id===st.barn;})?BARNS_LIST.find(function(b){return b.id===st.barn;}).name:BARNS_LIST[0].name)
-      +inp('Stall number / name','stall',st.stall,'e.g. A3')
-      +sectionHd('Discipline')
-      +row2(sel('Discipline','discipline',DISCIPLINES,st.discipline||'Hunter/Jumper'), sel('Level','level',LEVELS,st.level||'Green'))
-      +inp('Photo URL (optional)','photo',st.photo,'https://…');
-  } else if(st.step===2){
-    body=(mineMode
-        ?'<div style="background:var(--md-primary-container);border-radius:12px;padding:12px 14px;margin-bottom:6px;display:flex;align-items:center;gap:10px;">'+msiIcon('favorite',18,'var(--md-primary)')+'<div style="font-size:13px;color:var(--md-on-surface);">You\'ll be listed as the owner \u2014 <strong>'+currentPersonaName+'</strong></div></div>'
-        :sectionHd('Primary owner')
-          +inp('Owner name','ownerName',st.ownerName,'Full name')
-          +inp('Owner email','ownerEmail',st.ownerEmail,'email@example.com','email')
-          +sel('Ownership type','ownerShare',SHARES,st.ownerShare)
-      )
-      +sectionHd('Care team')
-      +inp('Veterinarian','vetName',st.vetName,'Dr. name or practice')
-      +inp('Trainer','trainerName',st.trainerName,'Trainer name')
-      +sectionHd('Staff notes')
-      +'<textarea oninput="window._addHorseState.notes=this.value" placeholder="Any notes about this horse for the barn team…" style="width:100%;min-height:80px;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;resize:vertical;">'+st.notes+'</textarea>';
-  }
+  var basicSection=sectionHd('Basic information')
+    +inp('Barn name','name',st.name,'e.g. Apollo')
+    +'<div style="margin-bottom:10px;"><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">Birth / foal date</label>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">'
+        +'<select oninput="window._addHorseState.birthYear=this.value;window._remapSexForBracket();rerender()" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 6px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;">'
+          +yearOptions.map(function(y){return '<option value="'+y+'"'+(y===st.birthYear?' selected':'')+'>'+(y||'Year')+'</option>';}).join('')
+        +'</select>'
+        +'<select oninput="window._addHorseState.birthMonth=this.value;window._remapSexForBracket();rerender()" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 6px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;">'
+          +monthOptions.map(function(mo){return '<option value="'+mo+'"'+(mo===st.birthMonth?' selected':'')+'>'+(mo||'Month')+'</option>';}).join('')
+        +'</select>'
+        +'<select oninput="window._addHorseState.birthDay=this.value;rerender()" style="width:100%;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 6px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;">'
+          +dayOptions.map(function(da){return '<option value="'+da+'"'+(da===st.birthDay?' selected':'')+'>'+(da||'Day')+'</option>';}).join('')
+        +'</select>'
+      +'</div>'
+      +(st.birthYear?'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:4px;">'+(computeAgeYears())+' years old'+(!st.birthMonth?' (assuming Jan 1)':'')+'</div>':'')
+    +'</div>'
+    +sel('Sex','sex',sexOptions,st.sex)
+    +row2(sel('Breed','breed',BREEDS,st.breed||''), sel('Color','color',COLORS,st.color||''))
+    +'<label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer;"><input type="checkbox" '+(st.mixedBreed?'checked':'')+' onchange="window._addHorseState.mixedBreed=this.checked;rerender()" style="width:16px;height:16px;accent-color:var(--md-primary);"/><span style="font-size:12px;color:var(--md-on-surface);">Mixed breed</span></label>'
+    // Second breed selector only appears once "Mixed breed" is checked —
+    // captures the second breed in the cross (e.g. Warmblood x Thoroughbred).
+    +(st.mixedBreed?sel('Secondary breed','secondaryBreed',BREEDS,st.secondaryBreed||''):'');
 
-  var stepPills='<div style="display:flex;gap:6px;margin-bottom:16px;">'
-    +['Horse details','Owner & care'].map(function(label,i){
-      var active=st.step===i+1;
-      return '<div style="display:flex;align-items:center;gap:5px;">'
-        +'<div style="width:20px;height:20px;border-radius:50%;background:'+(active?'var(--md-primary)':'var(--md-surface-variant)')+';color:'+(active?'#fff':'var(--md-on-surface-dim)')+';font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">'+(i+1)+'</div>'
-        +'<div style="font-size:12px;font-weight:'+(active?'700':'400')+';color:'+(active?'var(--md-on-surface)':'var(--md-on-surface-dim)')+';">'+label+'</div>'
-        +(i===0?'<div style="width:20px;height:1.5px;background:var(--md-outline-variant);margin:0 2px;"></div>':'')
-        +'</div>';
-    }).join('')
-    +'</div>';
+  // ── Additional details (collapsed by default) ────────────────────────────────
+  var markingsSummary=(st.markings&&st.markings.length&&st.markings[0]!=='None')?st.markings.join(', '):'No markings selected';
+  var additionalContent=sectionHd('Registration & history')
+    +inp('Registered name','registeredName',st.registeredName,'Full papers name')
+    +row2(inp('Purchase date','purchaseDate',st.purchaseDate,'MM/DD/YYYY','date'), inp('Microchip number','microchip',st.microchip,'15-digit chip #'))
+    +sectionHd('Physical characteristics')
+    +row2(inp('Height (hh)','heightHH',st.heightHH,'e.g. 16.2'), '')
+    +'<div style="margin-bottom:6px;"><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:6px;">Markings</label>'
+      +'<div style="font-size:12px;color:var(--md-on-surface-dim);margin-bottom:8px;">'+markingsSummary+'</div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:6px;">'
+        +MARKINGS_LIST.map(function(mk){
+          var checked=(st.markings||[]).includes(mk);
+          return '<button onclick="(function(){var arr=window._addHorseState.markings||[];var i=arr.indexOf(\''+mk+'\');if(i>=0)arr.splice(i,1);else{if(\''+mk+'\'===\'None\')arr=[];else{var ni=arr.indexOf(\'None\');if(ni>=0)arr.splice(ni,1);}arr.push(\''+mk+'\');}window._addHorseState.markings=arr;rerender();})()" style="padding:6px 12px;border-radius:20px;border:1.5px solid '+(checked?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(checked?'var(--md-primary-container)':'var(--md-surface)')+';color:'+(checked?'var(--md-primary)':'var(--md-on-surface-dim)')+';font-size:12px;font-weight:600;font-family:\'DM Sans\',sans-serif;cursor:pointer;">'+mk+'</button>';
+        }).join('')
+      +'</div>'
+    +'</div>'
+    +sectionHd('Discipline')
+    +row2(sel('Discipline','discipline',DISCIPLINES,st.discipline||''), sel('Level','level',LEVELS,st.level||''))
+    +sectionHd('Photo')
+    +inp('Photo URL','photo',st.photo,'https://…')
+    +(canAssignBarn
+      ?sectionHd('Barn &amp; stall')
+        +sel('Barn','barn',BARNS_LIST.map(function(b){return b.name;}),BARNS_LIST.find(function(b){return b.id===st.barn;})?BARNS_LIST.find(function(b){return b.id===st.barn;}).name:BARNS_LIST[0].name)
+        +inp('Stall number / name','stall',st.stall,'e.g. A3')
+      :'')
+    +sectionHd('Notes')
+    +'<textarea oninput="window._addHorseState.notes=this.value" placeholder="Any notes about this horse…" style="width:100%;min-height:70px;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;resize:vertical;">'+st.notes+'</textarea>';
+
+  var additionalToggle='<button onclick="window._addHorseState.showAdditional=!window._addHorseState.showAdditional;rerender()" style="width:100%;display:flex;align-items:center;justify-content:space-between;background:none;border:none;border-top:1.5px solid var(--md-outline-variant);padding:14px 2px;cursor:pointer;margin-top:6px;">'
+    +'<span style="font-size:13px;font-weight:700;color:var(--md-primary);">Additional details</span>'
+    +msiIcon(st.showAdditional?'keyboard_arrow_up':'keyboard_arrow_down',20,'var(--md-primary)')
+  +'</button>';
+
+  var body=ownershipToggle+basicSection+additionalToggle+(st.showAdditional?additionalContent:'');
 
   var submitJs="(function(){"
     +"var stx=window._addHorseState;if(!stx.name.trim())return;"
@@ -5883,24 +6007,24 @@ function rAddHorse(){
     +"var ownersArr=[];"
     +"var becameOwner=false;"
     +"if(mine){"
-      +"ownersArr=[{name:"+JSON.stringify(currentPersonaName)+",userId:"+JSON.stringify(currentPersonaUserId)+",share:'Full'}];"
+      +"ownersArr=[{name:"+JSON.stringify(currentPersonaName).replace(/"/g,'&quot;')+",userId:"+JSON.stringify(currentPersonaUserId).replace(/"/g,'&quot;')+",share:'Full'}];"
       +"if(S.roles.indexOf('owner')<0){S.roles.push('owner');becameOwner=true;}"
-    +"}else if(stx.ownerName){"
-      +"ownersArr=[{name:stx.ownerName,userId:'owner-'+stx.ownerName.toLowerCase().replace(/[^a-z]/g,'-'),share:stx.ownerShare||'Full'}];"
     +"}"
-    +"var barnObj=Object.values(BARNS).find(function(b){return b.id===stx.barn||b.name===stx.barn;});"
-    +"var barnId=barnObj?barnObj.id:'sunrise';"
+    // Barn horses (non-owner creator): owners stays blank — assigned later via Connections.
+    +"var barnId="+(canAssignBarn?"(function(){var b=Object.values(BARNS).find(function(bb){return bb.id===stx.barn||bb.name===stx.barn;});return b?b.id:'sunrise';})()":"'unassigned'")+";"
+    +"var birthDateISO=stx.birthYear?(stx.birthYear+'-'+(stx.birthMonth||'01')+'-'+(stx.birthDay||'01')):'';"
+    +"var ageLabel=stx.birthYear?((function(){var y=parseInt(stx.birthYear,10);var m=stx.birthMonth?parseInt(stx.birthMonth,10):1;var d=stx.birthDay?parseInt(stx.birthDay,10):1;var birth=new Date(y,m-1,d);var today=new Date('2026-08-03');var age=today.getFullYear()-birth.getFullYear();var had=(today.getMonth()>birth.getMonth())||(today.getMonth()===birth.getMonth()&&today.getDate()>=birth.getDate());if(!had)age--;return age+' years';})()):'';"
     +"var newId='horse_'+Date.now();"
-    +"HORSES_ALL.push({id:newId,photo:stx.photo||'',name:stx.name,breed:stx.breed||'Warmblood',color:stx.color||'Bay',age:stx.age||'',sex:stx.sex||'Gelding',barn:barnId,stall:stx.stall||'',owners:ownersArr,trainer:stx.trainerName||'',vet:stx.vetName||'',avatar:{bg:'#6A3A18',mane:'#2A1A08',sock:'#F5EDE0',marking:null},note:stx.notes||'',alerts:[]});"
+    +"HORSES_ALL.push({id:newId,photo:stx.photo||'',name:stx.name,registeredName:stx.registeredName||'',breed:(stx.mixedBreed?((stx.breed||'Warmblood')+(stx.secondaryBreed?' x '+stx.secondaryBreed:' Mix')):(stx.breed||'Warmblood')),color:stx.color||'Bay',age:ageLabel,birthDateISO:birthDateISO,sex:stx.sex||'Gelding',barn:barnId,stall:stx.stall||'',purchaseDate:stx.purchaseDate||'',heightHH:stx.heightHH||'',microchip:stx.microchip||'',markings:stx.markings||[],owners:ownersArr,trainer:'',vet:'',avatar:{bg:'#6A3A18',mane:'#2A1A08',sock:'#F5EDE0',marking:null},note:stx.notes||'',alerts:[]});"
     +"stx.submitted=true;stx.createdId=newId;stx.becameOwner=becameOwner;"
+    +"S.selectedHorse=newId;S.horseTab='connections';S.showAddHorse=false;"
+    +"showToast(stx.name+' added!','check_circle','success');"
+    +resetState
     +"rerender();"
   +"})()";
 
-  var footer='<div style="display:flex;gap:10px;margin-top:18px;">'
-    +(st.step>1?'<button onclick="window._addHorseState.step=1;rerender()" style="flex:1;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:var(--md-shape-md);padding:12px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface-dim);cursor:pointer;">Back</button>':'')
-    +(st.step===1
-      ?'<button onclick="if(!window._addHorseState.name.trim()){alert(\'Please enter a horse name\');return;}window._addHorseState.step=2;rerender()" style="flex:1;background:var(--md-primary);color:#fff;border:none;border-radius:var(--md-shape-md);padding:12px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Continue</button>'
-      :'<button onclick="'+submitJs+'" style="flex:1;background:var(--md-primary);color:#fff;border:none;border-radius:var(--md-shape-md);padding:12px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">'+msiIcon('check',16,'#fff')+'Add horse</button>')
+  var footer='<div style="margin-top:18px;">'
+    +'<button onclick="if(!window._addHorseState.name.trim()){alert(\'Please enter a barn name\');return;}'+submitJs+'" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:var(--md-shape-md);padding:13px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">'+msiIcon('check',16,'#fff')+'Create</button>'
     +'</div>';
 
   return '<div style="display:flex;align-items:center;gap:10px;padding:0 0 12px;border-bottom:1.5px solid var(--md-outline-variant);margin-bottom:16px;">'
@@ -5908,7 +6032,7 @@ function rAddHorse(){
     +'<div style="font-size:16px;font-weight:700;color:var(--md-on-surface);">Add a horse</div>'
     +'</div>'
     +'<div style="padding:0 0 20px;">'
-    +stepPills+body+footer
+    +body+footer
     +'</div>';
 }
 
@@ -6633,6 +6757,22 @@ const OWNER_HORSES=[
   {id:'rv',photo:'https://images.pexels.com/photos/52500/horse-herd-fog-nature-52500.jpeg?w=400&h=400&fit=crop',name:'Rivendell',age:'11 years',breed:'Hanoverian',color:'Dark Bay',sex:'Mare',note:'Post-colic recovery. Soaked hay 48 hrs.',avatar:{bg:'#3A1A06',mane:'#1A0800',sock:'#F5EDE0',marking:'star'}},
 ];
 
+// ── "New Owner" demo scoping ────────────────────────────────────────────────
+// When S.newOwnerDemo is true (see selectRoleCombo()'s "New Owner" combo),
+// every owner-facing surface should behave as if this is a brand-new owner
+// with nothing set up yet — zero horses, zero appointments, zero events —
+// so the Home page empty states (apptSection / rEventPassSection) and the
+// Horses tab render correctly for that scenario. We do NOT mutate the real
+// OWNER_HORSES/OWNER_APPOINTMENTS/OWNER_EVENTS consts to achieve this (that
+// would corrupt the data for the regular "Owner" (Emily) persona the next
+// time someone switches back to her). Instead, every render path that reads
+// owner data goes through these three functions instead of the consts
+// directly, so "New Owner" is empty everywhere consistently, and switching
+// back to "Owner" instantly restores Emily's real data with no side effects.
+function ownerScopedHorses(){return S.newOwnerDemo?[]:OWNER_HORSES;}
+function ownerScopedAppointments(){return S.newOwnerDemo?[]:OWNER_APPOINTMENTS;}
+function ownerScopedEvents(){return S.newOwnerDemo?[]:OWNER_EVENTS;}
+
 // Event passes for owner's horses
 const TRAINER_UPCOMING_COMPS=[
   {horseId:'h3',horseName:'Luna',     event:'Tri-State Spring Classic',         dateISO:'2026-03-28',dateStr:'Mar 28',classes:['Training Level Test 1','Training Level Test 2'],hasBagging:true},
@@ -6681,10 +6821,10 @@ const EVENT_PASSES=[
 function rRolePickerSheet(){
   const t=TH;
   // Single-role rows (index 0-5) shown as user cards
-  const singleCombos=ROLE_COMBOS.slice(0,6);
+  const singleCombos=ROLE_COMBOS.slice(0,7);
   // Demo onboarding trigger
   var obDemoBtn='<div style="padding:10px 16px;border-bottom:1px solid var(--md-outline-variant);"><button onclick="S.showRolePicker=false;window._ob=null;obStart(\'fresh\');" style="width:100%;background:var(--md-primary-container);color:var(--md-primary);border:1.5px solid var(--md-primary)33;border-radius:10px;padding:10px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">'+msiIcon('rocket_launch',15,'var(--md-primary)')+' Demo: New user onboarding</button></div>';
-  const multiCombos=ROLE_COMBOS.slice(6);
+  const multiCombos=ROLE_COMBOS.slice(7);
   const active=S.roleComboIdx;
 
   function userCard(combo,idx){
@@ -6731,7 +6871,7 @@ function rRolePickerSheet(){
 
   const userCards='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;">'+singleCombos.map(function(combo,idx){return userCard(combo,idx);}).join('')+'</div>';
   const multiSection='<div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;">Multi-role</div>'
-    +multiCombos.map(function(combo,idx){return multiRow(combo,idx+6);}).join('');
+    +multiCombos.map(function(combo,idx){return multiRow(combo,idx+7);}).join('');
 
   return '<div onclick="S.showRolePicker=false;rerender()" style="position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.4);"></div>'
     +'<div style="position:fixed;left:0;right:0;top:0;z-index:2001;background:var(--md-surface);border-radius:0 0 20px 20px;padding:14px 14px 18px;box-shadow:0 8px 32px rgba(0,0,0,0.18);max-height:90vh;overflow-y:auto;">'
@@ -7095,7 +7235,48 @@ function rMultiRoleHome(){
 
 function rEventPassSection(){
   const t=TH;
-  if(!OWNER_EVENTS.length) return '';
+  // ── EMPTY-STATE LOGIC ────────────────────────────────────────────────────
+  // Event Passes are generated once a horse is entered into a competition
+  // (tracked via the Competitions tab on that horse's profile). If there are
+  // no OWNER_EVENTS yet, there's nothing to show a pass for — instead of
+  // silently rendering nothing (the old behavior), explain what this card is
+  // for and route the owner to the right next step:
+  //   - No horses at all -> Add a horse (nothing to enter in a competition
+  //     without one)
+  //   - Exactly one horse -> deep-link straight to that horse's Competitions
+  //     tab (S.selectedHorse + S.horseTab='competitions')
+  //   - Multiple horses -> can't guess which one, so list them as tappable
+  //     rows, each deep-linking to that horse's Competitions tab
+  if(!ownerScopedEvents().length){
+    if(!ownerScopedHorses().length){
+      return '<div style="margin-bottom:14px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Events &amp; Event Passes</div>'
+        +'<div style="background:var(--md-surface-variant);border-radius:14px;padding:16px;text-align:center;">'
+        +msiIcon('confirmation_number',26,'var(--md-on-surface-dim)')
+        +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-top:8px;margin-bottom:4px;">No event passes yet</div>'
+        +'<div style="font-size:12px;color:var(--md-on-surface-dim);line-height:1.5;margin-bottom:12px;">Once you add a horse and enter them in a competition, their Event Pass will show up here.</div>'
+        +'<button onclick="S.showAddHorse=true;rerender()" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Add your first horse</button>'
+        +'</div></div>';
+    }
+    var singleHorse=ownerScopedHorses().length===1?ownerScopedHorses()[0]:null;
+    return '<div style="margin-bottom:14px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Events &amp; Event Passes</div>'
+      +'<div style="background:var(--md-surface-variant);border-radius:14px;padding:16px;text-align:center;">'
+      +msiIcon('confirmation_number',26,'var(--md-on-surface-dim)')
+      +'<div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-top:8px;margin-bottom:4px;">No event passes yet</div>'
+      +'<div style="font-size:12px;color:var(--md-on-surface-dim);line-height:1.5;margin-bottom:12px;">Enter a horse in a competition from their Competitions tab, and their Event Pass will show up here.</div>'
+      +(singleHorse
+        ?'<button onclick="S.selectedHorse=\''+singleHorse.id+'\';S.horseTab=\'competitions\';rerender()" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Go to '+singleHorse.name+'\u2019s Competitions tab</button>'
+        :'<div style="text-align:left;">'
+          +ownerScopedHorses().map(function(h){
+            return '<div onclick="S.selectedHorse=\''+h.id+'\';S.horseTab=\'competitions\';rerender()" style="display:flex;align-items:center;gap:9px;padding:9px 11px;background:var(--md-surface);border-radius:9px;margin-bottom:6px;cursor:pointer;">'
+              +horseAvatar(h,26)
+              +'<span style="font-size:13px;font-weight:600;color:var(--md-on-surface);flex:1;">'+h.name+'</span>'
+              +msiIcon('chevron_right',16,'var(--md-on-surface-dim)')
+            +'</div>';
+          }).join('')
+        +'</div>'
+      )
+      +'</div></div>';
+  }
   
   // Group events by name
   const groups={};
@@ -7157,9 +7338,10 @@ function rOwnerHome(){
   const unread=OWNER_NOTIFICATIONS.filter(n=>!n.read).length;
 
   // Header
+  const ownerPersonaName=(ROLE_COMBOS[S.roleComboIdx]&&ROLE_COMBOS[S.roleComboIdx].name)||'Emily';
   const header=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
     <div>
-      <div style="font-size:18px;font-weight:700;color:var(--md-on-surface);">Good morning, Emily</div>
+      <div style="font-size:18px;font-weight:700;color:var(--md-on-surface);">Good morning, ${ownerPersonaName}</div>
       <div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:1px;">Monday, Mar 16 · Sunrise Stables</div>
     </div>
     <div style="width:38px;height:38px;border-radius:50%;background:#C04A6A22;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class=\"msi\" style=\"font-size:30px;color:#C04A6A;line-height:1;\">face_2</span></div>
@@ -7167,9 +7349,48 @@ function rOwnerHome(){
 
 
   // Upcoming appointments
+  //
+  // ── EMPTY-STATE LOGIC (read before editing) ─────────────────────────────
+  // There are TWO distinct, non-overlapping ways an owner ends up with an
+  // appointment on the books, and this empty state must route to the right
+  // one(s) depending on what's actually available to the owner right now:
+  //
+  //   1) "Request an appointment" (S.quickAction='request-appointment' ->
+  //      rRequestAppointmentForm). The owner requests an appointment DIRECTLY
+  //      with a professional connected to one of their horses (that horse's
+  //      vet/trainer fields, or another pro connection). This has nothing to
+  //      do with barn scheduling — it's a direct owner<->pro request the pro
+  //      then confirms. Available any time the owner has >=1 horse.
+  //
+  //   2) "Book appointment for my horse" during a scheduled barn visit
+  //      (window.bookApptState + S.bookingVisitId, surfaced inside
+  //      visitCard() for BARN_VISITS entries with status==='confirmed').
+  //      This only exists when a professional has ALREADY scheduled a
+  //      confirmed visit to the barn — the owner is booking a slot WITHIN
+  //      that barn-level visit, not initiating contact with the pro
+  //      themselves. This UI already lives in the "Professionals visiting
+  //      your barn" section (ownerVisitSection, rendered below apptSection).
+  //      The empty state below does not duplicate that card; if any confirmed
+  //      barn visits exist it just points down to that section.
+  //
+  // So: CTA #1 requires a horse<->pro connection and is independent of barn
+  // scheduling. CTA #2 requires a confirmed barn-level visit and has nothing
+  // to do with whether the horse has its own connected pro. Do not conflate
+  // them or assume one replaces the other.
+  const ownerConfirmedVisits=S.newOwnerDemo?[]:BARN_VISITS.filter(function(v){return v.status==='confirmed';});
+  const apptEmptyState=`<div style="background:var(--md-surface-variant);border-radius:14px;padding:16px;text-align:center;">
+    ${msiIcon('event_available',26,'var(--md-on-surface-dim)')}
+    <div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-top:8px;margin-bottom:4px;">No upcoming appointments</div>
+    <div style="font-size:12px;color:var(--md-on-surface-dim);line-height:1.5;margin-bottom:12px;">${ownerScopedHorses().length?'Vet, farrier, dentist, and trainer visits for your horses will show up here once scheduled.':'Once you add a horse, appointments with their vet, farrier, dentist, or trainer will show up here.'}</div>
+    ${ownerScopedHorses().length
+      ? `<button onclick="S.quickAction='request-appointment';rerender()" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;margin-bottom:${ownerConfirmedVisits.length?'8px':'0'};">Request an appointment</button>`
+      + (ownerConfirmedVisits.length ? `<div style="font-size:11px;color:var(--md-on-surface-dim);">Or book a spot with a professional already visiting your barn below &darr;</div>` : `<div style="font-size:11px;color:var(--md-on-surface-dim);">You can also book a spot when a professional has a scheduled visit to your barn.</div>`)
+      : `<button onclick="S.showAddHorse=true;rerender()" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;">Add your first horse</button>`
+    }
+  </div>`;
   const apptSection=`<div style="margin-bottom:14px;">
     <div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Upcoming appointments</div>
-    ${OWNER_APPOINTMENTS.map(apt=>`<div onclick="openExamFromAppt(${JSON.stringify(apt).replace(/"/g,"'")})" style="background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:11px;padding:11px 13px;margin-bottom:7px;display:flex;align-items:center;gap:10px;cursor:pointer;">
+    ${ownerScopedAppointments().length ? ownerScopedAppointments().map(apt=>`<div onclick="openExamFromAppt(${JSON.stringify(apt).replace(/"/g,"'")})" style="background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:11px;padding:11px 13px;margin-bottom:7px;display:flex;align-items:center;gap:10px;cursor:pointer;">
       <div style="width:42px;height:42px;border-radius:10px;background:var(--md-primary-container);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;">
         <div style="font-size:9px;font-weight:700;color:var(--md-primary);line-height:1;">${apt.date.split(' ')[0]}</div>
         <div style="font-size:15px;font-weight:700;color:var(--md-primary);line-height:1;">${apt.date.split(' ')[1]}</div>
@@ -7179,13 +7400,14 @@ function rOwnerHome(){
         <div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:2px;">${apt.time} · ${apt.vet}</div>
       </div>
       <span class="msi" style="font-size:18px;color:var(--md-on-surface-dim);line-height:1;display:inline-block;user-select:none;vertical-align:middle;">chevron_right</span>
-    </div>`).join('')}
+    </div>`).join('') : apptEmptyState}
   </div>`;
 
-  // Events & Event Passes
+  
+// Events & Event Passes
   const eventsSection=rEventPassSection();
 
-  const ownerVisits=BARN_VISITS.filter(function(v){return v.status==='confirmed';});
+  const ownerVisits=S.newOwnerDemo?[]:BARN_VISITS.filter(function(v){return v.status==='confirmed';});
   const ownerVisitSection=ownerVisits.length?'<div style="margin-bottom:14px;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Professionals visiting your barn</div>'+ownerVisits.map(function(v){return visitCard(v,'owner');}).join('')+'</div>':'';
   return dateBanner()+header+ownerVisitSection+apptSection+eventsSection+quickActionsBar('owner');
 }
@@ -7194,8 +7416,8 @@ function rOwnerHorses(){
   const t=TH;
   function sc(sex){if(sex==='Mare'||sex==='Filly')return{bg:'var(--md-error-container)',color:'var(--md-error)'};return{bg:'var(--md-secondary-container)',color:'var(--md-secondary)'};}
   return `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-    <div><div style="font-size:16px;font-weight:700;color:var(--md-on-surface);">My horses</div><div style="font-size:11px;color:var(--md-on-surface-dim);">${OWNER_HORSES.length} horses</div></div>
-  </div>`+OWNER_HORSES.map(h=>{
+    <div><div style="font-size:16px;font-weight:700;color:var(--md-on-surface);">My horses</div><div style="font-size:11px;color:var(--md-on-surface-dim);">${ownerScopedHorses().length} horses</div></div>
+  </div>`+ownerScopedHorses().map(h=>{
     const s=sc(h.sex);
     const pass=EVENT_PASSES.find(p=>p.horseId===h.id);
     return `<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);margin-bottom:10px;overflow:hidden;">
@@ -9083,40 +9305,95 @@ function rHorseDetail(h){
       nayNay:true,
     });
   }).join('');
+  // No owner assigned yet — happens when a barn manager (or other
+  // barn-affiliated professional) creates a horse. Barn/stall assignment is
+  // a manager-only step during horse creation, and ownership is
+  // deliberately left blank at that point rather than guessed — the actual
+  // owner gets added here, on Connections, as a follow-up step.
+  if(!(h.owners||[]).length){
+    ownerCards=ctaCard('person','No owner assigned yet.','Add owner',"window._inviteState={open:true,name:'',role:'Owner',email:'',phone:''};rerender()");
+  }
+
+  // ── Empty-state CTA helper ───────────────────────────────────────────────
+  // Used for any of a horse's associations (barn, vet, trainer, owner) that
+  // is currently unset ("null" in spirit — h.barn==='unassigned', or an
+  // empty h.vet/h.trainer string). A horse fresh out of the Add Horse flow
+  // in "My Horse" mode has ALL of these blank except owners, by design (see
+  // rAddHorse()'s submitJs) — this is the intended next step for filling
+  // them in, not a bug to silently paper over with fallback/placeholder data.
+  function ctaCard(icon,message,btnLabel,btnAction){
+    return '<div style="background:var(--md-surface-variant);border-radius:12px;padding:14px;margin-bottom:10px;text-align:center;">'
+      +msiIcon(icon,20,'var(--md-on-surface-dim)')
+      +'<div style="font-size:12px;color:var(--md-on-surface-dim);margin:8px 0 10px;">'+message+'</div>'
+      +'<button onclick="'+btnAction+'" style="background:var(--md-primary);color:#fff;border:none;border-radius:9px;padding:9px 16px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">'+btnLabel+'</button>'
+    +'</div>';
+  }
 
   // ── Barn section ─────────────────────────────────────────────────────────
-  var barnCard=connCard({
-    face:'home',faceColor:'var(--md-primary)',faceBg:'var(--md-primary-container)',
-    name:barnData.name,role:'Barn · Manager: '+barnData.manager,
-    detail:barnData.address,email:barnData.email,phone:barnData.phone,
-    nayNay:barnData.nayNay,
-  });
+  // h.barn==='unassigned' is the sentinel set when an owner creates "My
+  // Horse" (barn assignment is a manager-only step during creation — see
+  // rAddHorse()). Show a "Join a barn" CTA instead of fabricating barn data.
+  var barnCard;
+  if(!h.barn||h.barn==='unassigned'){
+    barnCard=ctaCard('home','This horse isn\'t associated with a barn yet.','Join a barn',"window._barnJoinPromptHorseId='"+h.id+"';showToast('Barn search coming soon','home','info');");
+  } else if(h.barn==='sunrise'){
+    barnCard=connCard({
+      face:'home',faceColor:'var(--md-primary)',faceBg:'var(--md-primary-container)',
+      name:barnData.name,role:'Barn · Manager: '+barnData.manager,
+      detail:barnData.address,email:barnData.email,phone:barnData.phone,
+      nayNay:barnData.nayNay,
+    });
+  } else {
+    var realBarn=BARNS[h.barn];
+    barnCard=connCard({
+      face:'home',faceColor:'var(--md-primary)',faceBg:'var(--md-primary-container)',
+      name:realBarn?realBarn.name:h.barn,role:'Barn',
+      detail:realBarn?realBarn.location:null,email:null,phone:null,
+      nayNay:true,
+    });
+  }
 
   // ── Veterinarian section ─────────────────────────────────────────────────
-  var vetPro=BARN_PROFESSIONALS.find(function(p){return p.type==='Vet';});
-  var vetCard=vetPro?connCard({
-    face:vetPro.face||'face_6',faceColor:vetPro.color,faceBg:vetPro.bg,
-    name:vetPro.name,role:'Veterinarian',
-    detail:vetPro.nayNay?'Active on NayNay — records shared automatically':null,
-    email:vetPro.email||null,phone:vetPro.phone||null,
-    nayNay:vetPro.nayNay,
-    actionLabel:vetPro.nayNay?null:'Invite to NayNay',actionFn:"window._inviteState={open:true,name:'"+vetPro.name+"',role:'Veterinarian',email:'"+(vetPro.email||'')+"',phone:''};rerender()",
-  }):'';
+  // Only shows a card when THIS horse has h.vet set — previously this
+  // ignored h.vet entirely and always showed the barn's vet, which meant a
+  // horse with no vet connection still displayed one. Falls back to a CTA
+  // when h.vet is empty.
+  var vetCard;
+  if(!h.vet){
+    vetCard=ctaCard('medical_services','No veterinarian connected yet.','Invite a vet',"window._inviteState={open:true,name:'',role:'Veterinarian',email:'',phone:''};rerender()");
+  } else {
+    var vetPro=BARN_PROFESSIONALS.find(function(p){return p.type==='Vet'&&p.name===h.vet;});
+    vetCard=connCard({
+      face:vetPro?(vetPro.face||'face_6'):'face_6',faceColor:vetPro?vetPro.color:'var(--md-secondary)',faceBg:vetPro?vetPro.bg:'var(--md-secondary-container)',
+      name:h.vet,role:'Veterinarian',
+      detail:vetPro&&vetPro.nayNay?'Active on NayNay — records shared automatically':null,
+      email:vetPro?(vetPro.email||null):null,phone:vetPro?(vetPro.phone||null):null,
+      nayNay:vetPro?vetPro.nayNay:false,
+      actionLabel:(!vetPro||!vetPro.nayNay)?'Invite to NayNay':null,
+      actionFn:"window._inviteState={open:true,name:'"+h.vet+"',role:'Veterinarian',email:'"+(vetPro&&vetPro.email||'')+"',phone:''};rerender()",
+    });
+  }
 
   // ── Trainer section ───────────────────────────────────────────────────────
-  var trainerName=h.trainer||'Jordan M.';
-  var trainerPro=BARN_PROFESSIONALS.find(function(p){return p.type==='Trainer';});
-  var trainerCard=connCard({
-    face:trainerPro?trainerPro.face:'face_5',
-    faceColor:trainerPro?trainerPro.color:'var(--md-tertiary)',
-    faceBg:trainerPro?trainerPro.bg:'var(--md-tertiary-container)',
-    name:trainerName,role:'Trainer',
-    detail:trainerPro&&trainerPro.nayNay?'Active on NayNay — training logs shared':null,
-    email:trainerPro?trainerPro.email:null,phone:null,
-    nayNay:trainerPro?trainerPro.nayNay:false,
-    actionLabel:trainerPro&&!trainerPro.nayNay?'Invite to NayNay':null,
-    actionFn:"window._inviteState={open:true,name:'"+trainerName+"',role:'Trainer',email:'"+(trainerPro&&trainerPro.email||'')+"',phone:''};rerender()",
-  });
+  // Same fix as Vet — no more silent fallback to a hardcoded name when
+  // h.trainer is empty. Shows a CTA instead.
+  var trainerCard;
+  if(!h.trainer){
+    trainerCard=ctaCard('sports','No trainer connected yet.','Invite a trainer',"window._inviteState={open:true,name:'',role:'Trainer',email:'',phone:''};rerender()");
+  } else {
+    var trainerPro=BARN_PROFESSIONALS.find(function(p){return p.type==='Trainer'&&p.name===h.trainer;});
+    trainerCard=connCard({
+      face:trainerPro?trainerPro.face:'face_5',
+      faceColor:trainerPro?trainerPro.color:'var(--md-tertiary)',
+      faceBg:trainerPro?trainerPro.bg:'var(--md-tertiary-container)',
+      name:h.trainer,role:'Trainer',
+      detail:trainerPro&&trainerPro.nayNay?'Active on NayNay — training logs shared':null,
+      email:trainerPro?trainerPro.email:null,phone:null,
+      nayNay:trainerPro?trainerPro.nayNay:false,
+      actionLabel:(!trainerPro||!trainerPro.nayNay)?'Invite to NayNay':null,
+      actionFn:"window._inviteState={open:true,name:'"+h.trainer+"',role:'Trainer',email:'"+(trainerPro&&trainerPro.email||'')+"',phone:''};rerender()",
+    });
+  }
 
   // ── Other professionals ───────────────────────────────────────────────────
   var otherPros=BARN_PROFESSIONALS.filter(function(p){return p.type!=='Vet'&&p.type!=='Trainer';});
