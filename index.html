@@ -1022,7 +1022,7 @@ let S={
   trainingAssignments:{[TODAY]:todayTrainingAssign},
   mgrView:'home',assignDate:TODAY,expandedAssign:null,expandedTrainingAssign:null,
   mgrAssignTab:'tasks',
-  selectedHorse:null,mgrInviteSheet:null,scheduleVisitSheet:null,vetApptSheet:null,healthAddSheetOpen:false,ingestLogSheet:null,ingestAddSheetOpen:false,showWelcomeSheet:false,welcomeSeen:false,newOwnerDemo:false,quickActionsDrawerOpen:false,trainingView:'list',trainingFabOpen:false,trainingCalMonth:null,trainingLogSheet:null,taskFilter:'all',
+  selectedHorse:null,mgrInviteSheet:null,scheduleVisitSheet:null,vetApptSheet:null,healthAddSheetOpen:false,ingestLogSheet:null,ingestAddSheetOpen:false,showWelcomeSheet:false,welcomeSeen:false,newOwnerDemo:false,highlightApptCard:false,quickActionsDrawerOpen:false,trainingView:'list',trainingFabOpen:false,trainingCalMonth:null,trainingLogSheet:null,taskFilter:'all',
   vetSignedIn:false,vetView:'confirmation',vetSetupTab:'account',trainerSetupTab:'account',mgrSetupTab:'tasks',staffSetupTab:'account',ownerSetupTab:'account',taskScheduleExpanded:false,editingTaskId:null,aiScheduleDismissed:{},aiScheduleAdded:{},
   vetConfirmPage:false,vetEditMode:false,prevVetView:null,
   feedCardExpanded:false,feedCardHorse:null,
@@ -1218,7 +1218,7 @@ function bottomBar(isMgr,isVet){
   // Setup tab: shown for all roles
   return `<div style="background:var(--md-surface);border-top:1.5px solid var(--md-outline-variant);display:flex;padding:10px 0 14px;flex-shrink:0;">${tabs.map(tab=>`<div onclick="${tab.nav}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;opacity:${tab.on?1:0.4};">${ic(tab.ic,tab.on)}<span style="font-size:11px;font-weight:600;color:${tab.on?t.T:t.TX3};">${tab.l}</span></div>`).join('')}</div>`;
 }
-function navTo(tab){S.activeTab=tab;S.selectedHorse=null;S.horseTab='overview';S.quickAction=null;S.bookingVisitId=null;if(tab==='home'){S.mgrView='home';S.feedCardExpanded=false;S.feedCardHorse=null;}if(tab!=='messages')S.selectedThread=null;rerender();}
+function navTo(tab){S.activeTab=tab;S.selectedHorse=null;S.horseTab='overview';S.quickAction=null;S.bookingVisitId=null;if(tab!=='home')S.highlightApptCard=false;if(tab==='home'){S.mgrView='home';S.feedCardExpanded=false;S.feedCardHorse=null;}if(tab!=='messages')S.selectedThread=null;rerender();}
 
 function showToast(msg,icon,type){
   S.toast={msg:msg,icon:icon||'check_circle',type:type||'success',id:Date.now()};
@@ -5086,75 +5086,132 @@ if(!window.reqApptState) window.reqApptState={horseId:'',proType:'',proId:'',des
 function rRequestAppointmentForm(){
   const t=TH;
   const ra=window.reqApptState;
-  function resetState(){window.reqApptState={horseId:'',proType:'',proId:'',serviceId:'',description:'',preferredDate:'',preferredTime:'',submitted:false};S.quickAction=null;rerender();}
+  var currentPersonaName=(ROLE_COMBOS[S.roleComboIdx]&&ROLE_COMBOS[S.roleComboIdx].name)||'Sarah K.';
+  // The built-in "Owner" demo persona is internally identified as
+  // 'owner-sarah' throughout the app (see getHorsesForUser()'s owner
+  // branch) regardless of the display name shown in the switcher — matching
+  // that existing convention here rather than deriving a new, inconsistent
+  // id from the persona's display name.
+  var currentOwnerUserId='owner-sarah';
+
+  function freshState(){
+    return {horseId:'',lockHorse:false,proType:'',proId:'',lockPro:false,
+      serviceId:'',serviceCategory:'',description:'',preferredDate:'',preferredTime:'',
+      useNewCard:false,newCardNumber:'',newCardExpiry:'',newCardCVC:'',
+      submitted:false};
+  }
+  function resetState(){window.reqApptState=freshState();S.quickAction=null;rerender();}
+
   const backBtn='<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">'
-    +'<button onclick="window.reqApptState={horseId:\'\',proType:\'\',proId:\'\',serviceId:\'\',description:\'\',preferredDate:\'\',preferredTime:\'\',submitted:false};S.quickAction=null;rerender()" style="background:none;border:none;padding:4px;cursor:pointer;display:flex;">'+msiIcon('arrow_back',22,'var(--md-on-surface)')+'</button>'
+    +'<button onclick="window.reqApptState='+JSON.stringify(freshState()).replace(/"/g,'&quot;')+';S.quickAction=null;rerender()" style="background:none;border:none;padding:4px;cursor:pointer;display:flex;">'+msiIcon('arrow_back',22,'var(--md-on-surface)')+'</button>'
     +'<div style="flex:1;display:flex;align-items:center;gap:7px;"><div style="width:28px;height:28px;border-radius:7px;background:var(--md-warning-container);display:flex;align-items:center;justify-content:center;">'+msiIcon('event_note',16,'var(--md-warning)')+'</div>'
-    +'<span style="font-size:15px;font-weight:700;color:var(--md-on-surface);">Request Appointment</span></div></div>';
+    +'<span style="font-size:15px;font-weight:700;color:var(--md-on-surface);">Book Appointment</span></div></div>';
 
-  if(ra.submitted){
-    var pro2=BARN_PROFESSIONALS.find(function(p){return p.id===ra.proId;})||{name:ra.proType,type:ra.proType,nayNay:false};
-    var allSvcs=vetServices.concat(trainerServices);
-    var svcObj=ra.serviceId?allSvcs.find(function(sv){return sv.id===ra.serviceId;})||{name:ra.serviceId}:{name:ra.description||'Appointment'};
-    return backBtn+'<div style="background:var(--md-secondary-container);border:1.5px solid var(--md-secondary)44;border-radius:14px;padding:20px;text-align:center;margin-bottom:14px;">'
-      +'<svg width="36" height="36" viewBox="0 0 36 36" fill="none" style="margin:0 auto 10px;display:block;"><circle cx="18" cy="18" r="16" fill="var(--md-secondary)22" stroke="var(--md-secondary)" stroke-width="1.5"/><path d="M11 18l5 5 9-9" stroke="var(--md-secondary)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-      +'<div style="font-size:16px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Request sent!</div>'
-      +'<div style="font-size:13px;color:var(--md-on-surface-variant);">'+pro2.name+' · '+svcObj.name+'</div>'
-      +'<div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:3px;">'+(ra.preferredDate?ra.preferredDate+' · ':'')+( ra.preferredTime||'')+'</div></div>'
-      +(pro2.nayNay
-        ?'<div style="background:var(--md-primary-container);border:1.5px solid var(--md-outline);border-radius:12px;padding:12px 14px;display:flex;gap:9px;align-items:flex-start;"><div style="font-size:12px;color:var(--md-on-surface);">'+msiIcon('notifications_active',14,'var(--md-primary)')+' <strong>'+pro2.name+'</strong> has been notified on NayNay and will confirm a time shortly.</div></div>'
-        :'<div style="background:var(--md-warning-container);border:1.5px solid var(--md-warning)44;border-radius:12px;padding:12px 14px;display:flex;gap:9px;align-items:flex-start;"><div style="font-size:12px;color:var(--md-on-surface);">'+msiIcon('sms',14,'var(--md-warning)')+' Your request has been sent. You\'ll hear back once a time is confirmed.</div></div>'
-      );
+  // ── Horse picker ──────────────────────────────────────────────────────────
+  // Uses the real owner<->horse relationship (getHorsesForUser) rather than
+  // a hardcoded list. When launched from a horse's own profile (Overview FAB
+  // or Connections tab), ra.horseId/ra.lockHorse are pre-set by the caller —
+  // the horse still shows, just not selectable, so context stays visible.
+  var ownedHorses=getHorsesForUser().filter(function(r){return r.rel==='own';}).map(function(r){return r.horse;});
+  var selectedHorseObj=ownedHorses.find(function(h){return h.id===ra.horseId;})||HORSES_ALL.find(function(h){return h.id===ra.horseId;});
+
+  var horseSel;
+  if(ra.lockHorse&&selectedHorseObj){
+    horseSel='<div style="margin-bottom:13px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:6px;">Horse</label>'
+      +'<div style="display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:10px;background:var(--md-primary-container);border:1.5px solid var(--md-primary);">'
+        +horseAvatar(selectedHorseObj,28)
+        +'<span style="font-size:13px;font-weight:700;color:var(--md-primary);flex:1;">'+selectedHorseObj.name+'</span>'
+        +msiIcon('lock',14,'var(--md-primary)')
+      +'</div></div>';
+  } else {
+    horseSel='<div style="margin-bottom:13px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:6px;">Horse</label>'
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap;">'+ownedHorses.map(function(h){var sel=ra.horseId===h.id;return '<button onclick="window.reqApptState.horseId=\''+h.id+'\';window.reqApptState.proId=\'\';window.reqApptState.serviceId=\'\';rerender()" style="font-family:\'DM Sans\',sans-serif;padding:7px 14px;border-radius:20px;border:1.5px solid '+(sel?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(sel?'var(--md-primary-container)':'var(--md-surface)')+';font-size:13px;font-weight:700;color:'+(sel?'var(--md-primary)':'var(--md-on-surface-variant)')+';cursor:pointer;">'+h.name+'</button>';}).join('')+'</div></div>';
   }
 
-  // Horse picker
-  var ownerHorses=[{id:'h3',name:'Luna'},{id:'h4',name:'Rivendell'}];
-  var horseSel='<div style="margin-bottom:13px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:6px;">Horse</label>'
-    +'<div style="display:flex;gap:8px;">'+ownerHorses.map(function(h){var sel=ra.horseId===h.id;return '<button onclick="window.reqApptState.horseId=\''+h.id+'\';rerender()" style="font-family:\'DM Sans\',sans-serif;padding:7px 14px;border-radius:20px;border:1.5px solid '+(sel?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(sel?'var(--md-primary-container)':'var(--md-surface)')+';font-size:13px;font-weight:700;color:'+(sel?'var(--md-primary)':'var(--md-on-surface-variant)')+';cursor:pointer;">'+h.name+'</button>';}).join('')+'</div></div>';
+  // ── Professional picker ──────────────────────────────────────────────────
+  // When a horse is selected, only show professionals ACTUALLY connected to
+  // that horse (h.vet, h.trainer, h.pros[]) — booking should reflect real
+  // relationships, not the whole barn roster. Falls back to the general
+  // proType-chips + barn-wide picker only when no horse is selected yet.
+  var proTypeSel='',proList='';
+  var horseConnectedPros=[];
+  if(selectedHorseObj){
+    if(selectedHorseObj.vet) horseConnectedPros.push({name:selectedHorseObj.vet,type:'Vet'});
+    if(selectedHorseObj.trainer) horseConnectedPros.push({name:selectedHorseObj.trainer,type:'Trainer'});
+    (selectedHorseObj.pros||[]).forEach(function(p){horseConnectedPros.push({name:p.name,type:p.role});});
+  }
 
-  // Pro type chips
-  var proTypes=['Vet','Farrier','Dentist','Chiropractor','Masseuse','Trainer','Other'];
-  var proTypeSel='<div style="margin-bottom:13px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:6px;">Professional type</label>'
-    +'<div style="display:flex;flex-wrap:wrap;gap:7px;">'+proTypes.map(function(pt){var sel=ra.proType===pt;return '<button onclick="window.reqApptState.proType=\''+pt+'\';window.reqApptState.proId=\'\';window.reqApptState.serviceId=\'\';rerender()" style="font-family:\'DM Sans\',sans-serif;padding:6px 12px;border-radius:20px;border:1.5px solid '+(sel?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(sel?'var(--md-primary-container)':'var(--md-surface)')+';font-size:12px;font-weight:700;color:'+(sel?'var(--md-primary)':'var(--md-on-surface-variant)')+';cursor:pointer;">'+pt+'</button>';}).join('')+'</div></div>';
+  if(ra.lockPro&&ra.proId){
+    var lockedPro=BARN_PROFESSIONALS.find(function(p){return p.id===ra.proId;});
+    proList='<div style="margin-bottom:13px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:6px;">Professional</label>'
+      +'<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--md-primary-container);border:1.5px solid var(--md-primary);">'
+        +'<div style="width:36px;height:36px;border-radius:50%;background:'+(lockedPro?lockedPro.bg:'#ccc')+';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:'+(lockedPro?lockedPro.color:'#333')+';flex-shrink:0;">'+(lockedPro?lockedPro.initials:'?')+'</div>'
+        +'<div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--md-primary);">'+ra.proType+'</div></div>'
+        +msiIcon('lock',14,'var(--md-primary)')
+      +'</div></div>';
+  } else if(selectedHorseObj&&horseConnectedPros.length){
+    proList='<div style="margin-bottom:13px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:6px;">Professional</label>'
+      +horseConnectedPros.map(function(cp){
+        var barnPro=BARN_PROFESSIONALS.find(function(p){return p.name===cp.name;});
+        var sel=ra.proId===(barnPro?barnPro.id:cp.name);
+        return '<div onclick="window.reqApptState.proType=\''+cp.type+'\';window.reqApptState.proId=\''+(barnPro?barnPro.id:cp.name)+'\';window.reqApptState.serviceId=\'\';rerender()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1.5px solid '+(sel?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(sel?'var(--md-primary-container)':'var(--md-surface)')+';margin-bottom:7px;cursor:pointer;">'
+          +'<div style="width:36px;height:36px;border-radius:50%;background:'+(barnPro?barnPro.bg:'var(--md-surface-variant)')+';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:'+(barnPro?barnPro.color:'var(--md-on-surface-dim)')+';flex-shrink:0;">'+(barnPro?barnPro.initials:cp.name.charAt(0))+'</div>'
+          +'<div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+cp.name+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+(barnPro&&barnPro.nayNay?'<span style="background:var(--md-primary-container);color:var(--md-primary);font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;margin-right:4px;">on NayNay</span>':'')+cp.type+'</div></div>'
+          +(sel?'<svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8" fill="var(--md-primary)"/><path d="M5 9l3 3 5-5" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>':'')
+        +'</div>';
+      }).join('')
+    +'</div>';
+  } else {
+    var proTypes=['Vet','Farrier','Dentist','Chiropractor','Masseuse','Trainer','Other'];
+    proTypeSel='<div style="margin-bottom:13px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:6px;">Professional type</label>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:7px;">'+proTypes.map(function(pt){var sel=ra.proType===pt;return '<button onclick="window.reqApptState.proType=\''+pt+'\';window.reqApptState.proId=\'\';window.reqApptState.serviceId=\'\';rerender()" style="font-family:\'DM Sans\',sans-serif;padding:6px 12px;border-radius:20px;border:1.5px solid '+(sel?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(sel?'var(--md-primary-container)':'var(--md-surface)')+';font-size:12px;font-weight:700;color:'+(sel?'var(--md-primary)':'var(--md-on-surface-variant)')+';cursor:pointer;">'+pt+'</button>';}).join('')+'</div></div>';
+    var matchingPros=ra.proType?BARN_PROFESSIONALS.filter(function(p){return p.type===ra.proType;}):[];
+    proList=matchingPros.length?'<div style="margin-bottom:13px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:6px;">Select professional</label>'
+      +matchingPros.map(function(p){var sel=ra.proId===p.id;return '<div onclick="window.reqApptState.proId=\''+p.id+'\';window.reqApptState.serviceId=\'\';rerender()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1.5px solid '+(sel?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(sel?'var(--md-primary-container)':'var(--md-surface)')+';margin-bottom:7px;cursor:pointer;">'
+        +'<div style="width:36px;height:36px;border-radius:50%;background:'+p.bg+';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:'+p.color+';flex-shrink:0;">'+p.initials+'</div>'
+        +'<div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+p.name+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+(p.nayNay?'<span style="background:var(--md-primary-container);color:var(--md-primary);font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;margin-right:4px;">on NayNay</span>':'')+p.type+'</div></div>'
+        +(sel?'<svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8" fill="var(--md-primary)"/><path d="M5 9l3 3 5-5" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>':'')
+      +'</div>';}).join('')+'</div>':'';
+  }
 
-  // Matching pros
-  var matchingPros=ra.proType?BARN_PROFESSIONALS.filter(function(p){return p.type===ra.proType;}):[]; 
-  var proList=matchingPros.length?'<div style="margin-bottom:13px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:6px;">Select professional</label>'
-    +matchingPros.map(function(p){var sel=ra.proId===p.id;return '<div onclick="window.reqApptState.proId=\''+p.id+'\';window.reqApptState.serviceId=\'\';rerender()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1.5px solid '+(sel?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(sel?'var(--md-primary-container)':'var(--md-surface)')+';margin-bottom:7px;cursor:pointer;">'
-      +'<div style="width:36px;height:36px;border-radius:50%;background:'+p.bg+';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:'+p.color+';flex-shrink:0;">'+p.initials+'</div>'
-      +'<div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+p.name+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+(p.nayNay?'<span style="background:var(--md-primary-container);color:var(--md-primary);font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;margin-right:4px;">on NayNay</span>':'')+p.type+'</div></div>'
-      +(sel?'<svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8" fill="var(--md-primary)"/><path d="M5 9l3 3 5-5" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>':'')
-    +'</div>';}).join('')+'</div>':'';
-
-  // Services for selected pro type
+  // ── Services: real per-pro-type data, with duration + category filter ──────
   var servicesForType=[];
-  if(ra.proId){
-    if(ra.proType==='Vet'){servicesForType=vetServices.filter(function(sv){return sv.canBeRequestedByOwner!==false&&(sv.category==='Exam'||sv.category==='Vaccination');});}
-    else if(ra.proType==='Trainer'){servicesForType=trainerServices.filter(function(sv){return sv.canBeRequestedByOwner!==false;});}
-    else if(ra.proType==='Farrier'){servicesForType=[{id:'farrier_full',name:'Full Set (shoes)',duration:60},{id:'farrier_trim',name:'Trim only',duration:30},{id:'farrier_reset',name:'Reset (re-shoe)',duration:45},{id:'farrier_front',name:'Front shoes only',duration:40},{id:'farrier_special',name:'Corrective shoeing',duration:75}];}
-    else if(ra.proType==='Dentist'){servicesForType=[{id:'dent_float',name:'Dental float',duration:60},{id:'dent_exam',name:'Dental exam',duration:30},{id:'dent_extract',name:'Tooth extraction',duration:90},{id:'dent_xray',name:'Dental X-ray',duration:45}];}
-    else if(ra.proType==='Chiropractor'){servicesForType=[{id:'chiro_adj',name:'Full adjustment',duration:45},{id:'chiro_eval',name:'Initial evaluation',duration:60},{id:'chiro_follow',name:'Follow-up visit',duration:30}];}
-    else if(ra.proType==='Masseuse'){servicesForType=[{id:'mass_full',name:'Full-body massage',duration:60},{id:'mass_spot',name:'Spot treatment',duration:30},{id:'mass_post',name:'Post-competition massage',duration:45}];}
-  }
+  if(ra.proType==='Vet'){servicesForType=vetServices.filter(function(sv){return sv.canBeRequestedByOwner!==false;});}
+  else if(ra.proType==='Trainer'){servicesForType=trainerServices.filter(function(sv){return sv.canBeRequestedByOwner!==false;});}
+  else if(ra.proType==='Breeder'){servicesForType=breederServices.filter(function(sv){return sv.canBeRequestedByOwner!==false;});}
+  else if(ra.proType==='Farrier'){servicesForType=[{id:'farrier_full',name:'Full Set (shoes)',category:'Shoeing',duration:60,price:180},{id:'farrier_trim',name:'Trim only',category:'Shoeing',duration:30,price:55},{id:'farrier_reset',name:'Reset (re-shoe)',category:'Shoeing',duration:45,price:100},{id:'farrier_front',name:'Front shoes only',category:'Shoeing',duration:40},{id:'farrier_special',name:'Corrective shoeing',category:'Shoeing',duration:75,price:220}];}
+  else if(ra.proType==='Dentist'){servicesForType=[{id:'dent_float',name:'Dental float',category:'Procedure',duration:60,price:150},{id:'dent_exam',name:'Dental exam',category:'Exam',duration:30,price:75},{id:'dent_extract',name:'Tooth extraction',category:'Procedure',duration:90,price:350},{id:'dent_xray',name:'Dental X-ray',category:'Diagnostics',duration:45}];}
+  else if(ra.proType==='Chiropractor'){servicesForType=[{id:'chiro_adj',name:'Full adjustment',category:'Wellness',duration:45},{id:'chiro_eval',name:'Initial evaluation',category:'Exam',duration:60},{id:'chiro_follow',name:'Follow-up visit',category:'Exam',duration:30}];}
+  else if(ra.proType==='Masseuse'){servicesForType=[{id:'mass_full',name:'Full-body massage',category:'Wellness',duration:60,price:120},{id:'mass_spot',name:'Spot treatment',category:'Wellness',duration:30,price:75},{id:'mass_post',name:'Post-competition massage',category:'Wellness',duration:45,price:100}];}
+
+  var svcCategories=Array.from(new Set(servicesForType.map(function(sv){return sv.category;}).filter(Boolean)));
+  var filteredServices=ra.serviceCategory?servicesForType.filter(function(sv){return sv.category===ra.serviceCategory;}):servicesForType;
 
   var svcSel='';
-  if(servicesForType.length){
+  if(ra.proId&&servicesForType.length){
     svcSel='<div style="margin-bottom:13px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:6px;">Service</label>'
+      +(svcCategories.length>1?'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px;">'
+        +'<button onclick="window.reqApptState.serviceCategory=\'\';rerender()" style="font-family:\'DM Sans\',sans-serif;padding:5px 11px;border-radius:20px;border:1.5px solid '+(!ra.serviceCategory?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(!ra.serviceCategory?'var(--md-primary-container)':'var(--md-surface)')+';font-size:11px;font-weight:700;color:'+(!ra.serviceCategory?'var(--md-primary)':'var(--md-on-surface-dim)')+';cursor:pointer;">All</button>'
+        +svcCategories.map(function(cat){var sel=ra.serviceCategory===cat;return '<button onclick="window.reqApptState.serviceCategory=\''+cat+'\';rerender()" style="font-family:\'DM Sans\',sans-serif;padding:5px 11px;border-radius:20px;border:1.5px solid '+(sel?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(sel?'var(--md-primary-container)':'var(--md-surface)')+';font-size:11px;font-weight:700;color:'+(sel?'var(--md-primary)':'var(--md-on-surface-dim)')+';cursor:pointer;">'+cat+'</button>';}).join('')
+      +'</div>':'')
       +'<div style="display:flex;flex-direction:column;gap:6px;">'
-      +servicesForType.map(function(sv){var sel=ra.serviceId===sv.id;return '<div onclick="window.reqApptState.serviceId=\''+sv.id+'\';rerender()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1.5px solid '+(sel?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(sel?'var(--md-primary-container)':'var(--md-surface)')+';cursor:pointer;">'
+      +filteredServices.map(function(sv){var sel=ra.serviceId===sv.id;return '<div onclick="window.reqApptState.serviceId=\''+sv.id+'\';rerender()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1.5px solid '+(sel?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(sel?'var(--md-primary-container)':'var(--md-surface)')+';cursor:pointer;">'
         +'<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+sv.name+'</div>'
-        +(sv.duration||sv.price?'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:1px;">'+(sv.duration?msiIcon('timer',11,'var(--md-on-surface-dim)')+' '+sv.duration+' min':'')+(sv.duration&&sv.price?' · ':'')+(sv.price?'$'+sv.price:'')+'</div>':'')
-        +'</div>'+(sel?msiIcon('check_circle',18,'var(--md-primary)'):msiIcon('radio_button_unchecked',18,'var(--md-outline-variant)'))+'</div>';}).join('')
+        +'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:1px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">'
+          +(sv.category?'<span style="background:var(--md-surface-variant);padding:1px 6px;border-radius:8px;">'+sv.category+'</span>':'')
+          +(sv.duration?msiIcon('timer',11,'var(--md-on-surface-dim)')+' '+sv.duration+' min':'')
+          +(sv.price?'$'+sv.price:'')
+        +'</div></div>'+(sel?msiIcon('check_circle',18,'var(--md-primary)'):msiIcon('radio_button_unchecked',18,'var(--md-outline-variant)'))+'</div>';}).join('')
       +'</div></div>';
   }
 
-  // Additional details
+  // ── Additional details ────────────────────────────────────────────────────
   var detailField=ra.proId?'<div style="margin-bottom:13px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Additional details <span style="font-weight:400;color:var(--md-on-surface-dim);">(optional)</span></label>'
-    +'<textarea placeholder="Any specifics about what you need, relevant medical history, or context that would help the professional prepare…" oninput="window.reqApptState.description=this.value" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;resize:none;box-sizing:border-box;" rows="3">'+( ra.description||'')+'</textarea>'
+    +'<textarea placeholder="Any specifics about what you need, relevant medical history, or context that would help the professional prepare…" oninput="window.reqApptState.description=this.value" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;resize:none;box-sizing:border-box;" rows="3">'+(ra.description||'')+'</textarea>'
     +'</div>':'';
 
-  // Date/time
-  var prefDate='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">'
+  // ── Date/time ──────────────────────────────────────────────────────────────
+  var prefDate=ra.proId?'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">'
     +'<div><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Preferred date</label>'
     +'<div style="background:var(--md-primary-container);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;display:flex;align-items:center;">'
     +'<input type="date" value="'+(ra.preferredDate||'')+'" onchange="window.reqApptState.preferredDate=this.value" style="background:transparent;border:none;outline:none;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);flex:1;"/>'
@@ -5162,12 +5219,62 @@ function rRequestAppointmentForm(){
     +'<div><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:5px;">Preferred time</label>'
     +'<div style="background:var(--md-primary-container);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;display:flex;align-items:center;">'
     +'<input type="time" value="'+(ra.preferredTime||'')+'" onchange="window.reqApptState.preferredTime=this.value" style="background:transparent;border:none;outline:none;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);flex:1;"/>'
-    +'</div></div></div>';
+    +'</div></div></div>':'';
+
+  // ── Payment step ───────────────────────────────────────────────────────────
+  var cardOnFile=OWNER_PAYMENT_METHODS[currentOwnerUserId];
+  var paymentSection='';
+  if(ra.proId&&ra.serviceId){
+    paymentSection='<div style="margin-bottom:16px;"><label style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:6px;">Payment</label>'
+      +(!ra.useNewCard&&cardOnFile
+        ?'<div style="display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:10px;border:1.5px solid var(--md-primary);background:var(--md-primary-container);margin-bottom:8px;">'
+          +'<div style="width:38px;height:26px;border-radius:5px;background:var(--md-surface);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:var(--md-primary);flex-shrink:0;">'+cardOnFile.brand+'</div>'
+          +'<div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">•••• '+cardOnFile.last4+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">Expires '+cardOnFile.expiry+' · '+cardOnFile.cardName+'</div></div>'
+          +msiIcon('check_circle',18,'var(--md-primary)')
+        +'</div>'
+        +'<button onclick="window.reqApptState.useNewCard=true;rerender()" style="background:none;border:none;padding:2px;font-size:12px;font-weight:700;color:var(--md-primary);cursor:pointer;font-family:\'DM Sans\',sans-serif;">+ Use a different card</button>'
+        :(cardOnFile?'<button onclick="window.reqApptState.useNewCard=false;rerender()" style="width:100%;text-align:left;background:var(--md-surface);border:1.5px dashed var(--md-outline);border-radius:10px;padding:11px 13px;font-size:12px;font-weight:700;color:var(--md-primary);cursor:pointer;font-family:\'DM Sans\',sans-serif;margin-bottom:8px;">← Use card on file (•••• '+cardOnFile.last4+')</button>':'')
+        +'<div style="margin-bottom:9px;"><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.6px;display:block;margin-bottom:4px;">Card number</label><input type="text" value="'+ra.newCardNumber+'" oninput="window.reqApptState.newCardNumber=this.value" placeholder="1234 5678 9012 3456" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:9px 12px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">'
+          +'<div><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.6px;display:block;margin-bottom:4px;">Expiry</label><input type="text" value="'+ra.newCardExpiry+'" oninput="window.reqApptState.newCardExpiry=this.value" placeholder="MM/YY" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:9px 12px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>'
+          +'<div><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.6px;display:block;margin-bottom:4px;">CVC</label><input type="text" value="'+ra.newCardCVC+'" oninput="window.reqApptState.newCardCVC=this.value" placeholder="123" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:9px 12px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>'
+        +'</div>'
+      )
+    +'</div>';
+  }
 
   var canSend=!!ra.horseId&&!!ra.proType&&!!ra.proId&&(servicesForType.length===0||!!ra.serviceId);
-  var sendBtn='<button onclick="'+(canSend?'window.reqApptState.submitted=true;rerender()':'void 0')+'" style="width:100%;background:'+(canSend?t.T:t.BRD)+';color:#fff;border:none;padding:13px;border-radius:var(--md-shape-md);font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(canSend?'pointer':'not-allowed')+';">Send request</button>';
 
-  return backBtn+'<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);padding:14px;">'+horseSel+proTypeSel+proList+svcSel+detailField+prefDate+sendBtn+'</div>';
+  // ── Submit: attach to an existing confirmed visit, or create a new one ─────
+  // See the VISIT / APPOINTMENT DATA MODEL comment above BARN_VISITS for the
+  // full rule. In short: if this pro already has a confirmed BARN_VISITS
+  // entry on the chosen date, this appointment attaches to it (no new visit
+  // created). Otherwise, a new owner-initiated visit is created around this
+  // single appointment.
+  var submitJs="(function(){"
+    +"var rax=window.reqApptState;"
+    +"var proObj=BARN_PROFESSIONALS.find(function(p){return p.id===rax.proId;});"
+    +"var proName=proObj?proObj.name:rax.proType;"
+    +"var existingVisit=BARN_VISITS.find(function(v){return v.status==='confirmed'&&v.professionalName===proName&&v.date===rax.preferredDate;});"
+    +"var visitId;"
+    +"if(existingVisit){visitId=existingVisit.id;}"
+    +"else{"
+      +"visitId='v_'+Date.now();"
+      +"BARN_VISITS.push({id:visitId,professionalId:rax.proId,professionalName:proName,professionalType:rax.proType,date:rax.preferredDate,timeStart:rax.preferredTime,timeEnd:rax.preferredTime,services:[],note:'',status:'pending',initiatedBy:'owner',notifyOwners:false});"
+    +"}"
+    +"var allSvcs=vetServices.concat(trainerServices).concat(breederServices);"
+    +"var svcObj=rax.serviceId?allSvcs.find(function(sv){return sv.id===rax.serviceId;}):null;"
+    +"var horseObj=HORSES_ALL.find(function(hh){return hh.id===rax.horseId;});"
+    +"OWNER_APPOINTMENTS.push({id:'apt_'+Date.now(),horse:horseObj?horseObj.name:'',type:svcObj?svcObj.name:(rax.description||'Appointment'),vet:proName,date:rax.preferredDate,time:rax.preferredTime,barn:(horseObj&&BARNS[horseObj.barn])?BARNS[horseObj.barn].name:'',urgent:false,visitId:visitId});"
+    +"showToast('Appointment booked with '+proName+'!','event_available','success');"
+    +"S.quickAction=null;window.reqApptState="+JSON.stringify(freshState()).replace(/"/g,'&quot;')+";"
+    +"S.activeTab='home';S.selectedHorse=null;S.highlightApptCard=true;"
+    +"rerender();"
+  +"})()";
+
+  var sendBtn='<button onclick="'+(canSend?submitJs:'void 0')+'" style="width:100%;background:'+(canSend?t.T:t.BRD)+';color:#fff;border:none;padding:13px;border-radius:var(--md-shape-md);font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(canSend?'pointer':'not-allowed')+';">Book appointment</button>';
+
+  return backBtn+'<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);padding:14px;">'+horseSel+proTypeSel+proList+svcSel+detailField+prefDate+paymentSection+sendBtn+'</div>';
 }
 
 function getNotifyGroups(ctx, role){
@@ -7388,7 +7495,13 @@ function rOwnerHome(){
       : `<button onclick="S.showAddHorse=true;rerender()" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;">Add your first horse</button>`
     }
   </div>`;
-  const apptSection=`<div style="margin-bottom:14px;">
+  // S.highlightApptCard is set by rRequestAppointmentForm's submit handler
+  // right after a successful booking, so the owner lands back on Home with
+  // this card visually called out instead of having to hunt for their new
+  // appointment. Cleared the moment they navigate to any other tab (see
+  // navTo()) so the highlight doesn't linger indefinitely.
+  const apptHighlight=!!S.highlightApptCard;
+  const apptSection=`<div style="margin-bottom:14px;${apptHighlight?'border:2px solid var(--md-warning);border-radius:14px;padding:10px;background:var(--md-warning-container)18;':''}">
     <div style="font-size:13px;font-weight:700;color:var(--md-on-surface);margin-bottom:8px;">Upcoming appointments</div>
     ${ownerScopedAppointments().length ? ownerScopedAppointments().map(apt=>`<div onclick="openExamFromAppt(${JSON.stringify(apt).replace(/"/g,"'")})" style="background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:11px;padding:11px 13px;margin-bottom:7px;display:flex;align-items:center;gap:10px;cursor:pointer;">
       <div style="width:42px;height:42px;border-radius:10px;background:var(--md-primary-container);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;">
@@ -9182,6 +9295,18 @@ function rHorseDetail(h){
 
   var healthTab=healthAddSheet+healthFab+'<div style="padding:14px;">'+breedingSection+ultrasoundSection+vitalsSection+immunizationsSection+examsSection+labsSection+visitsSection+'</div>';
   overviewTab=overviewTab+'</div>';
+
+  // ── Book Appointment FAB (Overview tab only) ─────────────────────────────
+  // Launches the shared rRequestAppointmentForm with this horse pre-selected
+  // and locked (window.reqApptState.lockHorse=true), so the picker still
+  // shows which horse it's for but the user can't change it mid-flow — they
+  // came from THIS horse's profile. Professional/service/date/payment are
+  // left open for them to choose.
+  var bookApptFab=anyRole('owner')
+    ?'<button onclick="window.reqApptState={horseId:\''+h.id+'\',lockHorse:true,proType:\'\',proId:\'\',lockPro:false,serviceId:\'\',serviceCategory:\'\',description:\'\',preferredDate:\'\',preferredTime:\'\',useNewCard:false,newCardNumber:\'\',newCardExpiry:\'\',newCardCVC:\'\',submitted:false};S.quickAction=\'request-appointment\';rerender()" style="position:fixed;bottom:80px;right:20px;z-index:200;width:54px;height:54px;border-radius:50%;background:var(--md-warning);border:none;box-shadow:0 4px 14px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;cursor:pointer;">'+msiIcon('event_available',24,'#fff')+'</button>'
+    :'';
+  overviewTab=bookApptFab+overviewTab;
+
   pedigreeTab=pedigreeTab+(foalSection?('<div style="padding:0 14px 14px;">'+foalSection+'</div>'):'');
 
   // ── Add Pedigree Info FAB + sheet (Pedigree tab only) ────────────────────────
@@ -9255,7 +9380,7 @@ function rHorseDetail(h){
 
   var sessions=(HORSE_TRAINING_HISTORY[h.id]||[]);
 
-  if(!window._inviteState)window._inviteState={open:false,name:'',role:'Veterinarian',email:'',phone:''};
+  if(!window._inviteState)window._inviteState={open:false,step:1,name:'',role:'Veterinarian',email:'',phone:'',inviteCode:null};
   var inv=window._inviteState;
 
   // ── Connections Tab ───────────────────────────────────────────────────────
@@ -9311,7 +9436,7 @@ function rHorseDetail(h){
   // deliberately left blank at that point rather than guessed — the actual
   // owner gets added here, on Connections, as a follow-up step.
   if(!(h.owners||[]).length){
-    ownerCards=ctaCard('person','No owner assigned yet.','Add owner',"window._inviteState={open:true,name:'',role:'Owner',email:'',phone:''};rerender()");
+    ownerCards=ctaCard('person','No owner assigned yet.','Add owner',"window._inviteState={open:true,name:'',role:'Owner',email:'',phone:'',step:1,inviteCode:null};rerender()");
   }
 
   // ── Empty-state CTA helper ───────────────────────────────────────────────
@@ -9358,9 +9483,17 @@ function rHorseDetail(h){
   // ignored h.vet entirely and always showed the barn's vet, which meant a
   // horse with no vet connection still displayed one. Falls back to a CTA
   // when h.vet is empty.
+  // Small helper: "Book appointment" button for a connected professional,
+  // pre-filling AND LOCKING both horse and professional in the shared
+  // rRequestAppointmentForm (see its lockHorse/lockPro handling) — you got
+  // here from this exact horse+pro pairing, so both stay fixed.
+  function bookApptBtn(proName,proType,proId){
+    return '<button onclick="window.reqApptState={horseId:\''+h.id+'\',lockHorse:true,proType:\''+proType+'\',proId:\''+(proId||proName)+'\',lockPro:true,serviceId:\'\',serviceCategory:\'\',description:\'\',preferredDate:\'\',preferredTime:\'\',useNewCard:false,newCardNumber:\'\',newCardExpiry:\'\',newCardCVC:\'\',submitted:false};S.quickAction=\'request-appointment\';rerender()" style="width:100%;background:var(--md-warning-container);color:var(--md-warning);border:none;border-radius:9px;padding:9px 13px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:5px;">'+msiIcon('event_available',14,'var(--md-warning)')+'Book appointment</button>';
+  }
+
   var vetCard;
   if(!h.vet){
-    vetCard=ctaCard('medical_services','No veterinarian connected yet.','Invite a vet',"window._inviteState={open:true,name:'',role:'Veterinarian',email:'',phone:''};rerender()");
+    vetCard=ctaCard('medical_services','No veterinarian connected yet.','Invite a vet',"window._inviteState={open:true,name:'',role:'Veterinarian',email:'',phone:'',step:1,inviteCode:null};rerender()");
   } else {
     var vetPro=BARN_PROFESSIONALS.find(function(p){return p.type==='Vet'&&p.name===h.vet;});
     vetCard=connCard({
@@ -9370,8 +9503,8 @@ function rHorseDetail(h){
       email:vetPro?(vetPro.email||null):null,phone:vetPro?(vetPro.phone||null):null,
       nayNay:vetPro?vetPro.nayNay:false,
       actionLabel:(!vetPro||!vetPro.nayNay)?'Invite to NayNay':null,
-      actionFn:"window._inviteState={open:true,name:'"+h.vet+"',role:'Veterinarian',email:'"+(vetPro&&vetPro.email||'')+"',phone:''};rerender()",
-    });
+      actionFn:"window._inviteState={open:true,name:'"+h.vet+"',role:'Veterinarian',email:'"+(vetPro&&vetPro.email||'')+"',phone:'',step:1,inviteCode:null};rerender()",
+    })+(anyRole('owner')?bookApptBtn(h.vet,'Vet',vetPro?vetPro.id:null):'');
   }
 
   // ── Trainer section ───────────────────────────────────────────────────────
@@ -9379,7 +9512,7 @@ function rHorseDetail(h){
   // h.trainer is empty. Shows a CTA instead.
   var trainerCard;
   if(!h.trainer){
-    trainerCard=ctaCard('sports','No trainer connected yet.','Invite a trainer',"window._inviteState={open:true,name:'',role:'Trainer',email:'',phone:''};rerender()");
+    trainerCard=ctaCard('sports','No trainer connected yet.','Invite a trainer',"window._inviteState={open:true,name:'',role:'Trainer',email:'',phone:'',step:1,inviteCode:null};rerender()");
   } else {
     var trainerPro=BARN_PROFESSIONALS.find(function(p){return p.type==='Trainer'&&p.name===h.trainer;});
     trainerCard=connCard({
@@ -9391,8 +9524,8 @@ function rHorseDetail(h){
       email:trainerPro?trainerPro.email:null,phone:null,
       nayNay:trainerPro?trainerPro.nayNay:false,
       actionLabel:(!trainerPro||!trainerPro.nayNay)?'Invite to NayNay':null,
-      actionFn:"window._inviteState={open:true,name:'"+h.trainer+"',role:'Trainer',email:'"+(trainerPro&&trainerPro.email||'')+"',phone:''};rerender()",
-    });
+      actionFn:"window._inviteState={open:true,name:'"+h.trainer+"',role:'Trainer',email:'"+(trainerPro&&trainerPro.email||'')+"',phone:'',step:1,inviteCode:null};rerender()",
+    })+(anyRole('owner')?bookApptBtn(h.trainer,'Trainer',trainerPro?trainerPro.id:null):'');
   }
 
   // ── Other professionals ───────────────────────────────────────────────────
@@ -9404,17 +9537,75 @@ function rHorseDetail(h){
       email:p.email||null,phone:p.phone||null,
       nayNay:p.nayNay,
       actionLabel:!p.nayNay?'Invite to NayNay':null,
-      actionFn:"window._inviteState={open:true,name:'"+p.name+"',role:'"+p.type+"',email:'"+(p.email||'')+"',phone:'"+(p.phone||'')+"'};rerender()",
+      actionFn:"window._inviteState={open:true,name:'"+p.name+"',role:'"+p.type+"',email:'"+(p.email||'')+"',phone:'"+(p.phone||'')+"',step:1,inviteCode:null};rerender()",
     });
   }).join('');
 
   // ── Invite panel ─────────────────────────────────────────────────────────
   var ROLE_OPTIONS=['Veterinarian','Trainer','Farrier','Dentist','Chiropractor','Acupuncturist','Masseuse','Nutritionist','Other'];
   var invitePanel=inv.open
-    ?'<div onclick="window._inviteState.open=false;rerender()" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:400;display:flex;flex-direction:column;justify-content:flex-end;">'+'<div onclick="event.stopPropagation()" style="background:var(--md-surface);border-radius:20px 20px 0 0;padding:20px 16px 32px;max-height:88vh;overflow-y:auto;">'+'<div style="width:36px;height:4px;border-radius:2px;background:var(--md-outline-variant);margin:0 auto 18px;"></div>'+'<div style="font-size:16px;font-weight:700;color:var(--md-on-surface);margin-bottom:14px;display:flex;align-items:center;gap:8px;">'+msiIcon('person_add',18,'var(--md-primary)')+'Add a professional</div>'+'<div style="margin-bottom:10px;"><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">Name</label>'+'<input type="text" value="'+inv.name+'" oninput="_inviteState.name=this.value" placeholder="Full name" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:9px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>'+'<div style="margin-bottom:10px;"><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">Role</label>'+'<select oninput="_inviteState.role=this.value" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:9px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;">'+['Veterinarian','Trainer','Farrier','Dentist','Chiropractor','Acupuncturist','Masseuse','Nutritionist','Other'].map(function(opt){return '<option value="'+opt+'"'+(inv.role===opt?' selected':'')+'>'+opt+'</option>';}).join('')+'</select></div>'+'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">'+'<div><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">Email</label>'+'<input type="email" value="'+inv.email+'" oninput="_inviteState.email=this.value" placeholder="email@example.com" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:9px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>'+'<div><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">Phone</label>'+'<input type="tel" value="'+inv.phone+'" oninput="_inviteState.phone=this.value" placeholder="(555) 000-0000" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:9px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>'+'</div>'+'<div style="background:var(--md-surface-variant);border-radius:9px;padding:9px 11px;font-size:11px;color:var(--md-on-surface-dim);margin-bottom:14px;line-height:1.5;">'+msiIcon('info',12,'var(--md-primary)')+" If they're on NayNay, they'll be connected instantly. Otherwise we'll send them an email invite."+'</div>'+'<div style="display:flex;gap:8px;">'+'<button onclick="window._inviteState.open=false;rerender()" style="flex:1;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:12px;padding:12px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface);">Cancel</button>'+'<button onclick="showToast(\'Invitation sent to \'+(window._inviteState.name||\'professional\')+\'!\',\'check_circle\',\'success\');window._inviteState={open:false,name:\'\',role:\'Veterinarian\',email:\'\',phone:\'\'};rerender()" style="flex:1;background:var(--md-primary);color:#fff;border:none;border-radius:12px;padding:12px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Send invite</button>'+'</div></div></div>'    :''
+    ?(function(){
+      var horseName=h.name;
+      // ── Step 1: contact info ────────────────────────────────────────────
+      if(inv.step===1){
+        return '<div onclick="window._inviteState.open=false;rerender()" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:400;display:flex;flex-direction:column;justify-content:flex-end;">'
+          +'<div onclick="event.stopPropagation()" style="background:var(--md-surface);border-radius:20px 20px 0 0;padding:20px 16px 32px;max-height:88vh;overflow-y:auto;">'
+          +'<div style="width:36px;height:4px;border-radius:2px;background:var(--md-outline-variant);margin:0 auto 18px;"></div>'
+          +'<div style="font-size:16px;font-weight:700;color:var(--md-on-surface);margin-bottom:14px;display:flex;align-items:center;gap:8px;">'+msiIcon('person_add',18,'var(--md-primary)')+'Add a professional</div>'
+          +'<div style="margin-bottom:10px;"><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">Name</label>'
+          +'<input type="text" value="'+inv.name+'" oninput="window._inviteState.name=this.value" placeholder="Full name" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:9px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>'
+          +'<div style="margin-bottom:10px;"><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">Role</label>'
+          +'<select oninput="window._inviteState.role=this.value" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:9px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;">'+['Veterinarian','Trainer','Farrier','Dentist','Chiropractor','Acupuncturist','Masseuse','Nutritionist','Other'].map(function(opt){return '<option value="'+opt+'"'+(inv.role===opt?' selected':'')+'>'+opt+'</option>';}).join('')+'</select></div>'
+          +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">'
+          +'<div><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">Email</label>'
+          +'<input type="email" value="'+inv.email+'" oninput="window._inviteState.email=this.value" placeholder="email@example.com" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:9px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>'
+          +'<div><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">Phone</label>'
+          +'<input type="tel" value="'+inv.phone+'" oninput="window._inviteState.phone=this.value" placeholder="(555) 000-0000" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:9px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>'
+          +'</div>'
+          +'<div style="background:var(--md-surface-variant);border-radius:9px;padding:9px 11px;font-size:11px;color:var(--md-on-surface-dim);margin-bottom:14px;line-height:1.5;">'+msiIcon('info',12,'var(--md-primary)')+" If they're on NayNay, they'll be connected instantly. Otherwise we'll send them an invite."+'</div>'
+          +'<div style="display:flex;gap:8px;">'
+          +'<button onclick="window._inviteState.open=false;rerender()" style="flex:1;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:12px;padding:12px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface);">Cancel</button>'
+          +'<button onclick="'+(inv.name?"window._inviteState.step=2;window._inviteState.inviteCode=window._inviteState.inviteCode||generateInviteCode();rerender()":'void 0')+'" style="flex:1;background:'+(inv.name?'var(--md-primary)':'var(--md-outline-variant)')+';color:'+(inv.name?'#fff':'var(--md-on-surface-dim)')+';border:none;border-radius:12px;padding:12px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(inv.name?'pointer':'not-allowed')+';">Preview invite</button>'
+          +'</div></div></div>';
+      }
+      // ── Step 2: message preview + native share ──────────────────────────
+      var roleColorMap={Veterinarian:'var(--md-secondary)',Trainer:'var(--md-tertiary)',Farrier:'var(--md-warning)',Dentist:'var(--md-error)',Chiropractor:'var(--md-primary)',Acupuncturist:'var(--md-primary)',Masseuse:'var(--md-secondary)',Nutritionist:'var(--md-tertiary)',Other:'var(--md-on-surface-dim)'};
+      var rc=roleColorMap[inv.role]||'var(--md-primary)';
+      var msg="Hi "+inv.name+",\\n\\nI'd like to add you to "+horseName+"'s care team on NayNay so we can share health records, schedule visits, and stay coordinated in one place.\\n\\nJoin here: https://naynay.app/join/"+inv.inviteCode+"\\n\\n\\u2014 sent via NayNay";
+      var shareUrl='https://naynay.app/join/'+inv.inviteCode;
+      return '<div onclick="window._inviteState.open=false;rerender()" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:400;display:flex;flex-direction:column;justify-content:flex-end;">'
+        +'<div onclick="event.stopPropagation()" style="background:var(--md-surface);border-radius:20px 20px 0 0;padding:20px 16px 32px;max-height:88vh;overflow-y:auto;">'
+        +'<div style="width:36px;height:4px;border-radius:2px;background:var(--md-outline-variant);margin:0 auto 18px;"></div>'
+        +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><div style="width:32px;height:32px;border-radius:9px;background:'+rc+'22;display:flex;align-items:center;justify-content:center;">'+msiIcon('mail',16,rc)+'</div><div style="font-size:17px;font-weight:800;color:var(--md-on-surface);">Preview invite</div></div>'
+        +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:14px;">This message will be shared with <strong style="color:var(--md-on-surface);">'+inv.name+'</strong>.</div>'
+        +'<div style="background:var(--md-surface-variant);border:1.5px solid var(--md-outline-variant);border-radius:14px;padding:14px 15px;margin-bottom:16px;max-height:260px;overflow-y:auto;"><div style="font-size:12px;color:var(--md-on-surface);line-height:1.7;white-space:pre-wrap;">'+msg+'</div></div>'
+        +'<div style="display:flex;align-items:center;gap:10px;background:var(--md-primary-container);border-radius:12px;padding:10px 13px;margin-bottom:16px;">'+msiIcon('qr_code',20,'var(--md-primary)')+'<div><div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;">Invite code</div><div style="font-size:18px;font-weight:800;color:var(--md-primary);letter-spacing:3px;">'+inv.inviteCode+'</div></div><div style="flex:1;text-align:right;font-size:11px;color:var(--md-on-surface-dim);">naynay.app/join/'+inv.inviteCode+'</div></div>'
+        // ── Connection is saved to the horse's data (h.vet / h.trainer /
+        // h.pros) HERE, at share-time — not when the contact-info step is
+        // filled in. This means the Connections list only ever shows a
+        // person once the invite has actually been sent (or copied), same
+        // timing as the barn-level invite flow this was modeled on. Since
+        // this whole tab re-renders reactively off h.vet/h.trainer/h.pros,
+        // no separate "refresh" step is needed — the list just reflects the
+        // mutation as soon as rerender() runs.
+        +'<button onclick="(function(){'
+          +'var name='+JSON.stringify(inv.name).replace(/"/g,'&quot;')+';'
+          +'var role='+JSON.stringify(inv.role).replace(/"/g,'&quot;')+';'
+          +'var hz=HORSES_ALL.find(function(hh){return hh.id==='+JSON.stringify(h.id).replace(/"/g,'&quot;')+';});'
+          +'if(hz){if(role===\'Veterinarian\'){hz.vet=name;}else if(role===\'Trainer\'){hz.trainer=name;}else{hz.pros=hz.pros||[];hz.pros.push({role:role,name:name,next:null});}}'
+          +'var msgTxt='+JSON.stringify(msg).replace(/"/g,'&quot;')+';'
+          +'var url='+JSON.stringify(shareUrl).replace(/"/g,'&quot;')+';'
+          +'if(navigator.share){navigator.share({title:\'Join \'+name+\' on NayNay\',text:msgTxt,url:url}).then(function(){window._inviteState={open:false,step:1,name:\'\',role:\'Veterinarian\',email:\'\',phone:\'\',inviteCode:null};showToast(\'Invite sent to \'+name+\'!\',\'check_circle\',\'success\');rerender();}).catch(function(){});}'
+          +'else{try{navigator.clipboard.writeText(msgTxt);}catch(e){} window._inviteState={open:false,step:1,name:\'\',role:\'Veterinarian\',email:\'\',phone:\'\',inviteCode:null};showToast(\'Connected \'+name+\' \\u2014 message copied to clipboard\',\'content_copy\',\'success\');rerender();}'
+        +'})()" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px;">'+msiIcon('ios_share',18,'#fff')+' Send invite</button>'
+        +'<button onclick="window._inviteState.step=1;rerender()" style="width:100%;background:transparent;border:none;padding:10px;font-size:13px;font-weight:700;color:var(--md-on-surface-dim);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Back</button>'
+        +'</div></div>';
+    })()
+    :'';
 
-  // ── Add professional button ───────────────────────────────────────────────
-  var addProBtn='<button onclick="window._inviteState={open:true,name:\'\',role:\'Veterinarian\',email:\'\',phone:\'\'};rerender()" style="position:fixed;bottom:80px;right:20px;z-index:200;width:54px;height:54px;border-radius:50%;background:var(--md-primary);border:none;box-shadow:0 4px 14px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;cursor:pointer;">'+msiIcon('person_add',24,'#fff')+'</button>'
+  
+// ── Add professional button ───────────────────────────────────────────────
+  var addProBtn='<button onclick="window._inviteState={open:true,name:\'\',role:\'Veterinarian\',email:\'\',phone:\'\',step:1,inviteCode:null};rerender()" style="position:fixed;bottom:80px;right:20px;z-index:200;width:54px;height:54px;border-radius:50%;background:var(--md-primary);border:none;box-shadow:0 4px 14px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;cursor:pointer;">'+msiIcon('person_add',24,'#fff')+'</button>'
 
   connectionsTab='<div style="padding:14px;">'
     +invitePanel
@@ -10463,6 +10654,36 @@ const BARN_PROFESSIONALS=[
 ];
 
 // --- VISITS DATA ---------------------------------------------
+// ══════════════════════════════════════════════════════════════════════════
+// VISIT / APPOINTMENT DATA MODEL
+// ══════════════════════════════════════════════════════════════════════════
+// Every appointment (OWNER_APPOINTMENTS) belongs to a visit (BARN_VISITS).
+// A visit is a professional's time block at (or around) the barn; an
+// appointment is one horse+owner's specific slot within that block.
+//
+// A visit comes into existence one of two ways, distinguished by
+// BARN_VISITS[].initiatedBy:
+//
+//   'professional' or 'barn' — the pro (or the barn manager on their
+//   behalf) proactively schedules a visit window, independent of any
+//   specific owner's request. Shows up under "Professionals visiting your
+//   barn" on the owner Home screen. Owners then book INTO this existing
+//   visit via the shared booking flow (rBookAppointmentFlow) — no new visit
+//   is created, the appointment just references the existing visit's id.
+//
+//   'owner' — an owner requests/books an appointment directly with a pro
+//   (via rBookAppointmentFlow) and NO existing confirmed visit from that
+//   pro fits (same pro, same date). The flow creates a new BARN_VISITS
+//   entry on the fly, containing just that one appointment, status
+//   'pending' until the pro confirms it. This is what makes "every
+//   appointment sits within a visit" true even for one-off owner-initiated
+//   requests — see the submit handler inside rBookAppointmentFlow for the
+//   exact match-existing-vs-create-new logic.
+//
+// OWNER_APPOINTMENTS entries carry a `visitId` field pointing back to
+// whichever BARN_VISITS entry they belong to (either an existing one they
+// were attached to, or a new one created for them).
+// ══════════════════════════════════════════════════════════════════════════
 const BARN_VISITS=[
   {id:'v1',professionalId:'p1',professionalName:'Dr. Goudz',professionalType:'Vet',date:'Apr 8, 2026',timeStart:'9:00 AM',timeEnd:'2:00 PM',services:[{name:'Seasonal Shots / Spring Vaccines',price:'$35–$80',priceNote:'varies by vaccine'},{name:'Wellness Exam',price:'$85'},{name:'Coggins Test',price:'$45'},{name:'Dental Float (add-on)',price:'$120'}],note:'Spring vaccination day — please have all horses accessible.',status:'confirmed',initiatedBy:'professional',notifyOwners:true},
   {id:'v2',professionalId:'p2',professionalName:'Mike Farrell',professionalType:'Farrier',date:'Mar 28, 2026',timeStart:'9:00 AM',timeEnd:'12:00 PM',services:[{name:'Full Set (shoes)',price:'$180'},{name:'Trim only',price:'$55'},{name:'Reset (reset existing shoes)',price:'$120'}],note:'Mike will start with Apollo then work through the list.',status:'confirmed',initiatedBy:'barn',notifyOwners:true},
