@@ -841,6 +841,21 @@ const HORSES_ALL=[
 const HORSES=HORSES_ALL.filter(function(h){return h.barn==='sunrise';});
 
 // ─── ROLE-AWARE HORSE FILTERING ──────────────────────────────
+// The built-in "Owner" persona (Emily, in the switcher) is historically
+// tied to the seed data's 'owner-sarah' userId — a display-name/userId
+// mismatch baked into the demo data early on. Every OTHER owner-capable
+// persona (e.g. "New Owner"/Nadia) derives its userId from its own name.
+// Centralized here so getHorsesForUser() and rAddHorse() can't drift out
+// of sync with each other the way they did before this fix — Nadia's
+// newly-created horses were invisible to getHorsesForUser() because it
+// hardcoded 'owner-sarah' regardless of which owner persona was active.
+function getCurrentOwnerUserId(){
+  var combo=ROLE_COMBOS[S.roleComboIdx];
+  if(!combo) return 'owner-sarah';
+  if(combo.label==='Owner') return 'owner-sarah';
+  return 'owner-'+combo.name.toLowerCase().replace(/[^a-z]/g,'-');
+}
+
 function getHorsesForUser(){
   var role=S.role;
   var roles=S.roles;
@@ -893,8 +908,9 @@ function getHorsesForUser(){
     });
   }
   if(hasRole('owner')){
-    // Owner (Sarah K.) sees horses she owns or leases
-    var myId='owner-sarah';
+    // Owner sees horses she owns or leases — myId reflects whichever owner
+    // persona is currently active, not just the default Emily/Sarah one.
+    var myId=getCurrentOwnerUserId();
     HORSES_ALL.forEach(function(h){
       var isOwner=h.owners.some(function(o){return o.userId===myId;});
       if(isOwner){
@@ -1374,7 +1390,7 @@ function getPad(isVet,showHorse){
 // FIRST-LOGIN WELCOME SHEET
 // ══════════════════════════════════════════════════════════════════════════
 function rWelcomeSheet(){
-  var personaMatch=ROLE_COMBOS.find(function(c){return c.roles.length===1&&c.roles[0]===S.role;});
+  var personaMatch=ROLE_COMBOS[S.roleComboIdx];
   var personaName=personaMatch?personaMatch.name.split(' ')[0]:'there';
 
   var WELCOME_CONTENT={
@@ -2733,7 +2749,13 @@ function rOnboarding(){
 // Invite FAB asks which one you mean before proceeding (see
 // rPeopleInviteChoiceSheet). A single-scope persona skips that question
 // entirely and goes straight to the one flow that applies.
-const CURRENT_OWNER_USERID='owner-sarah'; // matches the app-wide convention (see getHorsesForUser, rAddHorse)
+// NOTE: was hardcoded to 'owner-sarah' — same bug class as
+// getHorsesForUser()/rAddHorse() before their fix: any owner persona other
+// than the default (e.g. "New Owner"/Nadia) would fail this equality check
+// for THEIR OWN entry, causing the current user to incorrectly show up as
+// a "Co-owner" of their own horse. Resolved via getCurrentOwnerUserId() at
+// use-time instead of a fixed constant, so it always reflects the active
+// persona.
 
 function getUnifiedPeopleList(){
   var hasOwnHorses=S.newOwnerDemo?false:getHorsesForUser().some(function(r){return r.rel==='own';});
@@ -2748,9 +2770,19 @@ function getUnifiedPeopleList(){
     if(horseName&&p.horseNames.indexOf(horseName)<0) p.horseNames.push(horseName);
     if(proId) p.barnProId=proId;
   }
+  // BARN_PROFESSIONALS uses the abbreviation 'Vet' for type, while every
+  // other role reference in this app (h.vet-derived personal connections,
+  // ROLE_ORDER, personRoleColor, PEOPLE_APPT_ROLES) uses the full
+  // 'Veterinarian'. Left unnormalized, barn-scope vets were landing in a
+  // separate, unstyled 'Vet' group instead of merging into the real
+  // Veterinarian section — no matching color, no appointment/visit actions
+  // (both keyed off the full word) — which is what actually caused the
+  // formatting inconsistency between the Veterinarian block and the others.
+  var ROLE_TYPE_NORMALIZE={Vet:'Veterinarian'};
   if(hasBarnRole){
     BARN_PROFESSIONALS.forEach(function(pro){
-      addPerson(pro.name,pro.type,'barn',null,pro.id);
+      var normRole=ROLE_TYPE_NORMALIZE[pro.type]||pro.type;
+      addPerson(pro.name,normRole,'barn',null,pro.id);
       people[pro.name].nayNay=pro.nayNay;
     });
   }
@@ -2761,7 +2793,7 @@ function getUnifiedPeopleList(){
       if(h.trainer) addPerson(h.trainer,'Trainer','personal',h.name);
       (h.pros||[]).forEach(function(p){addPerson(p.name,p.role,'personal',h.name);});
       (h.owners||[]).forEach(function(o){
-        var isMe=o.userId===CURRENT_OWNER_USERID;
+        var isMe=o.userId===getCurrentOwnerUserId();
         if(!isMe) addPerson(o.name,'Co-owner','personal',h.name);
       });
     });
@@ -2789,22 +2821,77 @@ function peopleInviteHorseAction(){
 }
 
 function rPeoplePage(){
+  // "My barn/business" (choice sheet, or the direct FAB path for a
+  // single-scope barn/pro persona) sets S.mgrInviteSheet or
+  // S.barnConnectFlow, but this page builds its own unified list rather
+  // than delegating to rMgrSetupConnections()/rProSetupConnections() the
+  // way it used to — so those two legacy functions' invite-sheet overlays
+  // never actually got a chance to render once People stopped calling them.
+  // Rather than extracting/refactoring their large, proven sheet-rendering
+  // logic out, delegate to the legacy page WHOLESALE for the duration the
+  // sheet is open (it renders both the sheet and its own connections list
+  // correctly); once the sheet closes (state goes back to null), control
+  // returns to this page's own unified list on the next render.
+  if(S.mgrInviteSheet) return rMgrSetupConnections();
+  if(S.barnConnectFlow) return rProSetupConnections(S.barnConnectFlow.role==='vet'?'vet':'trainer');
+
   var data=getUnifiedPeopleList();
   var hasOwnHorses=data.hasOwnHorses, hasBarnRole=data.hasBarnRole;
   if(!S.peopleSearch) S.peopleSearch='';
   if(!S.peopleRoleFilter) S.peopleRoleFilter=[];
 
-  // ── No data at all: role-appropriate empty state ──────────────────────────
-  if(!hasOwnHorses&&!hasBarnRole){
-    return '<div style="padding:14px;">'
-      +'<div style="font-size:18px;font-weight:800;color:var(--md-on-surface);margin-bottom:14px;">People</div>'
-      +'<div style="background:var(--md-surface-variant);border-radius:14px;padding:20px;text-align:center;">'
-        +msiIcon('group',28,'var(--md-on-surface-dim)')
-        +'<div style="font-size:14px;font-weight:700;color:var(--md-on-surface);margin:10px 0 4px;">No horses yet</div>'
-        +'<div style="font-size:12px;color:var(--md-on-surface-dim);margin-bottom:14px;">Once you add a horse, everyone connected to their care will show up here.</div>'
-        +'<button onclick="S.showAddHorse=true;rerender()" style="background:var(--md-primary);color:#fff;border:none;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Add your first horse</button>'
-      +'</div></div>';
+  // ── Empty state: no one connected yet ───────────────────────────────────
+  // Triggers whenever the unified list is genuinely empty (not just
+  // filtered-empty from a search) — covers both a brand-new persona and one
+  // who already has horses/barn access but hasn't invited anyone. This is a
+  // first-impression / value-explainer moment, not just a "nothing here"
+  // notice, so it carries real copy instead of a one-liner: what the
+  // ecosystem is for, what happens when someone's invited (they get their
+  // own account, and — for barn/business invites — manage their own
+  // services through it), that functionality works even before they accept,
+  // and what messaging is for once they're connected. Three role-tailored
+  // variants share this structure with different framing/CTA.
+  if(!data.people.length){
+    function emptyCard(icon,heading,body,ctaLabel,ctaAction){
+      return '<div style="padding:14px;">'
+        +'<div style="font-size:18px;font-weight:800;color:var(--md-on-surface);margin-bottom:14px;">People</div>'
+        +'<div style="background:var(--md-surface-variant);border-radius:16px;padding:24px 20px;text-align:center;">'
+          +'<div style="width:52px;height:52px;border-radius:50%;background:var(--md-primary-container);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">'+msiIcon(icon,26,'var(--md-primary)')+'</div>'
+          +'<div style="font-size:16px;font-weight:800;color:var(--md-on-surface);margin-bottom:10px;">'+heading+'</div>'
+          +'<div style="font-size:13px;color:var(--md-on-surface-variant);line-height:1.6;margin-bottom:18px;text-align:left;">'+body+'</div>'
+          +'<button onclick="'+ctaAction+'" style="background:var(--md-primary);color:#fff;border:none;border-radius:10px;padding:11px 20px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">'+ctaLabel+'</button>'
+        +'</div></div>';
+    }
+
+    var chatLine='Once they\u2019re connected, chat keeps every conversation about a visit, a horse, or a schedule change in one thread \u2014 instead of scattered texts you have to dig back through.';
+    var noWaitLine='You don\u2019t have to wait for them to accept, either \u2014 you can already request an appointment or book them into a barn visit as soon as they\u2019re added, even before they\u2019ve signed up.';
+
+    // ── Owner ────────────────────────────────────────────────────────────
+    if(S.role==='owner'&&!hasBarnRole){
+      if(!hasOwnHorses){
+        return emptyCard('group','Build your horse\u2019s care team',
+          'Your vet, trainer, farrier, and anyone else involved in your horse\u2019s care can all live in one place. Add your first horse, then invite the people who care for them \u2014 each one gets their own NayNay account to work from.<br><br>'+noWaitLine+'<br><br>'+chatLine,
+          'Add your first horse',"S.showAddHorse=true;rerender()");
+      }
+      return emptyCard('group','Build your horse\u2019s care team',
+        'Invite your vet, trainer, farrier, or anyone else involved in your horse\u2019s care. They\u2019ll set up their own NayNay account \u2014 from there you can share records, request appointments, and message them directly.<br><br>'+noWaitLine+'<br><br>'+chatLine,
+        'Invite someone',"peopleOpenInviteFlow('personal');rerender()");
+    }
+
+    // ── Barn Manager ─────────────────────────────────────────────────────
+    if(S.role==='manager'){
+      return emptyCard('home_work','Bring your barn\u2019s professionals onboard',
+        'Every vet, farrier, trainer, and other pro who works with your barn can manage their own services, pricing, and availability right in NayNay \u2014 no more coordinating by phone. Invite them and they\u2019ll set up their own account.<br><br>'+noWaitLine+'<br><br>'+chatLine,
+        'Invite someone',"S.peopleInviteChoice=true;rerender()");
+    }
+
+    // ── Professional (Vet / Trainer / Breeder) ──────────────────────────
+    return emptyCard('diversity_3','Connect to the horses and barns you work with',
+      'Add the barns you visit and the horses you care for. Appointment requests, barn visit scheduling, and care records all flow through one shared record \u2014 and if a barn invites you, you can manage your services and availability right in NayNay instead of juggling a different system for each one.<br><br>'+noWaitLine+'<br><br>'+chatLine,
+      'Invite someone',"S.peopleInviteChoice=true;rerender()");
   }
+
+
 
   // ── Filtering ──────────────────────────────────────────────────────────────
   var q=(S.peopleSearch||'').toLowerCase();
@@ -2873,7 +2960,9 @@ function rPeoplePage(){
               actions.push({label:'Request visit',icon:'home_work',action:"S.scheduleVisitSheet={step:1,proId:'"+p.barnProId+"',proName:'"+p.name+"',proRole:'"+roleName+"',service:'',date:'',timeStart:'',timeEnd:'',notes:''};"});
             }
           } else {
-            actions.push({label:'Invite to NayNay',icon:'send',action:"window._inviteState={open:true,step:1,name:'"+p.name+"',role:'"+roleName+"',email:'',phone:'',inviteCode:null};"});
+            var scopeForInvite=p.scopes.indexOf('personal')>=0?'personal':'barn';
+            var horseForInvite=(scopeForInvite==='personal'&&hasOwnHorses)?getHorsesForUser().filter(function(r){return r.rel==='own';}).find(function(r){return p.horseNames.indexOf(r.horse.name)>=0;}):null;
+            actions.push({label:'Invite to NayNay',icon:'send',action:"window._inviteState={open:true,step:1,scope:'"+scopeForInvite+"',horseId:"+(horseForInvite?"'"+horseForInvite.horse.id+"'":'null')+",skipMutation:true,name:'"+p.name+"',role:'"+roleName+"',email:'',phone:'',inviteCode:null,showContacts:false};"});
           }
           
 var revokeAction="if(confirm('Remove "+p.name.replace(/'/g,"\\'")+" from your connections?')){"
@@ -2888,12 +2977,19 @@ var revokeAction="if(confirm('Remove "+p.name.replace(/'/g,"\\'")+" from your co
                 +'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:2px;">'+scopeBadges+(p.nayNay?'<span style="background:var(--md-primary-container);color:var(--md-primary);font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;margin-right:4px;">on NayNay</span>':'')+detail+'</div>'
               +'</div>'
             +'</div>'
-            +'<div style="display:flex;gap:6px;flex-wrap:wrap;">'
+            +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">'
               +actions.map(function(a){
-                return '<button onclick="'+a.action+'rerender()" style="display:flex;align-items:center;gap:4px;background:'+(a.danger?'var(--md-error-container)':'var(--md-surface-variant)')+';border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;color:'+(a.danger?'var(--md-error)':'var(--md-primary)')+';cursor:pointer;font-family:\'DM Sans\',sans-serif;">'+msiIcon(a.icon,12,'var(--md-primary)')+a.label+'</button>';
+                return '<button onclick="'+a.action+'rerender()" style="display:flex;align-items:center;gap:4px;background:'+(a.danger?'var(--md-error-container)':'var(--md-surface-variant)')+';border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;color:'+(a.danger?'var(--md-error)':'var(--md-primary)')+';cursor:pointer;font-family:\'DM Sans\',sans-serif;white-space:nowrap;">'+msiIcon(a.icon,12,'var(--md-primary)')+a.label+'</button>';
               }).join('')
-            +'</div>'
-            +'<button onclick="'+revokeAction+'" style="background:none;border:none;padding:4px 2px;font-size:10px;font-weight:600;color:var(--md-on-surface-dim);cursor:pointer;font-family:\'DM Sans\',sans-serif;text-decoration:underline;flex-shrink:0;">Revoke</button>'
+              // Revoke lives inside the SAME wrapping flex row as the action
+              // chips (not a separate space-between row) — with a variable
+              // number of action buttons per role (Vet gets Message +
+              // Request visit; most others just get Message), a
+              // justify-content:space-between sibling row caused inconsistent
+              // card heights depending on whether the actions wrapped to a
+              // second line. Keeping everything in one flex-wrap row fixes
+              // that regardless of how many actions a given role has.
+              +'<button onclick="'+revokeAction+'" style="background:none;border:none;padding:6px 2px;font-size:10px;font-weight:600;color:var(--md-on-surface-dim);cursor:pointer;font-family:\'DM Sans\',sans-serif;text-decoration:underline;white-space:nowrap;">Revoke</button>'
             +'</div>'
           +'</div>';
         }).join('');
@@ -2939,17 +3035,20 @@ var revokeAction="if(confirm('Remove "+p.name.replace(/'/g,"\\'")+" from your co
 // ── Invite FAB — see rPeopleInviteChoiceSheet / rPeopleHorsePickerSheet for
   // the disambiguation flow this triggers when a persona has both scopes.
   var fabAction;
-  if(hasOwnHorses&&hasBarnRole) fabAction="S.peopleInviteChoice=true;";
-  else if(hasOwnHorses) fabAction="peopleInviteHorseAction();";
-  else if(S.role==='manager') fabAction="S.mgrInviteSheet={step:1,role:null,firstName:'',lastName:'',email:'',phone:'',inviteCode:generateInviteCode()};";
-  else if(S.role==='vet') fabAction="S.barnConnectFlow={role:'Veterinarian',step:'search',query:'',selected:null,sent:false};";
-  else fabAction="S.barnConnectFlow={role:'Trainer',step:'search',query:'',selected:null,sent:false};";
+  // Owner (no barn role): single action, straight into the unified invite
+  // flow. Manager/Vet/Trainer/Breeder (any barn role) ALWAYS gets both
+  // options via the choice sheet, regardless of whether they personally
+  // own horses — as a professional, "my horse" means any horse they work
+  // with (see peopleRelevantHorses()), not literal ownership.
+  if(hasBarnRole) fabAction="S.peopleInviteChoice=true;";
+  else fabAction="peopleOpenInviteFlow('personal');";
   var fab='<button onclick="'+fabAction+'rerender()" style="position:fixed;bottom:80px;right:20px;z-index:200;width:54px;height:54px;border-radius:50%;background:var(--md-primary);border:none;box-shadow:0 4px 14px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;cursor:pointer;">'+msiIcon('person_add',24,'#fff')+'</button>';
 
   var choiceSheet=S.peopleInviteChoice?rPeopleInviteChoiceSheet():'';
   var horsePickerSheet=S.peopleInviteHorsePicker?rPeopleHorsePickerSheet():'';
+  var inviteSheetOverlay=rInvitePersonSheet();
 
-  return choiceSheet+horsePickerSheet+fab+'<div style="padding:14px;padding-bottom:80px;">'
+  return inviteSheetOverlay+choiceSheet+horsePickerSheet+fab+'<div style="padding:14px;padding-bottom:80px;">'
     +'<div style="font-size:18px;font-weight:800;color:var(--md-on-surface);margin-bottom:14px;">People</div>'
     +pendingSection
     +searchBar+filterPills
@@ -2960,17 +3059,21 @@ var revokeAction="if(confirm('Remove "+p.name.replace(/'/g,"\\'")+" from your co
 // ── Disambiguation: "invite for a horse" vs "invite to the barn/business" ───
 function rPeopleInviteChoiceSheet(){
   var close="S.peopleInviteChoice=false;";
+  // Both options route into the SAME unified invite flow
+  // (peopleOpenInviteFlow -> rInvitePersonSheet), differing only in scope
+  // ('personal' vs 'barn') — no more separate mgrInviteSheet/barnConnectFlow
+  // mechanisms here.
   return '<div onclick="'+close+'rerender()" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:400;display:flex;flex-direction:column;justify-content:flex-end;">'
     +'<div onclick="event.stopPropagation()" style="background:var(--md-surface);border-radius:20px 20px 0 0;padding:18px 16px 26px;">'
       +'<div style="width:36px;height:4px;border-radius:2px;background:var(--md-outline-variant);margin:0 auto 16px;"></div>'
       +'<div style="font-size:16px;font-weight:800;color:var(--md-on-surface);margin-bottom:14px;">Who is this invite for?</div>'
-      +'<button onclick="'+close+'peopleInviteHorseAction();rerender()" style="width:100%;display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--md-surface-variant);border:none;border-radius:12px;cursor:pointer;text-align:left;margin-bottom:8px;">'
+      +'<button onclick="'+close+"peopleOpenInviteFlow('personal');"+'rerender()" style="width:100%;display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--md-surface-variant);border:none;border-radius:12px;cursor:pointer;text-align:left;margin-bottom:8px;">'
         +'<div style="width:38px;height:38px;border-radius:10px;background:var(--md-primary-container);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon('favorite',18,'var(--md-primary)')+'</div>'
         +'<div><div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">One of my horses</div><div style="font-size:11px;color:var(--md-on-surface-dim);">A vet, trainer, or other professional for a horse you own</div></div>'
       +'</button>'
-      +'<button onclick="'+close+(S.role==='manager'?"S.mgrInviteSheet={step:1,role:null,firstName:'',lastName:'',email:'',phone:'',inviteCode:generateInviteCode()};":"S.barnConnectFlow={role:'"+(S.role==='vet'?'Veterinarian':'Trainer')+"',step:'search',query:'',selected:null,sent:false};")+'rerender()" style="width:100%;display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--md-surface-variant);border:none;border-radius:12px;cursor:pointer;text-align:left;">'
+      +'<button onclick="'+close+"peopleOpenInviteFlow('barn');"+'rerender()" style="width:100%;display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--md-surface-variant);border:none;border-radius:12px;cursor:pointer;text-align:left;">'
         +'<div style="width:38px;height:38px;border-radius:10px;background:var(--md-tertiary-container);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon('home_work',18,'var(--md-tertiary)')+'</div>'
-        +'<div><div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">My barn/business</div><div style="font-size:11px;color:var(--md-on-surface-dim);">Someone joining the barn broadly, not tied to one horse</div></div>'
+        +'<div><div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">'+(S.role==='manager'?'My barn':'My business')+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">Someone joining the barn broadly, not tied to one horse</div></div>'
       +'</button>'
     +'</div>'
   +'</div>';
@@ -2979,18 +3082,19 @@ function rPeopleInviteChoiceSheet(){
 // ── Horse picker: which owned horse is this invite for? ──────────────────────
 function rPeopleHorsePickerSheet(){
   var close="S.peopleInviteHorsePicker=false;";
-  var ownedHorses=getHorsesForUser().filter(function(r){return r.rel==='own';}).map(function(r){return r.horse;});
+  var relevantHorses=peopleRelevantHorses();
   // The single-horse case is handled BEFORE this sheet ever opens — see
-  // peopleInviteHorseAction() in rPeoplePage/rPeopleInviteChoiceSheet, which
-  // jumps straight to the invite flow instead of triggering this picker at
-  // all when there's nothing to pick between. This function only renders
-  // when there are genuinely 2+ owned horses to choose from.
+  // peopleOpenInviteFlow(), which jumps straight to the invite flow instead
+  // of triggering this picker when there's nothing to pick between. This
+  // function only renders when there are genuinely 2+ relevant horses.
+  // Picking one opens the SAME unified invite flow (rInvitePersonSheet)
+  // directly, scoped to that horse — no navigation away from People.
   return '<div onclick="'+close+'rerender()" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:400;display:flex;flex-direction:column;justify-content:flex-end;">'
     +'<div onclick="event.stopPropagation()" style="background:var(--md-surface);border-radius:20px 20px 0 0;padding:18px 16px 26px;">'
       +'<div style="width:36px;height:4px;border-radius:2px;background:var(--md-outline-variant);margin:0 auto 16px;"></div>'
       +'<div style="font-size:16px;font-weight:800;color:var(--md-on-surface);margin-bottom:14px;">Which horse?</div>'
-      +ownedHorses.map(function(h){
-        return '<button onclick="'+close+'S.selectedHorse=\''+h.id+'\';S.horseTab=\'connections\';window._inviteState={open:true,step:1,name:\'\',role:\'Veterinarian\',email:\'\',phone:\'\',inviteCode:null};rerender()" style="width:100%;display:flex;align-items:center;gap:11px;padding:11px 13px;background:var(--md-surface-variant);border:none;border-radius:11px;cursor:pointer;text-align:left;margin-bottom:7px;">'
+      +relevantHorses.map(function(h){
+        return '<button onclick="'+close+'window._inviteState={open:true,step:1,scope:\'personal\',horseId:\''+h.id+'\',name:\'\',role:\'Veterinarian\',email:\'\',phone:\'\',inviteCode:null,showContacts:false};rerender()" style="width:100%;display:flex;align-items:center;gap:11px;padding:11px 13px;background:var(--md-surface-variant);border:none;border-radius:11px;cursor:pointer;text-align:left;margin-bottom:7px;">'
           +horseAvatar(h,32)
           +'<span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+h.name+'</span>'
         +'</button>';
@@ -6363,9 +6467,9 @@ function rAddHorse(){
   var BARNS_LIST=Object.values(BARNS).filter(function(b){return b.id!=='unassigned';});
 
   // ── Current persona (for "My Horse" ownership assignment) ───────────────────
-  var personaMatch=ROLE_COMBOS.find(function(c){return c.roles.length===1&&c.roles[0]===S.role;});
+  var personaMatch=ROLE_COMBOS[S.roleComboIdx];
   var currentPersonaName=personaMatch?personaMatch.name:'You';
-  var currentPersonaUserId='owner-'+currentPersonaName.toLowerCase().replace(/[^a-z]/g,'-');
+  var currentPersonaUserId=getCurrentOwnerUserId();
   var isOwnerRole=(S.role==='owner');
   var mineMode=isOwnerRole||st.horseOwnership==='mine';
   // Barn + stall assignment is a barn-management action, not part of an
@@ -6529,6 +6633,14 @@ function rAddHorse(){
     +"var newId='horse_'+Date.now();"
     +"HORSES_ALL.push({id:newId,photo:stx.photo||'',name:stx.name,registeredName:stx.registeredName||'',breed:(stx.mixedBreed?((stx.breed||'Warmblood')+(stx.secondaryBreed?' x '+stx.secondaryBreed:' Mix')):(stx.breed||'Warmblood')),color:stx.color||'Bay',age:ageLabel,birthDateISO:birthDateISO,sex:stx.sex||'Gelding',barn:barnId,stall:stx.stall||'',purchaseDate:stx.purchaseDate||'',heightHH:stx.heightHH||'',microchip:stx.microchip||'',markings:stx.markings||[],owners:ownersArr,trainer:'',vet:'',avatar:{bg:'#6A3A18',mane:'#2A1A08',sock:'#F5EDE0',marking:null},note:stx.notes||'',alerts:[]});"
     +"stx.submitted=true;stx.createdId=newId;stx.becameOwner=becameOwner;"
+    // Creating a real horse means this persona is no longer "empty demo
+    // data" — S.newOwnerDemo forces ownerScopedHorses()/getUnifiedPeopleList()
+    // etc. to show empty regardless of what's actually in HORSES_ALL, which
+    // meant the People page (and Home) kept showing their "no horses yet"
+    // empty state even after a New Owner successfully added one. Clearing
+    // the flag here means every scoped view picks up the real, now-nonempty
+    // data on the very next render.
+    +"S.newOwnerDemo=false;"
     +"S.selectedHorse=newId;S.horseTab='connections';S.showAddHorse=false;"
     +"showToast(stx.name+' added!','check_circle','success');"
     +resetState
@@ -8877,6 +8989,17 @@ function journalEntryTypesForRole(){
   return all.filter(function(t){return allowed.includes(t.type);});
 }
 
+// Mock device-contacts list for the "Import from Contacts" flow — this is
+// a prototype, so there's no real Contacts API access; this stands in for
+// what a picker sourced from the device's contacts would show.
+const MOCK_CONTACTS=[
+  {name:'Dr. Sarah Chen',email:'s.chen@email.com',phone:'(555) 214-7789'},
+  {name:'Mike Thompson',email:'mthompson@email.com',phone:'(555) 908-2231'},
+  {name:'Rachel Nguyen',email:'rachel.n@email.com',phone:'(555) 445-1102'},
+  {name:'James Patterson',email:'jpatterson@email.com',phone:'(555) 673-9940'},
+  {name:'Dr. Amara Okafor',email:'a.okafor@email.com',phone:'(555) 312-6685'},
+];
+
 const REHAB_MODALITIES=['Massage','Chiropractic Adjustment','Acupuncture','Physical Therapy','PEMF','Laser Therapy','Shockwave Therapy','Stretching & Mobility','Myofascial Release','Aqua Treadmill','Hydrotherapy','Cold Saltwater Spa','Other'];
 const TRAINING_JOURNAL_TYPES=['Flat','Hack','Jump','Dressage','Fitness','Groundwork','Trail','Other'];
 
@@ -8994,6 +9117,147 @@ function rProgramSheet(h){
       +body
     +'</div>'
   +'</div>';
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// UNIFIED "Invite a person" flow
+// ══════════════════════════════════════════════════════════════════════════
+// One consistent flow — Role → contact info (+ Import from Contacts) →
+// preview & send — used everywhere someone gets invited, whether that's an
+// owner adding a professional to a specific horse, or a manager/pro adding
+// someone to their barn/business roster. window._inviteState.scope
+// ('personal'|'barn') is what used to be two entirely separate mechanisms
+// (this horse-scoped panel, vs S.mgrInviteSheet/S.barnConnectFlow) — those
+// are retired in favor of this single flow. scope determines:
+//   - the message wording (a specific horse's care team vs the barn itself)
+//   - what gets mutated on send: 'personal' writes to the target horse's
+//     h.vet/h.trainer/h.pros; 'barn' pushes a new BARN_PROFESSIONALS entry.
+// Not closure-bound to any particular horse — horseId lives in state, so
+// this same function renders correctly whether triggered from a horse's own
+// Connections tab or from the People page.
+function peopleRelevantHorses(){
+  // Owner (no barn role): "my horse" means literally owned. Manager/Vet/
+  // Trainer/Breeder: "my horse" means any horse they have a working
+  // relationship with, not strictly ownership — reflects how a barn
+  // professional actually relates to horses day to day.
+  var isPureOwner=(S.role==='owner')&&!anyRole('manager','vet','trainer','breeder');
+  if(isPureOwner){
+    return S.newOwnerDemo?[]:getHorsesForUser().filter(function(r){return r.rel==='own';}).map(function(r){return r.horse;});
+  }
+  return getHorsesForUser().map(function(r){return r.horse;});
+}
+
+// Click-time branching (not render-time) so it correctly reflects the
+// CURRENT horse count. scope 'barn' opens the flow directly (no horse
+// needed); scope 'personal' auto-picks when there's exactly one relevant
+// horse, otherwise shows a picker first.
+function peopleOpenInviteFlow(scope){
+  var freshInvite={open:true,step:1,scope:scope,horseId:null,name:'',role:'Veterinarian',email:'',phone:'',inviteCode:null,showContacts:false};
+  if(scope==='barn'){
+    window._inviteState=freshInvite;
+    return;
+  }
+  var horses=peopleRelevantHorses();
+  if(horses.length===1){
+    freshInvite.horseId=horses[0].id;
+    window._inviteState=freshInvite;
+  } else if(horses.length>1){
+    S.peopleInviteHorsePicker=true;
+  }
+  // horses.length===0: nothing to invite someone to yet — the FAB/choice
+  // sheet paths that reach here are already gated so this shouldn't occur
+  // for a persona with no horses at all, but fails safe (no-op) if it does.
+}
+
+function rInvitePersonSheet(){
+  if(!window._inviteState) window._inviteState={open:false,step:1,scope:'personal',horseId:null,name:'',role:'Veterinarian',email:'',phone:'',inviteCode:null,showContacts:false};
+  var inv=window._inviteState;
+  if(!inv.open) return '';
+
+  var horseObj=inv.horseId?HORSES_ALL.find(function(hh){return hh.id===inv.horseId;}):null;
+  var targetName=inv.scope==='barn'?'Sunrise Stables':(horseObj?horseObj.name:'');
+  var sheetTitle=inv.scope==='barn'?'Invite to your barn':'Add a professional';
+
+  var closeAction="window._inviteState={open:false,step:1,scope:'personal',horseId:null,name:'',role:'Veterinarian',email:'',phone:'',inviteCode:null,showContacts:false};";
+
+  var ROLE_OPTIONS=['Veterinarian','Trainer','Farrier','Dentist','Chiropractor','Acupuncturist','Masseuse','Nutritionist','Other'];
+
+  // ── Step 1: contact info ────────────────────────────────────────────
+  if(inv.step===1){
+    return '<div onclick="'+closeAction+'rerender()" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:400;display:flex;flex-direction:column;justify-content:flex-end;">'
+      +'<div onclick="event.stopPropagation()" style="background:var(--md-surface);border-radius:20px 20px 0 0;padding:20px 16px 32px;max-height:88vh;overflow-y:auto;">'
+      +'<div style="width:36px;height:4px;border-radius:2px;background:var(--md-outline-variant);margin:0 auto 18px;"></div>'
+      +'<div style="font-size:16px;font-weight:700;color:var(--md-on-surface);margin-bottom:14px;display:flex;align-items:center;gap:8px;">'+msiIcon('person_add',18,'var(--md-primary)')+sheetTitle+'</div>'
+      +'<div style="margin-bottom:10px;"><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">Role</label>'
+      +'<select oninput="window._inviteState.role=this.value" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:9px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;">'+ROLE_OPTIONS.map(function(opt){return '<option value="'+opt+'"'+(inv.role===opt?' selected':'')+'>'+opt+'</option>';}).join('')+'</select></div>'
+      +'<button onclick="window._inviteState.showContacts=!window._inviteState.showContacts;rerender()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:7px;background:var(--md-primary-container);border:none;border-radius:10px;padding:10px;font-size:12px;font-weight:700;color:var(--md-primary);cursor:pointer;font-family:\'DM Sans\',sans-serif;margin-bottom:12px;">'+msiIcon('contacts',15,'var(--md-primary)')+'Import from Contacts</button>'
+      +(inv.showContacts?('<div style="background:var(--md-surface-variant);border-radius:10px;padding:6px;margin-bottom:12px;max-height:180px;overflow-y:auto;">'
+        +MOCK_CONTACTS.map(function(ct){
+          return '<button onclick="window._inviteState.name=\''+ct.name+'\';window._inviteState.email=\''+ct.email+'\';window._inviteState.phone=\''+ct.phone+'\';window._inviteState.showContacts=false;rerender()" style="width:100%;display:flex;align-items:center;gap:10px;padding:8px 9px;background:none;border:none;border-radius:8px;cursor:pointer;text-align:left;">'
+            +'<div style="width:30px;height:30px;border-radius:50%;background:var(--md-primary-container);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--md-primary);flex-shrink:0;">'+ct.name.charAt(0)+'</div>'
+            +'<div><div style="font-size:12px;font-weight:700;color:var(--md-on-surface);">'+ct.name+'</div><div style="font-size:10px;color:var(--md-on-surface-dim);">'+ct.phone+'</div></div>'
+          +'</button>';
+        }).join('')
+      +'</div>'):'')
+      +'<div style="margin-bottom:10px;"><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">Name</label>'
+      +'<input type="text" value="'+inv.name+'" oninput="window._inviteState.name=this.value" placeholder="Full name" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:9px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">'
+      +'<div><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">Email</label>'
+      +'<input type="email" value="'+inv.email+'" oninput="window._inviteState.email=this.value" placeholder="email@example.com" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:9px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>'
+      +'<div><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">Phone</label>'
+      +'<input type="tel" value="'+inv.phone+'" oninput="window._inviteState.phone=this.value" placeholder="(555) 000-0000" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:9px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>'
+      +'</div>'
+      +'<div style="background:var(--md-surface-variant);border-radius:9px;padding:9px 11px;font-size:11px;color:var(--md-on-surface-dim);margin-bottom:14px;line-height:1.5;">'+msiIcon('info',12,'var(--md-primary)')+" If they're on NayNay, they'll be sent a notification to connect instantly. Otherwise we'll send them an invite."+'</div>'
+      +'<div style="display:flex;gap:8px;">'
+      +'<button onclick="'+closeAction+'rerender()" style="flex:1;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:12px;padding:12px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface);">Cancel</button>'
+      +'<button onclick="'+(inv.name?"window._inviteState.step=2;window._inviteState.inviteCode=window._inviteState.inviteCode||generateInviteCode();rerender()":'void 0')+'" style="flex:1;background:'+(inv.name?'var(--md-primary)':'var(--md-outline-variant)')+';color:'+(inv.name?'#fff':'var(--md-on-surface-dim)')+';border:none;border-radius:12px;padding:12px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(inv.name?'pointer':'not-allowed')+';">Preview invite</button>'
+      +'</div></div></div>';
+  }
+
+  // ── Step 2: message preview + native share ──────────────────────────
+  var roleColorMap={Veterinarian:'var(--md-secondary)',Trainer:'var(--md-tertiary)',Farrier:'var(--md-warning)',Dentist:'var(--md-error)',Chiropractor:'var(--md-primary)',Acupuncturist:'var(--md-primary)',Masseuse:'var(--md-secondary)',Nutritionist:'var(--md-tertiary)',Other:'var(--md-on-surface-dim)'};
+  var rc=roleColorMap[inv.role]||'var(--md-primary)';
+  var msg=inv.scope==='barn'
+    ?("Hi "+inv.name+",\n\nI'd like to add you to "+targetName+"'s team on NayNay so we can coordinate care, schedule visits, and stay in sync.\n\nJoin here: https://naynay.app/join/"+inv.inviteCode+"\n\n\u2014 sent via NayNay")
+    :("Hi "+inv.name+",\n\nI'd like to add you to "+targetName+"'s care team on NayNay so we can share health records, schedule visits, and stay coordinated in one place.\n\nJoin here: https://naynay.app/join/"+inv.inviteCode+"\n\n\u2014 sent via NayNay");
+  var shareUrl='https://naynay.app/join/'+inv.inviteCode;
+
+  var submitJs="(function(){"
+    +"var name="+JSON.stringify(inv.name).replace(/"/g,'&quot;')+";"
+    +"var role="+JSON.stringify(inv.role).replace(/"/g,'&quot;')+";"
+    // skipMutation: used when re-inviting someone who's ALREADY a known
+    // connection (the People page row action for a not-yet-on-NayNay
+    // person) — they're already in BARN_PROFESSIONALS / h.vet etc from
+    // when the connection was first made, so re-running that mutation
+    // here would create a duplicate barn entry or a harmless-but-pointless
+    // rewrite. This just sends the nudge message without touching data.
+    +(inv.skipMutation?"":(inv.scope==='barn'
+      // Barn scope: add a real BARN_PROFESSIONALS entry — not yet on
+      // NayNay (nayNay:false) since this is a fresh invite, matching how
+      // every other not-yet-connected barn professional is represented.
+      ?("var initials=name.split(' ').map(function(w){return w.charAt(0);}).join('').slice(0,2).toUpperCase();"
+        +"BARN_PROFESSIONALS.push({id:'bp_'+Date.now(),name:name,type:role,face:'face',email:"+JSON.stringify(inv.email).replace(/"/g,'&quot;')+",phone:"+JSON.stringify(inv.phone).replace(/"/g,'&quot;')+",nayNay:false,initials:initials,color:'var(--md-primary)',bg:'var(--md-primary-container)'});")
+      // Personal scope: same horse-mutation logic this always had, just
+      // keyed off inv.horseId (state) instead of a closure variable.
+      :("var hz=HORSES_ALL.find(function(hh){return hh.id==="+JSON.stringify(inv.horseId).replace(/"/g,'&quot;')+";});"
+        +"if(hz){if(role==='Veterinarian'){hz.vet=name;}else if(role==='Trainer'){hz.trainer=name;}else{hz.pros=hz.pros||[];hz.pros.push({role:role,name:name,next:null});}}")
+    ))
+    +"var msgTxt="+JSON.stringify(msg).replace(/"/g,'&quot;')+";"
+    +"var url="+JSON.stringify(shareUrl).replace(/"/g,'&quot;')+";"
+    +"if(navigator.share){navigator.share({title:'Join '+name+' on NayNay',text:msgTxt,url:url}).then(function(){"+closeAction+"showToast('Invite sent to '+name+'!','check_circle','success');rerender();}).catch(function(){});}"
+    +"else{try{navigator.clipboard.writeText(msgTxt);}catch(e){} "+closeAction+"showToast('Connected '+name+' \u2014 message copied to clipboard','content_copy','success');rerender();}"
+  +"})()";
+
+  return '<div onclick="'+closeAction+'rerender()" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:400;display:flex;flex-direction:column;justify-content:flex-end;">'
+    +'<div onclick="event.stopPropagation()" style="background:var(--md-surface);border-radius:20px 20px 0 0;padding:20px 16px 32px;max-height:88vh;overflow-y:auto;">'
+    +'<div style="width:36px;height:4px;border-radius:2px;background:var(--md-outline-variant);margin:0 auto 18px;"></div>'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><div style="width:32px;height:32px;border-radius:9px;background:'+rc+'22;display:flex;align-items:center;justify-content:center;">'+msiIcon('mail',16,rc)+'</div><div style="font-size:17px;font-weight:800;color:var(--md-on-surface);">Preview invite</div></div>'
+    +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:14px;">This message will be shared with <strong style="color:var(--md-on-surface);">'+inv.name+'</strong>.</div>'
+    +'<div style="background:var(--md-surface-variant);border:1.5px solid var(--md-outline-variant);border-radius:14px;padding:14px 15px;margin-bottom:16px;max-height:260px;overflow-y:auto;"><div style="font-size:12px;color:var(--md-on-surface);line-height:1.7;white-space:pre-wrap;">'+msg+'</div></div>'
+    +'<div style="display:flex;align-items:center;gap:10px;background:var(--md-primary-container);border-radius:12px;padding:10px 13px;margin-bottom:16px;">'+msiIcon('qr_code',20,'var(--md-primary)')+'<div><div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;">Invite code</div><div style="font-size:18px;font-weight:800;color:var(--md-primary);letter-spacing:3px;">'+inv.inviteCode+'</div></div><div style="flex:1;text-align:right;font-size:11px;color:var(--md-on-surface-dim);">naynay.app/join/'+inv.inviteCode+'</div></div>'
+    +'<button onclick="'+submitJs+'" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px;">'+msiIcon('ios_share',18,'#fff')+' Send invite</button>'
+    +'<button onclick="window._inviteState.step=1;rerender()" style="width:100%;background:transparent;border:none;padding:10px;font-size:13px;font-weight:700;color:var(--md-on-surface-dim);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Back</button>'
+    +'</div></div>';
 }
 
 function rJournalEntrySheet(h){
@@ -10168,7 +10432,7 @@ function rHorseDetail(h){
 
   var sessions=(HORSE_TRAINING_HISTORY[h.id]||[]);
 
-  if(!window._inviteState)window._inviteState={open:false,step:1,name:'',role:'Veterinarian',email:'',phone:'',inviteCode:null};
+  if(!window._inviteState)window._inviteState={open:false,step:1,scope:'personal',horseId:null,name:'',role:'Veterinarian',email:'',phone:'',inviteCode:null,showContacts:false};
   var inv=window._inviteState;
 
   // ── Connections Tab ───────────────────────────────────────────────────────
@@ -10224,7 +10488,7 @@ function rHorseDetail(h){
   // deliberately left blank at that point rather than guessed — the actual
   // owner gets added here, on Connections, as a follow-up step.
   if(!(h.owners||[]).length){
-    ownerCards=ctaCard('person','No owner assigned yet.','Add owner',"window._inviteState={open:true,name:'',role:'Owner',email:'',phone:'',step:1,inviteCode:null};rerender()");
+    ownerCards=ctaCard('person','No owner assigned yet.','Add owner',"window._inviteState={open:true,scope:'personal',horseId:'"+h.id+"',name:'',role:'Owner',email:'',phone:'',step:1,inviteCode:null,showContacts:false};rerender()");
   }
 
   // ── Empty-state CTA helper ───────────────────────────────────────────────
@@ -10281,7 +10545,7 @@ function rHorseDetail(h){
 
   var vetCard;
   if(!h.vet){
-    vetCard=ctaCard('medical_services','No veterinarian connected yet.','Invite a vet',"window._inviteState={open:true,name:'',role:'Veterinarian',email:'',phone:'',step:1,inviteCode:null};rerender()");
+    vetCard=ctaCard('medical_services','No veterinarian connected yet.','Invite a vet',"window._inviteState={open:true,scope:'personal',horseId:'+h.id+',name:'',role:'Veterinarian',email:'',phone:'',step:1,inviteCode:null};rerender()");
   } else {
     var vetPro=BARN_PROFESSIONALS.find(function(p){return p.type==='Vet'&&p.name===h.vet;});
     vetCard=connCard({
@@ -10291,7 +10555,7 @@ function rHorseDetail(h){
       email:vetPro?(vetPro.email||null):null,phone:vetPro?(vetPro.phone||null):null,
       nayNay:vetPro?vetPro.nayNay:false,
       actionLabel:(!vetPro||!vetPro.nayNay)?'Invite to NayNay':null,
-      actionFn:"window._inviteState={open:true,name:'"+h.vet+"',role:'Veterinarian',email:'"+(vetPro&&vetPro.email||'')+"',phone:'',step:1,inviteCode:null};rerender()",
+      actionFn:"window._inviteState={open:true,scope:'personal',horseId:'+h.id+',name:'"+h.vet+"',role:'Veterinarian',email:'"+(vetPro&&vetPro.email||'')+"',phone:'',step:1,inviteCode:null};rerender()",
     })+(anyRole('owner')?bookApptBtn(h.vet,'Vet',vetPro?vetPro.id:null):'');
   }
 
@@ -10300,7 +10564,7 @@ function rHorseDetail(h){
   // h.trainer is empty. Shows a CTA instead.
   var trainerCard;
   if(!h.trainer){
-    trainerCard=ctaCard('sports','No trainer connected yet.','Invite a trainer',"window._inviteState={open:true,name:'',role:'Trainer',email:'',phone:'',step:1,inviteCode:null};rerender()");
+    trainerCard=ctaCard('sports','No trainer connected yet.','Invite a trainer',"window._inviteState={open:true,scope:'personal',horseId:'+h.id+',name:'',role:'Trainer',email:'',phone:'',step:1,inviteCode:null};rerender()");
   } else {
     var trainerPro=BARN_PROFESSIONALS.find(function(p){return p.type==='Trainer'&&p.name===h.trainer;});
     trainerCard=connCard({
@@ -10312,7 +10576,7 @@ function rHorseDetail(h){
       email:trainerPro?trainerPro.email:null,phone:null,
       nayNay:trainerPro?trainerPro.nayNay:false,
       actionLabel:(!trainerPro||!trainerPro.nayNay)?'Invite to NayNay':null,
-      actionFn:"window._inviteState={open:true,name:'"+h.trainer+"',role:'Trainer',email:'"+(trainerPro&&trainerPro.email||'')+"',phone:'',step:1,inviteCode:null};rerender()",
+      actionFn:"window._inviteState={open:true,scope:'personal',horseId:'+h.id+',name:'"+h.trainer+"',role:'Trainer',email:'"+(trainerPro&&trainerPro.email||'')+"',phone:'',step:1,inviteCode:null};rerender()",
     })+(anyRole('owner')?bookApptBtn(h.trainer,'Trainer',trainerPro?trainerPro.id:null):'');
   }
 
@@ -10325,75 +10589,16 @@ function rHorseDetail(h){
       email:p.email||null,phone:p.phone||null,
       nayNay:p.nayNay,
       actionLabel:!p.nayNay?'Invite to NayNay':null,
-      actionFn:"window._inviteState={open:true,name:'"+p.name+"',role:'"+p.type+"',email:'"+(p.email||'')+"',phone:'"+(p.phone||'')+"',step:1,inviteCode:null};rerender()",
+      actionFn:"window._inviteState={open:true,scope:'personal',horseId:'+h.id+',name:'"+p.name+"',role:'"+p.type+"',email:'"+(p.email||'')+"',phone:'"+(p.phone||'')+"',step:1,inviteCode:null};rerender()",
     });
   }).join('');
 
   // ── Invite panel ─────────────────────────────────────────────────────────
   var ROLE_OPTIONS=['Veterinarian','Trainer','Farrier','Dentist','Chiropractor','Acupuncturist','Masseuse','Nutritionist','Other'];
-  var invitePanel=inv.open
-    ?(function(){
-      var horseName=h.name;
-      // ── Step 1: contact info ────────────────────────────────────────────
-      if(inv.step===1){
-        return '<div onclick="window._inviteState.open=false;rerender()" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:400;display:flex;flex-direction:column;justify-content:flex-end;">'
-          +'<div onclick="event.stopPropagation()" style="background:var(--md-surface);border-radius:20px 20px 0 0;padding:20px 16px 32px;max-height:88vh;overflow-y:auto;">'
-          +'<div style="width:36px;height:4px;border-radius:2px;background:var(--md-outline-variant);margin:0 auto 18px;"></div>'
-          +'<div style="font-size:16px;font-weight:700;color:var(--md-on-surface);margin-bottom:14px;display:flex;align-items:center;gap:8px;">'+msiIcon('person_add',18,'var(--md-primary)')+'Add a professional</div>'
-          +'<div style="margin-bottom:10px;"><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">Name</label>'
-          +'<input type="text" value="'+inv.name+'" oninput="window._inviteState.name=this.value" placeholder="Full name" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:9px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>'
-          +'<div style="margin-bottom:10px;"><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">Role</label>'
-          +'<select oninput="window._inviteState.role=this.value" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:9px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;">'+['Veterinarian','Trainer','Farrier','Dentist','Chiropractor','Acupuncturist','Masseuse','Nutritionist','Other'].map(function(opt){return '<option value="'+opt+'"'+(inv.role===opt?' selected':'')+'>'+opt+'</option>';}).join('')+'</select></div>'
-          +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">'
-          +'<div><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">Email</label>'
-          +'<input type="email" value="'+inv.email+'" oninput="window._inviteState.email=this.value" placeholder="email@example.com" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:9px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>'
-          +'<div><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">Phone</label>'
-          +'<input type="tel" value="'+inv.phone+'" oninput="window._inviteState.phone=this.value" placeholder="(555) 000-0000" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:9px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>'
-          +'</div>'
-          +'<div style="background:var(--md-surface-variant);border-radius:9px;padding:9px 11px;font-size:11px;color:var(--md-on-surface-dim);margin-bottom:14px;line-height:1.5;">'+msiIcon('info',12,'var(--md-primary)')+" If they're on NayNay, they'll be sent a notification to connect instantly. Otherwise we'll send them an invite."+'</div>'
-          +'<div style="display:flex;gap:8px;">'
-          +'<button onclick="window._inviteState.open=false;rerender()" style="flex:1;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:12px;padding:12px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface);">Cancel</button>'
-          +'<button onclick="'+(inv.name?"window._inviteState.step=2;window._inviteState.inviteCode=window._inviteState.inviteCode||generateInviteCode();rerender()":'void 0')+'" style="flex:1;background:'+(inv.name?'var(--md-primary)':'var(--md-outline-variant)')+';color:'+(inv.name?'#fff':'var(--md-on-surface-dim)')+';border:none;border-radius:12px;padding:12px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(inv.name?'pointer':'not-allowed')+';">Preview invite</button>'
-          +'</div></div></div>';
-      }
-      // ── Step 2: message preview + native share ──────────────────────────
-      var roleColorMap={Veterinarian:'var(--md-secondary)',Trainer:'var(--md-tertiary)',Farrier:'var(--md-warning)',Dentist:'var(--md-error)',Chiropractor:'var(--md-primary)',Acupuncturist:'var(--md-primary)',Masseuse:'var(--md-secondary)',Nutritionist:'var(--md-tertiary)',Other:'var(--md-on-surface-dim)'};
-      var rc=roleColorMap[inv.role]||'var(--md-primary)';
-      var msg="Hi "+inv.name+",\\n\\nI'd like to add you to "+horseName+"'s care team on NayNay so we can share health records, schedule visits, and stay coordinated in one place.\\n\\nJoin here: https://naynay.app/join/"+inv.inviteCode+"\\n\\n\\u2014 sent via NayNay";
-      var shareUrl='https://naynay.app/join/'+inv.inviteCode;
-      return '<div onclick="window._inviteState.open=false;rerender()" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:400;display:flex;flex-direction:column;justify-content:flex-end;">'
-        +'<div onclick="event.stopPropagation()" style="background:var(--md-surface);border-radius:20px 20px 0 0;padding:20px 16px 32px;max-height:88vh;overflow-y:auto;">'
-        +'<div style="width:36px;height:4px;border-radius:2px;background:var(--md-outline-variant);margin:0 auto 18px;"></div>'
-        +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><div style="width:32px;height:32px;border-radius:9px;background:'+rc+'22;display:flex;align-items:center;justify-content:center;">'+msiIcon('mail',16,rc)+'</div><div style="font-size:17px;font-weight:800;color:var(--md-on-surface);">Preview invite</div></div>'
-        +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:14px;">This message will be shared with <strong style="color:var(--md-on-surface);">'+inv.name+'</strong>.</div>'
-        +'<div style="background:var(--md-surface-variant);border:1.5px solid var(--md-outline-variant);border-radius:14px;padding:14px 15px;margin-bottom:16px;max-height:260px;overflow-y:auto;"><div style="font-size:12px;color:var(--md-on-surface);line-height:1.7;white-space:pre-wrap;">'+msg+'</div></div>'
-        +'<div style="display:flex;align-items:center;gap:10px;background:var(--md-primary-container);border-radius:12px;padding:10px 13px;margin-bottom:16px;">'+msiIcon('qr_code',20,'var(--md-primary)')+'<div><div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.5px;">Invite code</div><div style="font-size:18px;font-weight:800;color:var(--md-primary);letter-spacing:3px;">'+inv.inviteCode+'</div></div><div style="flex:1;text-align:right;font-size:11px;color:var(--md-on-surface-dim);">naynay.app/join/'+inv.inviteCode+'</div></div>'
-        // ── Connection is saved to the horse's data (h.vet / h.trainer /
-        // h.pros) HERE, at share-time — not when the contact-info step is
-        // filled in. This means the Connections list only ever shows a
-        // person once the invite has actually been sent (or copied), same
-        // timing as the barn-level invite flow this was modeled on. Since
-        // this whole tab re-renders reactively off h.vet/h.trainer/h.pros,
-        // no separate "refresh" step is needed — the list just reflects the
-        // mutation as soon as rerender() runs.
-        +'<button onclick="(function(){'
-          +'var name='+JSON.stringify(inv.name).replace(/"/g,'&quot;')+';'
-          +'var role='+JSON.stringify(inv.role).replace(/"/g,'&quot;')+';'
-          +'var hz=HORSES_ALL.find(function(hh){return hh.id==='+JSON.stringify(h.id).replace(/"/g,'&quot;')+';});'
-          +'if(hz){if(role===\'Veterinarian\'){hz.vet=name;}else if(role===\'Trainer\'){hz.trainer=name;}else{hz.pros=hz.pros||[];hz.pros.push({role:role,name:name,next:null});}}'
-          +'var msgTxt='+JSON.stringify(msg).replace(/"/g,'&quot;')+';'
-          +'var url='+JSON.stringify(shareUrl).replace(/"/g,'&quot;')+';'
-          +'if(navigator.share){navigator.share({title:\'Join \'+name+\' on NayNay\',text:msgTxt,url:url}).then(function(){window._inviteState={open:false,step:1,name:\'\',role:\'Veterinarian\',email:\'\',phone:\'\',inviteCode:null};showToast(\'Invite sent to \'+name+\'!\',\'check_circle\',\'success\');rerender();}).catch(function(){});}'
-          +'else{try{navigator.clipboard.writeText(msgTxt);}catch(e){} window._inviteState={open:false,step:1,name:\'\',role:\'Veterinarian\',email:\'\',phone:\'\',inviteCode:null};showToast(\'Connected \'+name+\' \\u2014 message copied to clipboard\',\'content_copy\',\'success\');rerender();}'
-        +'})()" style="width:100%;background:var(--md-primary);color:#fff;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px;">'+msiIcon('ios_share',18,'#fff')+' Send invite</button>'
-        +'<button onclick="window._inviteState.step=1;rerender()" style="width:100%;background:transparent;border:none;padding:10px;font-size:13px;font-weight:700;color:var(--md-on-surface-dim);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Back</button>'
-        +'</div></div>';
-    })()
-    :'';
+  var invitePanel=rInvitePersonSheet();
 
-  
-// ── Add professional button ───────────────────────────────────────────────
-  var addProBtn='<button onclick="window._inviteState={open:true,name:\'\',role:\'Veterinarian\',email:\'\',phone:\'\',step:1,inviteCode:null};rerender()" style="position:fixed;bottom:80px;right:20px;z-index:200;width:54px;height:54px;border-radius:50%;background:var(--md-primary);border:none;box-shadow:0 4px 14px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;cursor:pointer;">'+msiIcon('person_add',24,'#fff')+'</button>'
+  // ── Add professional button ───────────────────────────────────────────────
+  var addProBtn='<button onclick="window._inviteState={open:true,scope:\'personal\',horseId:\''+h.id+'\',name:\'\',role:\'Veterinarian\',email:\'\',phone:\'\',step:1,inviteCode:null,showContacts:false};rerender()" style="position:fixed;bottom:80px;right:20px;z-index:200;width:54px;height:54px;border-radius:50%;background:var(--md-primary);border:none;box-shadow:0 4px 14px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;cursor:pointer;">'+msiIcon('person_add',24,'#fff')+'</button>'
 
   connectionsTab='<div style="padding:14px;">'
     +invitePanel
@@ -11863,7 +12068,7 @@ function rThreadList(role){
   S.roles.forEach(function(r){(THREAD_VISIBILITY[r]||[]).forEach(function(id){if(myVisibleIds.indexOf(id)<0)myVisibleIds.push(id);});});
   if(myVisibleIds.length===0) myVisibleIds=THREAD_VISIBILITY[role]||[];
   const visibleThreads=MESSAGE_THREADS.filter(function(th){return myVisibleIds.indexOf(th.id)>=0;});
-  const header='<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1.5px solid var(--md-outline-variant);background:var(--md-surface);"><span style="font-size:16px;font-weight:700;color:var(--md-on-surface);">Messages</span><button style="background:var(--md-primary);color:#fff;border:none;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">+ New</button></div>';
+  const header='<div style="display:flex;align-items:center;padding:14px 16px 10px;border-bottom:1.5px solid var(--md-outline-variant);background:var(--md-surface);"><span style="font-size:16px;font-weight:700;color:var(--md-on-surface);">Messages</span></div>';
   const rows=visibleThreads.map(function(th){
     return '<div onclick="S.selectedThread=\''+th.id+'\';rerender()" style="display:flex;align-items:flex-start;gap:11px;padding:13px 16px;border-bottom:1px solid var(--md-outline-variant);cursor:pointer;background:var(--md-surface);">'
       +'<div style="width:44px;height:44px;border-radius:14px;background:'+th.iconBg+';display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">'+th.icon+'</div>'
@@ -11873,7 +12078,10 @@ function rThreadList(role){
       +'<div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12px;color:var(--md-on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">'+th.lastMsg+'</span>'+(getUnread(th)>0?'<div style="width:18px;height:18px;border-radius:50%;background:var(--md-primary);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;margin-left:6px;">'+getUnread(th)+'</div>':'')+'</div>'
       +'</div></div>';
   }).join('');
-  return '<div style="display:flex;flex-direction:column;height:100%;">'+header+'<div style="flex:1;overflow-y:auto;">'+rows+'</div></div>';
+  // 'New' moved from an inline header button to a FAB, matching every other
+  // list-with-a-primary-add-action screen in this app.
+  var newFab='<button style="position:fixed;bottom:80px;right:20px;z-index:200;width:54px;height:54px;border-radius:50%;background:var(--md-primary);border:none;box-shadow:0 4px 14px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;cursor:pointer;">'+msiIcon('add_comment',24,'#fff')+'</button>';
+  return newFab+'<div style="display:flex;flex-direction:column;height:100%;">'+header+'<div style="flex:1;overflow-y:auto;">'+rows+'</div></div>';
 }
 
 function rThreadView(threadId,role){
