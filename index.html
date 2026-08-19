@@ -374,20 +374,13 @@ function mdSecBlock(title,children){
 }
 
 // --- ROLE CYCLE -----------------------------------------------
-const ROLE_LABELS_MAP={'staff':'Staff','manager':'Manager','vet':'Vet','trainer':'Trainer','owner':'Owner','breeder':'Breeder','farrier':'Farrier','dentist':'Dentist','chiropractor':'Chiropractor','masseuse':'Masseuse','saddlefitter':'Saddle Fitter'};
+const ROLE_LABELS_MAP={'staff':'Staff','manager':'Manager','vet':'Vet','trainer':'Trainer','owner':'Owner','breeder':'Breeder'};
 const ROLE_COMBOS=[
   {label:'Staff',                    roles:['staff'],                         subtitle:'Barn hand / groom',                name:'Marcus',    face:'face_4',  color:'var(--md-secondary)'},
   {label:'Manager',                  roles:['manager'],                       subtitle:'Barn manager',                     name:'Charlene',  face:'face_3',  color:'var(--md-primary)'},
   {label:'Trainer',                  roles:['trainer'],                       subtitle:'Riding instructor',                name:'Alyse',     face:'face_5',  color:'var(--md-tertiary)'},
   {label:'Breeder',                  roles:['breeder'],                       subtitle:'Broodmare breeder',                name:'Patricia',  face:'face_5',  color:'var(--md-tertiary)'},
   {label:'Vet',                      roles:['vet'],                           subtitle:'Visiting veterinarian',            name:'Dr. Matthew',face:'face_6', color:'var(--md-secondary)'},
-  // Phase 5: the 5 new Pro personas — same single-role shape as the ones
-  // above, so they fall into rRolePickerSheet's "single-role" tile grid.
-  {label:'Farrier',                  roles:['farrier'],                       subtitle:'Visiting farrier',                 name:'Mike',      face:'face',    color:'var(--md-warning)'},
-  {label:'Dentist',                  roles:['dentist'],                       subtitle:'Equine dentist',                   name:'Dr. Priya', face:'face_3',  color:'var(--md-error)'},
-  {label:'Chiropractor',             roles:['chiropractor'],                  subtitle:'Equine chiropractor',              name:'Dr. Sam',   face:'face_6',  color:'var(--md-secondary)'},
-  {label:'Masseuse',                 roles:['masseuse'],                      subtitle:'Equine massage therapist',         name:'Sofia',     face:'face_4',  color:'var(--md-secondary)'},
-  {label:'Saddle Fitter',            roles:['saddlefitter'],                  subtitle:'Certified saddle fitter',          name:'Jamie',     face:'face_5',  color:'var(--md-warning)'},
   {label:'Owner',                    roles:['owner'],                         subtitle:'Horse owner',                      name:'Emily',     face:'face_2',  color:'#C04A6A'},
   {label:'New Owner',                roles:['owner'],                         subtitle:'First-time owner (onboarding demo)',name:'Nadia',    face:'face_2',  color:'#C04A6A', isNewOwnerDemo:true},
   {label:'Owner + Trainer',          roles:['owner','trainer'],               subtitle:'Competing owner-rider',            name:'Riley',     face:'face_2',  color:'#C04A6A'},
@@ -399,7 +392,7 @@ const ROLE_COMBOS=[
 function hasRole(r){return S.roles.includes(r);}
 function anyRole(){var args=Array.prototype.slice.call(arguments);return args.some(function(r){return S.roles.includes(r);});}
 function allRoles(){var args=Array.prototype.slice.call(arguments);return args.every(function(r){return S.roles.includes(r);});}
-function primaryRole(){var order=['vet','manager','trainer','breeder','farrier','dentist','chiropractor','masseuse','saddlefitter','staff','owner'];for(var i=0;i<order.length;i++){if(S.roles.includes(order[i]))return order[i];}return S.roles[0]||'staff';}
+function primaryRole(){var order=['vet','manager','trainer','breeder','staff','owner'];for(var i=0;i<order.length;i++){if(S.roles.includes(order[i]))return order[i];}return S.roles[0]||'staff';}
 function comboLabel(){var c=ROLE_COMBOS[S.roleComboIdx];return c?c.label:S.roles.map(function(r){return ROLE_LABELS_MAP[r]||r;}).join(' + ');}
 function openRolePicker(){S.showRolePicker=!S.showRolePicker;rerender();}
 function selectRoleCombo(idx){
@@ -443,69 +436,43 @@ const INTENSITY_LABELS={1:'Low',2:'Easy',3:'Medium',4:'Strong',5:'High'};
 const INTENSITY_COLORS={1:'#2A8A4A',2:'#5A8A2A',3:'#8A7A00',4:'#8A5000',5:'#8A2020'};
 
 // --- SERVICES DATA --------------------------------------------
-// ══════════════════════════════════════════════════════════════════════════
-// UNIFIED SERVICE TAXONOMY (naynayservicesbyrole.xlsx "Summary" tab is the
-// source of truth — this is a straight port of its 10-category taxonomy).
-// Every business's services[] array is tagged from this single shared set
-// of category/subCategory values, so a service in Care/Shoeing (Farrier)
-// and Care/Saddle Fitting (Saddle Fitter) sort and filter consistently
-// against a service in Care/Daily Care (Barn) — one taxonomy, all 9
-// business types, rather than each business inventing its own categories.
-// ══════════════════════════════════════════════════════════════════════════
-const SERVICE_CATEGORIES={
-  vet:['Exam','Diagnostics','Procedure','Wellness','Rehabilitation','Reproduction'],
-  manager:['Boarding','Care','Procedure','Logistics'],
-  trainer:['Training','Care'],
-  breeder:['Exam','Reproduction'],
-  farrier:['Care'],
-  dentist:['Exam','Diagnostics','Procedure'],
-  chiropractor:['Exam','Wellness'],
-  masseuse:['Wellness'],
-  saddlefitter:['Care'],
-  staff:[],owner:[]
-};
+const SERVICE_CATEGORIES={vet:['Exam','Procedure','Regimens','Vaccination'],manager:['Board','Training','Care','Procedure','Facility','Handling'],trainer:['Training'],staff:[],owner:[]};
 const SERVICE_SUBCATEGORIES={
-  Exam:['Well','Sick','Diagnostic','Follow-up','Foaling','Evaluation'],
-  Diagnostics:['Imaging','Lab'],
-  Procedure:['Vaccination','In-barn','Surgical'],
-  Wellness:['Alternative Therapy','Bodywork'],
-  Rehabilitation:['Electrotherapy','Manual Rehab','Hydrotherapy'],
-  Reproduction:['Planning','Monitoring','Breeding','Booking','Foaling'],
-  Training:['Session','Lesson','Show Prep'],
-  Boarding:['Full Care','Partial','Pasture','Med Recovery','Day Care'],
-  Care:['Daily Care','Specialized Care','Shoeing','Saddle Fitting','Tack Fitting'],
-  Logistics:['Holding','Transport','Personnel','Facility'],
+  Exam:['Wellness','Lameness','Pre-purchase','Emergency','Dental','Imaging','Reproductive','Chiropractic','Ophthalmology'],
+  Procedure:['Surgical','In-field','Hospital','Injection','Wound Care','IV/IM','Deworming','Acupuncture','Laser','Reproductive'],
+  Regimens:['Daily Meds','IV/IM','Supplements'],
+  Vaccination:['Core','Elective','Coggins'],
+  Board:['Full Care','Partial','Pasture','Med Recovery','Day Care'],
+  Training:['Training Ride','Lunging','Hand-walking','Lesson','Show Prep'],
+  Care:['Grooming','Bathing','Clipping','Tacking','Blanketing','Hoof Care'],
+  Facility:['Stall','Trailer','Laundry','Storage'],
+  Handling:['Personnel','Hauling','Holding'],
 };
-const ROLES_LIST=['Manager','Trainer','Veterinarian','Breeder','Farrier','Dentist','Chiropractor','Masseuse','Saddle Fitter'];
+const ROLES_LIST=['Manager','Trainer','Veterinarian'];
 
-// Re-tagged onto the unified taxonomy (see SERVICE_CATEGORIES/SUBCATEGORIES
-// above). A few move category, not just subCategory: Vaccination now lives
-// under Procedure (not Exam); Reproductive Evaluation now lives under
-// Reproduction/Monitoring (not Exam), matching the Breeder's own reproductive
-// services so the two roles' visit types line up when compared side by side.
 let vetServices=[
   {id:'svc1', name:'Well Visit',              category:'Exam',      subCategory:'Well',     duration:30,  price:50,   addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true,  roles:['Veterinarian']},
   {id:'svc2', name:'Sick Visit',              category:'Exam',      subCategory:'Sick',     duration:30,  price:100,  addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true,  roles:['Veterinarian']},
-  {id:'svc3', name:'Vaccination',             category:'Procedure', subCategory:'Vaccination', duration:15,  price:20,   addonPrice:15,   canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:true,  roles:['Veterinarian']},
+  {id:'svc3', name:'Vaccination',             category:'Exam',      subCategory:'Well',     duration:15,  price:20,   addonPrice:15,   canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:true,  roles:['Veterinarian']},
   {id:'svc4', name:'Dental Exam',             category:'Exam',      subCategory:'Well',     duration:30,  price:100,  addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true,  roles:['Veterinarian']},
   {id:'svc5', name:'Lameness Exam',           category:'Exam',      subCategory:'Well',     duration:60,  price:200,  addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true,  roles:['Veterinarian']},
   {id:'svc6', name:'Prepurchase Exam',        category:'Exam',      subCategory:'Well',     duration:120, price:300,  addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true,  roles:['Veterinarian']},
-  {id:'svc7', name:'Chiropractic Evaluation', category:'Exam',      subCategory:'Diagnostic',duration:30,  price:200,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Veterinarian']},
+  {id:'svc7', name:'Chiropractic Exam',       category:'Exam',      subCategory:'Well',     duration:30,  price:200,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Veterinarian']},
   {id:'svc8', name:'Ophthalmology Exam',      category:'Exam',      subCategory:'Well',     duration:60,  price:200,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Veterinarian']},
-  {id:'svc9', name:'Reproductive Evaluation', category:'Reproduction',subCategory:'Monitoring',duration:30, price:200,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Veterinarian']},
-  {id:'svc10',name:'Deworming',               category:'Procedure', subCategory:'In-barn',  duration:30,  price:100,  addonPrice:75,   canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:true,  roles:['Veterinarian']},
-  {id:'svc11',name:'IV Fluid Treatment',      category:'Procedure', subCategory:'In-barn',  duration:10,  price:100,  addonPrice:80,   canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:false, roles:['Veterinarian']},
-  {id:'svc12',name:'Acupuncture',             category:'Wellness',  subCategory:'Alternative Therapy', duration:30,  price:50,   addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Veterinarian']},
-  {id:'svc13',name:'Laser Therapy',           category:'Rehabilitation', subCategory:'Electrotherapy', duration:20,  price:1000, addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Veterinarian']},
-  {id:'svc14',name:'Artificial Insemination', category:'Reproduction', subCategory:'Breeding', duration:30,  price:200,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Veterinarian']},
-  {id:'svc15',name:'Tooth Extraction',        category:'Procedure', subCategory:'In-barn',  duration:5,   price:50,   addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Veterinarian']},
+  {id:'svc9', name:'Reproductive Evaluation', category:'Exam',      subCategory:'Well',     duration:30,  price:200,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Veterinarian']},
+  {id:'svc10',name:'Deworming',               category:'Procedure', subCategory:'Hospital', duration:30,  price:100,  addonPrice:75,   canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:true,  roles:['Veterinarian']},
+  {id:'svc11',name:'IV Fluid Treatment',      category:'Procedure', subCategory:'Hospital', duration:10,  price:100,  addonPrice:80,   canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:false, roles:['Veterinarian']},
+  {id:'svc12',name:'Acupuncture',             category:'Procedure', subCategory:'Hospital', duration:30,  price:50,   addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Veterinarian']},
+  {id:'svc13',name:'Laser Therapy',           category:'Procedure', subCategory:'Hospital', duration:20,  price:1000, addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Veterinarian']},
+  {id:'svc14',name:'Artificial Insemination', category:'Procedure', subCategory:'Hospital', duration:30,  price:200,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Veterinarian']},
+  {id:'svc15',name:'Tooth Extraction',        category:'Procedure', subCategory:'Surgical', duration:5,   price:50,   addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Veterinarian']},
   {id:'svc16',name:'Third Eye Removal',       category:'Procedure', subCategory:'Surgical', duration:30,  price:250,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Veterinarian']},
   {id:'svc17',name:'Enucleation',             category:'Procedure', subCategory:'Surgical', duration:60,  price:500,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Veterinarian']},
   {id:'svc18',name:'Castration',              category:'Procedure', subCategory:'Surgical', duration:60,  price:1000, addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Veterinarian']},
   {id:'svc19',name:'Hernia Repair',           category:'Procedure', subCategory:'Surgical', duration:90,  price:600,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Veterinarian']},
   {id:'svc20',name:'Laceration Repair',       category:'Procedure', subCategory:'Surgical', duration:90,  price:400,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Veterinarian']},
-  {id:'svc_reg1',name:'Daily Medication Admin',  category:'Procedure',  subCategory:'In-barn', duration:15,  price:25,   addonPrice:null, canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:false, roles:['Vet']},
-  {id:'svc_vac1',name:'Core Vaccination',        category:'Procedure',subCategory:'Vaccination',       duration:20,  price:40,   addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:false, roles:['Vet']},
+  {id:'svc_reg1',name:'Daily Medication Admin',  category:'Regimens',  subCategory:'Daily Meds', duration:15,  price:25,   addonPrice:null, canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:false, roles:['Vet']},
+  {id:'svc_vac1',name:'Core Vaccination',        category:'Vaccination',subCategory:'Core',       duration:20,  price:40,   addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:false, roles:['Vet']},
 ];
 
 // ── OWNER PAYMENT METHODS ─────────────────────────────────────────────────
@@ -529,113 +496,51 @@ var SCHEDULED_APPOINTMENTS=[
 
 
 let trainerServices=[
-  {id:'ts1', name:'Training Session',         category:'Training',  subCategory:'Session', duration:60,  price:150,  addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true,  roles:['Trainer']},
-  {id:'saddle_fit_tr', name:'Saddle and Bit Fitting', category:'Care', subCategory:'Tack Fitting', duration:60, price:150, addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true, roles:['Trainer']},
+  {id:'ts1', name:'Training Session',         category:'Regimens',  subCategory:'Training', duration:60,  price:150,  addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true,  roles:['Trainer']},
 ];
 
-// Consultation eliminated as its own category: breeding/pedigree consults
-// move into Reproduction/Planning; Weanling/Yearling Evaluation moves into
-// Exam/Evaluation since it assesses an existing horse, not the breeding
-// process itself (matches the spreadsheet's stated reasoning exactly).
 let breederServices=[
-  {id:'bs1',name:'Breeding Consultation',              category:'Reproduction',subCategory:'Planning',  duration:45,  price:100, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true,  roles:['Breeder']},
-  {id:'bs2',name:'Live Cover Breeding',                category:'Reproduction',subCategory:'Breeding',duration:null,price:500, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:false, roles:['Breeder']},
-  {id:'bs3',name:'Artificial Insemination Coordination',category:'Reproduction',subCategory:'Breeding',        duration:60,  price:350, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:false, roles:['Breeder']},
-  {id:'bs4',name:'Mare Cycle Monitoring',              category:'Reproduction',subCategory:'Monitoring',duration:30, price:75,  addonPrice:null, canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:true,  roles:['Breeder']},
-  {id:'bs5',name:'Reproductive Ultrasound',            category:'Reproduction',subCategory:'Monitoring',duration:30,  price:120, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true,  roles:['Breeder']},
-  {id:'bs6',name:'Newborn Foal Exam',                  category:'Exam',        subCategory:'Foaling',   duration:45,  price:150, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true,  roles:['Breeder']},
-  {id:'bs7',name:'Foaling Attendant (overnight)',      category:'Reproduction',subCategory:'Foaling',duration:null,price:200, addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Breeder']},
-  {id:'bs8',name:'Stallion Booking Coordination',      category:'Reproduction',subCategory:'Booking',   duration:null,price:50,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Breeder']},
-  {id:'bs9',name:'Pedigree & Bloodline Consultation',  category:'Reproduction',subCategory:'Planning',  duration:30,  price:85,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Breeder']},
-  {id:'bs10',name:'Weanling/Yearling Evaluation',      category:'Exam',        subCategory:'Evaluation',duration:45,  price:100, addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Breeder']},
+  {id:'bs1',name:'Breeding Consultation',              category:'Consultation',subCategory:'Consult',   duration:45,  price:100, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true,  roles:['Breeder']},
+  {id:'bs2',name:'Live Cover Breeding',                category:'Breeding',    subCategory:'Live Cover',duration:null,price:500, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:false, roles:['Breeder']},
+  {id:'bs3',name:'Artificial Insemination Coordination',category:'Breeding',   subCategory:'AI',        duration:60,  price:350, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:false, roles:['Breeder']},
+  {id:'bs4',name:'Mare Cycle Monitoring',              category:'Breeding',    subCategory:'Cycle Check',duration:30, price:75,  addonPrice:null, canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:true,  roles:['Breeder']},
+  {id:'bs5',name:'Reproductive Ultrasound',            category:'Breeding',    subCategory:'Ultrasound',duration:30,  price:120, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true,  roles:['Breeder']},
+  {id:'bs6',name:'Newborn Foal Exam',                  category:'Foaling',     subCategory:'Exam',      duration:45,  price:150, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true,  roles:['Breeder']},
+  {id:'bs7',name:'Foaling Attendant (overnight)',      category:'Foaling',     subCategory:'Foal Watch',duration:null,price:200, addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Breeder']},
+  {id:'bs8',name:'Stallion Booking Coordination',      category:'Breeding',    subCategory:'Booking',   duration:null,price:50,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Breeder']},
+  {id:'bs9',name:'Pedigree & Bloodline Consultation',  category:'Consultation',subCategory:'Pedigree',  duration:30,  price:85,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Breeder']},
+  {id:'bs10',name:'Weanling/Yearling Evaluation',      category:'Consultation',subCategory:'Evaluation',duration:45,  price:100, addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Breeder']},
 ];
 
-// Board→Boarding (rename to match taxonomy); Training subcats collapse to
-// Session/Lesson/Show Prep; Hoof Care stays Care/Daily Care (routine, any
-// groom) — distinct from Farrier's Care/Shoeing (licensed trade work) and
-// Saddle Fitter's Care/Saddle Fitting (licensed trade work); Handling+Facility
-// merge into Logistics; Wound Care/IV-IM Admin move to Procedure/In-barn.
 let mgrServices=[
-  {id:'ms_board_full',    name:'Full Board',              category:'Boarding',    subCategory:'Full Care',    duration:null, price:1500, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:false, roles:['Manager']},
-  {id:'ms_board_partial', name:'Partial Board',           category:'Boarding',    subCategory:'Partial',      duration:null, price:900,  addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:false, roles:['Manager']},
-  {id:'ms_board_pasture', name:'Pasture Board',           category:'Boarding',    subCategory:'Pasture',      duration:null, price:650,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Manager']},
-  {id:'ms_board_train',   name:'Full Training Board',     category:'Boarding',    subCategory:'Full Care',    duration:null, price:2400, addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Manager']},
-  {id:'ms_board_medical', name:'Medical Board',           category:'Boarding',    subCategory:'Med Recovery',      duration:null, price:2000, addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
-  {id:'ms_board_daycare', name:'Show Day Care',           category:'Boarding',    subCategory:'Day Care',     duration:null, price:75,   addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
-  {id:'ms_train_ride',    name:'Training Ride',           category:'Training', subCategory:'Session',duration:45,   price:75,   addonPrice:null, canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:true,  roles:['Manager']},
-  {id:'ms_lunge',         name:'Lunging',                 category:'Training', subCategory:'Session',      duration:30,   price:40,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
-  {id:'ms_handwalk',      name:'Hand-walking',            category:'Training', subCategory:'Session', duration:30,   price:25,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_board_full',    name:'Full Board',              category:'Board',    subCategory:'Full Care',    duration:null, price:1500, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:false, roles:['Manager']},
+  {id:'ms_board_partial', name:'Partial Board',           category:'Board',    subCategory:'Partial',      duration:null, price:900,  addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:false, roles:['Manager']},
+  {id:'ms_board_pasture', name:'Pasture Board',           category:'Board',    subCategory:'Pasture',      duration:null, price:650,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Manager']},
+  {id:'ms_board_train',   name:'Full Training Board',     category:'Board',    subCategory:'Full Care',    duration:null, price:2400, addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Manager']},
+  {id:'ms_board_medical', name:'Medical Board',           category:'Board',    subCategory:'Med Recovery',      duration:null, price:2000, addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_board_daycare', name:'Show Day Care',           category:'Board',    subCategory:'Day Care',     duration:null, price:75,   addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_train_ride',    name:'Training Ride',           category:'Training', subCategory:'Training Ride',duration:45,   price:75,   addonPrice:null, canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_lunge',         name:'Lunging',                 category:'Training', subCategory:'Lunging',      duration:30,   price:40,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_handwalk',      name:'Hand-walking',            category:'Training', subCategory:'Hand-walking', duration:30,   price:25,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
   {id:'ms_lesson_private',name:'Private Lesson',          category:'Training', subCategory:'Lesson',       duration:60,   price:95,   addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true,  roles:['Manager']},
   {id:'ms_lesson_group',  name:'Group Lesson',            category:'Training', subCategory:'Lesson',       duration:60,   price:55,   addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
   {id:'ms_show_prep',     name:'Show Preparation',        category:'Training', subCategory:'Show Prep',    duration:90,   price:150,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
   {id:'ms_trailerin',     name:'Trailer-in Lesson',       category:'Training', subCategory:'Lesson',       duration:60,   price:85,   addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
-  {id:'ms_groom',         name:'Grooming',                category:'Care',     subCategory:'Daily Care',     duration:30,   price:35,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
-  {id:'ms_bath',          name:'Bathing',                 category:'Care',     subCategory:'Daily Care',      duration:45,   price:45,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
-  {id:'ms_clip',          name:'Clipping',                category:'Care',     subCategory:'Specialized Care',     duration:120,  price:125,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
-  {id:'ms_tack',          name:'Tacking Up / Untacking',  category:'Care',     subCategory:'Daily Care',      duration:20,   price:20,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
-  {id:'ms_blanket',       name:'Blanketing',              category:'Care',     subCategory:'Daily Care',   duration:null, price:10,   addonPrice:null, canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:true,  roles:['Manager']},
-  {id:'ms_hoof',          name:'Hoof Care',               category:'Care',     subCategory:'Daily Care',    duration:30,   price:30,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
-  {id:'saddle_fit_mgr',   name:'Saddle and Bit Fitting',  category:'Care',     subCategory:'Tack Fitting',  duration:60,   price:150,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
-  {id:'ms_hold_farrier',  name:'Holding for Farrier',     category:'Logistics', subCategory:'Holding',      duration:60,   price:35,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
-  {id:'ms_hold_vet',      name:'Holding for Vet',         category:'Logistics', subCategory:'Holding',      duration:60,   price:35,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
-  {id:'ms_haul',          name:'Hauling',                 category:'Logistics', subCategory:'Transport',      duration:null, price:150,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
-  {id:'ms_breeding',      name:'Breeding Services',       category:'Logistics', subCategory:'Personnel',    duration:null, price:0,    addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Manager']},
-  {id:'ms_wound',         name:'Wound Care',              category:'Procedure',  subCategory:'In-barn',   duration:30,   price:40,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
-  {id:'ms_ivim',          name:'IV/IM Medication Admin',  category:'Procedure',  subCategory:'In-barn',  duration:30,   price:65,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
-  {id:'ms_stall_extra',   name:'Additional Stall Cleaning',category:'Logistics',subCategory:'Facility',        duration:null, price:20,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
-  {id:'ms_laundry',       name:'Laundry',                 category:'Logistics', subCategory:'Facility',      duration:null, price:15,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
-  {id:'ms_trailer_park',  name:'Trailer Parking',         category:'Logistics', subCategory:'Facility',      duration:null, price:75,   addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Manager']},
-];
-
-// Farrier: licensed trade work, filed under Care/Shoeing — its own
-// subcategory, separate from the Manager's Care/Daily Care Hoof Care, since
-// it's specialized professional trade work rather than routine maintenance.
-let farrierServices=[
-  {id:'farrier_full',   name:'Full Set (shoes)',   category:'Care', subCategory:'Shoeing', duration:60, price:180, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true, roles:['Farrier']},
-  {id:'farrier_trim',   name:'Trim only',          category:'Care', subCategory:'Shoeing', duration:30, price:55,  addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true, roles:['Farrier']},
-  {id:'farrier_reset',  name:'Reset (re-shoe)',    category:'Care', subCategory:'Shoeing', duration:45, price:100, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true, roles:['Farrier']},
-  {id:'farrier_front',  name:'Front shoes only',   category:'Care', subCategory:'Shoeing', duration:40, price:120, addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true, roles:['Farrier']}, // price estimated — marked TBD in source spreadsheet, needs real input
-  {id:'farrier_special',name:'Corrective shoeing', category:'Care', subCategory:'Shoeing', duration:75, price:220, addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true, roles:['Farrier']},
-];
-
-// Dentist: Dental X-ray filed under Diagnostics/Imaging (not Exam), matching
-// the taxonomy's split between assessment (Exam) and imaging (Diagnostics).
-let dentistServices=[
-  {id:'dent_exam',    name:'Dental exam',       category:'Exam',        subCategory:'Diagnostic', duration:30, price:75,  addonPrice:null, canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:true, roles:['Dentist']},
-  {id:'dent_xray',    name:'Dental X-ray',      category:'Diagnostics', subCategory:'Imaging',    duration:45, price:120, addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true, roles:['Dentist']}, // price estimated — marked TBD in source spreadsheet, needs real input
-  {id:'dent_float',   name:'Dental float',      category:'Procedure',   subCategory:'In-barn',    duration:60, price:150, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true, roles:['Dentist']},
-  {id:'dent_extract', name:'Tooth extraction',  category:'Procedure',   subCategory:'In-barn',    duration:90, price:350, addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false,roles:['Dentist']},
-];
-
-// Chiropractor: Initial evaluation and Follow-up visit filed under Exam
-// (Diagnostic / Follow-up) for consistency with Vet's own Chiropractic
-// Evaluation naming; Full adjustment is hands-on bodywork, filed under
-// Wellness/Bodywork alongside the Masseuse's massage services.
-let chiroServices=[
-  {id:'chiro_eval',   name:'Initial evaluation', category:'Exam',     subCategory:'Diagnostic', duration:60, price:200, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true, roles:['Chiropractor']}, // price estimated — marked TBD in source spreadsheet, needs real input
-  {id:'chiro_follow', name:'Follow-up visit',    category:'Exam',     subCategory:'Follow-up',  duration:30, price:100, addonPrice:null, canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:true, roles:['Chiropractor']}, // price estimated — marked TBD in source spreadsheet, needs real input
-  {id:'chiro_adj',    name:'Full adjustment',    category:'Wellness', subCategory:'Bodywork',   duration:45, price:175, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true, roles:['Chiropractor']}, // price estimated — marked TBD in source spreadsheet, needs real input
-];
-
-// Masseuse: all three services are hands-on bodywork, no equipment —
-// Wellness/Bodywork, same subcategory the Chiropractor's adjustment sits in.
-let masseuseServices=[
-  {id:'mass_full', name:'Full-body massage',        category:'Wellness', subCategory:'Bodywork', duration:60, price:120, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true, roles:['Masseuse']},
-  {id:'mass_spot', name:'Spot treatment',            category:'Wellness', subCategory:'Bodywork', duration:30, price:75,  addonPrice:null, canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:true, roles:['Masseuse']},
-  {id:'mass_post', name:'Post-competition massage',  category:'Wellness', subCategory:'Bodywork', duration:45, price:100, addonPrice:null, canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:true, roles:['Masseuse']},
-];
-
-// Saddle Fitter: licensed/certified trade work, filed under its own
-// Care/Saddle Fitting subcategory — distinct from the Trainer/Manager's
-// Care/Tack Fitting (a basic non-specialist assessment), same distinction
-// the taxonomy already draws between Farrier's Shoeing and Manager's
-// Daily Care Hoof Care.
-let saddleFitterServices=[
-  {id:'saddlefit_full',    name:'New Saddle Fitting',             category:'Care', subCategory:'Saddle Fitting', duration:90, price:200, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true, roles:['Saddle Fitter']},
-  {id:'saddlefit_eval',    name:'Static & Dynamic Fit Evaluation',category:'Care', subCategory:'Saddle Fitting', duration:60, price:150, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true, roles:['Saddle Fitter']},
-  {id:'saddlefit_reflock', name:'Reflocking / Panel Adjustment',  category:'Care', subCategory:'Saddle Fitting', duration:60, price:175, addonPrice:null, canBeAddon:false, isDefault:true,  canBeRequestedByOwner:true, roles:['Saddle Fitter']},
-  {id:'saddlefit_check',   name:'Fit Check (existing saddle)',    category:'Care', subCategory:'Saddle Fitting', duration:30, price:75,  addonPrice:null, canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:true, roles:['Saddle Fitter']},
-  {id:'saddlefit_girth',   name:'Girth & Pad Consultation',       category:'Care', subCategory:'Saddle Fitting', duration:30, price:60,  addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true, roles:['Saddle Fitter']},
+  {id:'ms_groom',         name:'Grooming',                category:'Care',     subCategory:'Grooming',     duration:30,   price:35,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_bath',          name:'Bathing',                 category:'Care',     subCategory:'Bathing',      duration:45,   price:45,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_clip',          name:'Clipping',                category:'Care',     subCategory:'Clipping',     duration:120,  price:125,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_tack',          name:'Tacking Up / Untacking',  category:'Care',     subCategory:'Tacking',      duration:20,   price:20,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_blanket',       name:'Blanketing',              category:'Care',     subCategory:'Blanketing',   duration:null, price:10,   addonPrice:null, canBeAddon:true,  isDefault:true,  canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_hoof',          name:'Hoof Care',               category:'Care',     subCategory:'Hoof Care',    duration:30,   price:30,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_hold_farrier',  name:'Holding for Farrier',     category:'Handling', subCategory:'Holding',      duration:60,   price:35,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_hold_vet',      name:'Holding for Vet',         category:'Handling', subCategory:'Holding',      duration:60,   price:35,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_haul',          name:'Hauling',                 category:'Handling', subCategory:'Hauling',      duration:null, price:150,  addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_breeding',      name:'Breeding Services',       category:'Handling', subCategory:'Personnel',    duration:null, price:0,    addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Manager']},
+  {id:'ms_wound',         name:'Wound Care',              category:'Procedure',  subCategory:'Wound Care',   duration:30,   price:40,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_ivim',          name:'IV/IM Medication Admin',  category:'Procedure',  subCategory:'IV/IM Admin',  duration:30,   price:65,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_stall_extra',   name:'Additional Stall Cleaning',category:'Facility',subCategory:'Stall',        duration:null, price:20,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_laundry',       name:'Laundry',                 category:'Facility', subCategory:'Laundry',      duration:null, price:15,   addonPrice:null, canBeAddon:true,  isDefault:false, canBeRequestedByOwner:true,  roles:['Manager']},
+  {id:'ms_trailer_park',  name:'Trailer Parking',         category:'Facility', subCategory:'Trailer',      duration:null, price:75,   addonPrice:null, canBeAddon:false, isDefault:false, canBeRequestedByOwner:false, roles:['Manager']},
 ];
 
 let svcEditId=null; // null=list, 'new'=new form, id=edit existing
@@ -1104,7 +1009,7 @@ function makeDefaultTrainingAssignments(){
 const todayTrainingAssign=makeDefaultTrainingAssignments();
 
 let S={
-  role:'staff',roles:['staff'],roleComboIdx:0,showRolePicker:false,activeTab:'home',
+  role:'owner',roles:['owner'],roleComboIdx:5,showRolePicker:false,activeTab:'home',
   exp:null,enote:null,daydone:false,
   setupTab:'schedule',
   mt:JSON.parse(JSON.stringify(MDEFS)),
@@ -1117,7 +1022,7 @@ let S={
   trainingAssignments:{[TODAY]:todayTrainingAssign},
   mgrView:'home',assignDate:TODAY,expandedAssign:null,expandedTrainingAssign:null,
   mgrAssignTab:'tasks',
-  selectedHorse:null,mgrInviteSheet:null,scheduleVisitSheet:null,vetApptSheet:null,healthAddSheetOpen:false,ingestLogSheet:null,ingestAddSheetOpen:false,showWelcomeSheet:false,welcomeSeen:false,newOwnerDemo:false,highlightApptCard:false,quickActionsDrawerOpen:false,trainingView:'list',trainingFabOpen:false,trainingCalMonth:null,trainingLogSheet:null,taskFilter:'all',
+  selectedHorse:null,mgrInviteSheet:null,scheduleVisitSheet:null,vetApptSheet:null,healthAddSheetOpen:false,ingestLogSheet:null,ingestAddSheetOpen:false,showWelcomeSheet:false,welcomeSeen:false,newOwnerDemo:false,showSidePanel:false,highlightApptCard:false,peopleSearch:'',peopleRoleFilter:[],peopleInviteChoice:false,peopleInviteHorsePicker:false,quickActionsDrawerOpen:false,trainingView:'list',trainingFabOpen:false,trainingCalMonth:null,trainingLogSheet:null,taskFilter:'all',
   vetSignedIn:false,vetView:'confirmation',vetSetupTab:'account',trainerSetupTab:'account',mgrSetupTab:'tasks',staffSetupTab:'account',ownerSetupTab:'account',taskScheduleExpanded:false,editingTaskId:null,aiScheduleDismissed:{},aiScheduleAdded:{},
   vetConfirmPage:false,vetEditMode:false,prevVetView:null,
   feedCardExpanded:false,feedCardHorse:null,
@@ -1272,6 +1177,110 @@ function rFeedMedHorseDetail(horse,regimen,globalAllDone){
 }
 
 // --- NAV -----------------------------------------------------
+// ══════════════════════════════════════════════════════════════════════════
+// SIDE PANEL (hamburger menu)
+// ══════════════════════════════════════════════════════════════════════════
+// Replaces the bottom nav's old "Setup" tab. Slides in from the left,
+// showing the current role's Setup pages as a vertical link list instead of
+// the horizontal tab row inside each rXSetup() function — tapping a link
+// still routes into that same function/tab, just entered from here instead
+// of from within Setup itself. Manager's "Connections" tab is deliberately
+// left out of this list — that functionality is now the People page
+// (bottom nav), not a Setup sub-page.
+function setupLinksForRole(){
+  if(S.role==='vet') return {
+    label:'Setup', links:[
+      {key:'account',label:'Account',icon:'person',nav:"S.vetView='setup';S.vetSetupTab='account';svcEditId=null;S.quickAction=null;S.vetApptSheet=null;"},
+      {key:'services',label:'Services',icon:'medical_services',nav:"S.vetView='setup';S.vetSetupTab='services';svcEditId=null;S.quickAction=null;S.vetApptSheet=null;"},
+      {key:'barns',label:'Barns',icon:'home_work',nav:"S.vetView='setup';S.vetSetupTab='barns';svcEditId=null;S.quickAction=null;S.vetApptSheet=null;"},
+      {key:'payments',label:'Payments',icon:'payments',nav:"S.vetView='setup';S.vetSetupTab='payments';svcEditId=null;S.quickAction=null;S.vetApptSheet=null;"},
+      {key:'calendar',label:'Calendar',icon:'calendar_month',nav:"S.vetView='setup';S.vetSetupTab='calendar';svcEditId=null;S.quickAction=null;S.vetApptSheet=null;"},
+      {key:'notifications',label:'Notifications',icon:'notifications',nav:"S.vetView='setup';S.vetSetupTab='notifications';svcEditId=null;S.quickAction=null;S.vetApptSheet=null;"},
+    ]
+  };
+  if(S.role==='manager') return {
+    label:'Setup', links:[
+      {key:'account',label:'Account',icon:'person',nav:"navTo('setup');S.mgrSetupTab='account';"},
+      {key:'tasks',label:'Tasks',icon:'checklist',nav:"navTo('setup');S.mgrSetupTab='tasks';"},
+      {key:'services',label:'Services',icon:'home_repair_service',nav:"navTo('setup');S.mgrSetupTab='services';"},
+      {key:'payments',label:'Payments',icon:'payments',nav:"navTo('setup');S.mgrSetupTab='payments';"},
+      {key:'calendar',label:'Calendar',icon:'calendar_month',nav:"navTo('setup');S.mgrSetupTab='calendar';"},
+      {key:'notifications',label:'Notifications',icon:'notifications',nav:"navTo('setup');S.mgrSetupTab='notifications';"},
+    ]
+  };
+  if(S.role==='trainer'||S.role==='breeder') return {
+    label:'Setup', links:[
+      {key:'account',label:'Account',icon:'person',nav:"navTo('setup');S.trainerSetupTab='account';"},
+      {key:'services',label:'Services',icon:'sports',nav:"navTo('setup');S.trainerSetupTab='services';"},
+      {key:'barns',label:'Barns',icon:'home_work',nav:"navTo('setup');S.trainerSetupTab='barns';"},
+      {key:'payments',label:'Payments',icon:'payments',nav:"navTo('setup');S.trainerSetupTab='payments';"},
+      {key:'calendar',label:'Calendar',icon:'calendar_month',nav:"navTo('setup');S.trainerSetupTab='calendar';"},
+      {key:'notifications',label:'Notifications',icon:'notifications',nav:"navTo('setup');S.trainerSetupTab='notifications';"},
+    ]
+  };
+  if(S.role==='owner') return {
+    label:'Setup', links:[
+      {key:'account',label:'Account',icon:'person',nav:"navTo('setup');S.ownerSetupTab='account';"},
+      {key:'calendar',label:'Calendar',icon:'calendar_month',nav:"navTo('setup');S.ownerSetupTab='calendar';"},
+      {key:'notifications',label:'Notifications',icon:'notifications',nav:"navTo('setup');S.ownerSetupTab='notifications';"},
+    ]
+  };
+  return {
+    label:'Setup', links:[
+      {key:'account',label:'Account',icon:'person',nav:"navTo('setup');S.staffSetupTab='account';"},
+      {key:'calendar',label:'Calendar',icon:'calendar_month',nav:"navTo('setup');S.staffSetupTab='calendar';"},
+      {key:'notifications',label:'Notifications',icon:'notifications',nav:"navTo('setup');S.staffSetupTab='notifications';"},
+    ]
+  };
+}
+
+function rSidePanel(){
+  if(!S.showSidePanel) return '';
+  var personaMatch=ROLE_COMBOS[S.roleComboIdx];
+  var personaName=personaMatch?personaMatch.name:'';
+  var roleLabel=comboLabel();
+  var group=setupLinksForRole();
+  var closeAction="S.showSidePanel=false;";
+
+  var personaFace=personaMatch?personaMatch.face:'face';
+  var personaColor=personaMatch?personaMatch.color:'var(--md-primary)';
+  var header='<div style="padding:20px 18px 16px;border-bottom:1px solid var(--md-outline-variant);">'
+    +'<div style="display:flex;align-items:center;gap:10px;">'+logoSVG(22,'var(--nn-tx)')+'<span style="font-size:15px;font-weight:700;color:var(--nn-tx);">NayNay</span></div>'
+    +'<div style="display:flex;align-items:center;gap:11px;margin-top:16px;">'
+      +'<div style="width:42px;height:42px;border-radius:50%;background:'+personaColor+'18;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
+        +'<span class="msi" style="font-size:26px;color:'+personaColor+';line-height:1;">'+personaFace+'</span>'
+      +'</div>'
+      +'<div><div style="font-size:15px;font-weight:800;color:var(--md-on-surface);">'+personaName+'</div>'
+      +'<div style="font-size:12px;color:var(--md-on-surface-dim);">'+roleLabel+'</div></div>'
+    +'</div>'
+  +'</div>';
+
+  function linkRow(l){
+    return '<button onclick="'+closeAction+l.nav+'rerender()" style="width:100%;display:flex;align-items:center;gap:12px;padding:12px 18px;background:none;border:none;cursor:pointer;text-align:left;">'
+      +msiIcon(l.icon,18,'var(--md-on-surface-dim)')
+      +'<span style="font-size:14px;font-weight:600;color:var(--md-on-surface);">'+l.label+'</span>'
+    +'</button>';
+  }
+
+  var body='<div style="padding:14px 0;">'
+    +'<div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.6px;padding:0 18px 6px;">'+group.label+'</div>'
+    +group.links.map(linkRow).join('')
+  +'</div>';
+
+  var switchRow='<div style="padding:14px 18px;border-top:1px solid var(--md-outline-variant);">'
+    +'<button onclick="'+closeAction+'openRolePicker();rerender()" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 0;background:none;border:none;cursor:pointer;text-align:left;">'
+      +msiIcon('logout',18,'var(--md-error)')
+      +'<span style="font-size:13px;font-weight:700;color:var(--md-error);">Log out</span>'
+    +'</button>'
+  +'</div>';
+
+  return '<div onclick="'+closeAction+'rerender()" style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:500;">'
+    +'<div onclick="event.stopPropagation()" style="position:fixed;top:0;left:0;bottom:0;width:78%;max-width:300px;background:var(--md-surface);box-shadow:4px 0 20px rgba(0,0,0,0.25);overflow-y:auto;display:flex;flex-direction:column;">'
+      +header+body+'<div style="flex:1;"></div>'+switchRow
+    +'</div>'
+  +'</div>';
+}
+
 function buildNav(isMgr,isVet,showBack,showHorse){
   const t=TH;
   const roleLabel=comboLabel();
@@ -1292,27 +1301,30 @@ function buildNav(isMgr,isVet,showBack,showHorse){
   else if(showHorse)leftEl='<button onclick="S.selectedHorse=null;S.horseTab=\'overview\';rerender()" style="background:none;border:none;padding:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M14 5L8 11l6 6" stroke="var(--nn-tx)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
   else if(isVet&&S.vetSignedIn&&S.vetView==='vaxform')leftEl='<button onclick="S.vetView=S.prevVetView||\'home\';rerender()" style="background:none;border:none;padding:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M14 5L8 11l6 6" stroke="var(--nn-tx)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
   else if(isVet&&S.vetSignedIn&&S.vetView==='setup'&&svcEditId!==null)leftEl='<button onclick="svcEditId=null;rerender()" style="background:none;border:none;padding:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M14 5L8 11l6 6" stroke="var(--nn-tx)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
-  else leftEl='<div style="display:flex;align-items:center;gap:7px;">'+logoSVG(24,'var(--nn-tx)')+'<span style="font-size:16px;font-weight:700;color:var(--nn-tx);letter-spacing:-0.3px;">NayNay</span></div>';
+  else leftEl='<div style="display:flex;align-items:center;gap:9px;">'+'<button onclick="S.showSidePanel=true;rerender()" style="background:none;border:none;padding:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="var(--nn-tx)" stroke-width="1.8" stroke-linecap="round"/></svg></button>'+'<div style="display:flex;align-items:center;gap:6px;">'+logoSVG(20,'var(--nn-tx)')+'<span style="font-size:15px;font-weight:700;color:var(--nn-tx);letter-spacing:-0.3px;">NayNay</span></div></div>';
   const rolePickerSheet=S.showRolePicker?rRolePickerSheet():'';
-  return '<div style="position:relative;">'+rolePickerSheet+'<div style="background:linear-gradient(135deg,var(--nn-bg-card) 0%,var(--nn-bg-card) 100%);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(58,172,190,0.25);position:relative;min-height:52px;">'+leftEl+'<div style="position:absolute;left:50%;transform:translateX(-50%);">'+rolePill+'</div>'+notifBell+notifPanel+'</div></div>';
+  const sidePanel=rSidePanel();
+  return '<div style="position:relative;">'+sidePanel+rolePickerSheet+'<div style="background:linear-gradient(135deg,var(--nn-bg-card) 0%,var(--nn-bg-card) 100%);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(58,172,190,0.25);position:relative;min-height:52px;">'+leftEl+'<div style="position:absolute;left:50%;transform:translateX(-50%);">'+rolePill+'</div>'+notifBell+notifPanel+'</div></div>';
 }
 function switchRole(r){S.role=r;S.roles=[r];S.roleComboIdx=ROLE_COMBOS.findIndex(function(c){return c.roles.length===1&&c.roles[0]===r;});if(S.roleComboIdx<0)S.roleComboIdx=0;S.activeTab='home';S.mgrView='home';S.selectedHorse=null;S.vetView='confirmation';S.vetConfirmPage=false;S.vetSignedIn=false;S.feedCardExpanded=false;S.feedCardHorse=null;S.expandedTraining=null;S.loggingTraining=null;svcEditId=null;S.ownerEventPass=null;S.quickAction=null;S.showNotifPanel=false;S.horseTab='overview';S.selectedThread=null;S.bookingVisitId=null;S.notifyCtx=null;S.vaxScanMode=false;window.obsState={horseId:'',obsType:'',notes:'',photos:[],videos:[],date:'',time:''};window.vitalsState={horseId:'',date:'',time:'',activeField:null,hr:'',rr:'',temp:'',bcs:'',hg:'',bl:'',notes:''};window.regimenState={horseId:'',type:'Flat',duration:45,intensity:3,days:[],timesPerDay:1,times:[''],dateFrom:'',dateTo:'',submitted:false};window.reqApptState={horseId:'',proType:'',proId:'',description:'',preferredDate:'',preferredTime:'',submitted:false};rerender();}
 function bottomBar(isMgr,isVet){
   const t=TH;
   const homeOn=isVet?(S.vetView==='home'):(S.activeTab==='home'&&!S.selectedHorse);
   const horsesOn=isVet?(S.vetView==='horses'):(S.activeTab==='horses'||!!S.selectedHorse);
+  const peopleOn=isVet?(S.vetView==='people'):(S.activeTab==='people');
   const msgOn=isVet?(S.vetView==='messages'):(S.activeTab==='messages');
-  const setupOn=isVet?(S.vetView==='setup'):(S.activeTab==='setup'&&!S.selectedHorse);
   function ic(p,on){return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none">${p(on?t.T:t.TX3)}</svg>`;}
   const tabs=[
     {l:'Home',on:homeOn,nav:isVet?`S.vetView='home';S.quickAction=null;S.vetApptSheet=null;rerender()`:`navTo('home')`,ic:c=>`<path d="M3 12L12 4l9 8" stroke="${c}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 10v9a1 1 0 001 1h4v-4h4v4h4a1 1 0 001-1v-9" stroke="${c}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`},
     {l:'Horses',on:horsesOn,nav:isVet?`S.vetView='horses';S.quickAction=null;S.vetApptSheet=null;rerender()`:`navTo('horses')`,ic:c=>`<ellipse cx="12" cy="9" rx="5" ry="3" stroke="${c}" stroke-width="1.5"/><path d="M7 9c0 2 2 5 5 7 3-2 5-5 5-7" stroke="${c}" stroke-width="1.5" stroke-linecap="round"/><path d="M5 14c-1.5 1-2 2.5-2 3.5C3 19 4 20 6 20h12c2 0 3-1 3-2.5 0-1-.5-2.5-2-3.5" stroke="${c}" stroke-width="1.5" stroke-linecap="round"/>`},
-    {l:'Messages',on:msgOn,nav:isVet?`S.vetView='messages';S.quickAction=null;S.vetApptSheet=null;rerender()`:`navTo('messages')`,ic:c=>`<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="${c}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`},
-    {l:'Setup',on:setupOn,nav:isVet?`S.vetView='setup';S.vetSetupTab='account';svcEditId=null;S.quickAction=null;S.vetApptSheet=null;rerender()`:`navTo('setup')`,ic:c=>`<circle cx="12" cy="12" r="3" stroke="${c}" stroke-width="1.5"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="${c}" stroke-width="1.5" stroke-linecap="round"/>`},
+    // People replaces Setup's old slot — see rPeoplePage(). Setup itself
+    // moved into the hamburger side panel (rSidePanel).
+    {l:'People',on:peopleOn,nav:isVet?`S.vetView='people';S.quickAction=null;S.vetApptSheet=null;rerender()`:`navTo('people')`,ic:c=>`<circle cx="9" cy="8" r="3" stroke="${c}" stroke-width="1.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="${c}" stroke-width="1.5" stroke-linecap="round"/><circle cx="17" cy="8" r="2.5" stroke="${c}" stroke-width="1.5"/><path d="M15.5 14.3c2.6.3 4.5 2.5 4.5 5.2" stroke="${c}" stroke-width="1.5" stroke-linecap="round"/>`},
+    {l:'Chat',on:msgOn,nav:isVet?`S.vetView='messages';S.quickAction=null;S.vetApptSheet=null;rerender()`:`navTo('messages')`,ic:c=>`<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="${c}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`},
   ];
-  // Setup tab: shown for all roles
   return `<div style="background:var(--md-surface);border-top:1.5px solid var(--md-outline-variant);display:flex;padding:10px 0 14px;flex-shrink:0;">${tabs.map(tab=>`<div onclick="${tab.nav}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;opacity:${tab.on?1:0.4};">${ic(tab.ic,tab.on)}<span style="font-size:11px;font-weight:600;color:${tab.on?t.T:t.TX3};">${tab.l}</span></div>`).join('')}</div>`;
 }
+
 function navTo(tab){S.activeTab=tab;S.selectedHorse=null;S.horseTab='overview';S.quickAction=null;S.bookingVisitId=null;if(tab!=='home')S.highlightApptCard=false;if(tab==='home'){S.mgrView='home';S.feedCardExpanded=false;S.feedCardHorse=null;}if(tab!=='messages')S.selectedThread=null;rerender();}
 
 function showToast(msg,icon,type){
@@ -1860,26 +1872,15 @@ function rOnboarding(){
       {id:'manager', icon:'home',              label:'Barn Manager',  sub:'I manage a barn or facility'},
       {id:'vet',     icon:'medical_services',  label:'Veterinarian',  sub:'I provide veterinary care'},
       {id:'trainer', icon:'sports',            label:'Trainer',       sub:'I train horses or riders'},
+      {id:'breeder', icon:'egg_alt',          label:'Breeder',       sub:'I breed and raise horses'},
       {id:'staff',   icon:'person',            label:'Barn Staff',    sub:'I work at a barn'},
     ];
-    // Less-common Pro roles — full peer role cards, just tucked behind a
-    // collapsed accordion instead of cluttering the main list. Each is a
-    // real role selection (obSetRole sets ob.roles=[id] directly), not a
-    // proType alias under Vet the way Farrier/Dentist/Chiropractor used to
-    // be — every one of these is its own first-class business now (Phase 2).
-    var OTHER_ROLES=[
-      {id:'breeder',      icon:'egg_alt',          label:'Breeder',       sub:'I breed and raise horses'},
-      {id:'farrier',      icon:'construction',     label:'Farrier',       sub:'I shoe and trim hooves'},
-      {id:'dentist',      icon:'dentistry',        label:'Dentist',       sub:'I provide equine dental care'},
-      {id:'chiropractor', icon:'self_improvement', label:'Chiropractor',  sub:'I provide chiropractic care'},
-      {id:'masseuse',     icon:'spa',              label:'Masseuse',      sub:'I provide massage therapy'},
-      {id:'saddlefitter', icon:'chair',            label:'Saddle Fitter', sub:'I fit and adjust saddles'},
-    ];
-    var otherSelected=OTHER_ROLES.find(function(r){return ob.roles.includes(r.id);});
-    var showOtherRoles=ob._showOtherRoles||!!otherSelected;
+    var OTHER_PRO_TYPES=['Farrier','Dentist','Chiropractor','Other'];
+    var hasOtherPro=ob.roles.includes('vet')&&['Farrier','Dentist','Chiropractor','Other'].includes(ob.proType);
+    var showOtherProPanel=ob._showOtherPro||hasOtherPro;
 
     function roleCard(r){
-      var on=ob.roles.includes(r.id);
+      var on=ob.roles.includes(r.id)&&!(r.id==='vet'&&ob._showOtherPro);
       return '<div onclick="obSetRole(\''+r.id+'\')" style="display:flex;align-items:center;gap:12px;padding:11px 14px;background:var(--md-surface);border-radius:14px;border:2px solid '+(on?'var(--md-primary)':'var(--md-outline-variant)')+';margin-bottom:8px;cursor:pointer;">'
         +'<div style="width:40px;height:40px;border-radius:11px;background:'+(on?'var(--md-primary-container)':'var(--md-surface-variant)')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
         +msiIcon(r.icon,20,on?'var(--md-primary)':'var(--md-on-surface-dim)')+'</div>'
@@ -1891,32 +1892,39 @@ function rOnboarding(){
 
     var mainCards=MAIN_ROLES.map(roleCard).join('');
 
-    // "Other roles" accordion
-    var otherRolesBlock='<div style="margin-bottom:8px;">';
-    if(!showOtherRoles){
-      otherRolesBlock+='<div onclick="window._ob._showOtherRoles=true;rerender()" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;border:2px dashed var(--md-outline-variant);cursor:pointer;">'
+    // Other Professional link / panel
+    var otherProLink='<div style="margin-bottom:8px;">';
+    if(!showOtherProPanel){
+      otherProLink+='<div onclick="window._ob._showOtherPro=true;window._ob.roles=window._ob.roles.filter(function(r){return r!==\'vet\'});window._ob.proType=null;rerender()" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;border:2px dashed var(--md-outline-variant);cursor:pointer;">'
         +'<div style="width:40px;height:40px;border-radius:11px;background:var(--md-surface-variant);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon('more_horiz',20,'var(--md-on-surface-dim)')+'</div>'
-        +'<div style="flex:1;"><div style="font-size:14px;font-weight:700;color:var(--md-primary);">Other roles</div>'
-        +'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:1px;">Breeder, farrier, dentist, chiropractor\u2026</div></div>'
-        +msiIcon('expand_more',20,'var(--md-on-surface-dim)')
+        +'<div style="flex:1;"><div style="font-size:14px;font-weight:700;color:var(--md-primary);">Other Professional</div>'
+        +'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:1px;">Farrier, dentist, chiropractor\u2026</div></div>'
         +'</div>';
     } else {
-      otherRolesBlock+='<div onclick="window._ob._showOtherRoles=false;rerender()" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;border:1.5px solid var(--md-outline-variant);cursor:pointer;margin-bottom:8px;">'
-        +'<div style="width:40px;height:40px;border-radius:11px;background:var(--md-surface-variant);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon('more_horiz',20,'var(--md-on-surface-dim)')+'</div>'
-        +'<div style="flex:1;"><div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">Other roles</div>'
-        +'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:1px;">'+(otherSelected?otherSelected.label+' selected':'Select one below')+'</div></div>'
-        +msiIcon('expand_less',20,'var(--md-on-surface-dim)')
+      var anyOtherSelected=OTHER_PRO_TYPES.some(function(pt){return ob.proType===pt;});
+      otherProLink+='<div style="background:var(--md-surface);border-radius:14px;border:2px solid '+(anyOtherSelected?'var(--md-primary)':'var(--md-outline-variant)')+';padding:12px 14px;">'
+        +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'
+        +'<div style="width:40px;height:40px;border-radius:11px;background:'+(anyOtherSelected?'var(--md-primary-container)':'var(--md-surface-variant)')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon('more_horiz',20,anyOtherSelected?'var(--md-primary)':'var(--md-on-surface-dim)')+'</div>'
+        +'<div style="flex:1;"><div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">Other Professional</div>'
+        +'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:1px;">Select your specialty below</div></div>'
+        +(anyOtherSelected?'<div style="width:22px;height:22px;border-radius:50%;background:var(--md-primary);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon('check',13,'#fff')+'</div>':'')
         +'</div>'
-        +OTHER_ROLES.map(roleCard).join('');
+        +'<div style="display:flex;flex-wrap:wrap;gap:7px;">'
+        +OTHER_PRO_TYPES.map(function(pt){
+          var on=ob.proType===pt;
+          return '<button onclick="window._ob.proType=\''+pt+'\';window._ob.roles=[\'vet\'];rerender()" style="padding:6px 14px;border-radius:20px;border:1.5px solid '+(on?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(on?'var(--md-primary-container)':'var(--md-surface-variant)')+';color:'+(on?'var(--md-primary)':'var(--md-on-surface-dim)')+';font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">'+pt+'</button>';
+        }).join('')
+        +'</div></div>';
     }
-    otherRolesBlock+='</div>';
+    otherProLink+='</div>';
 
     var hasMulti=ob.roles.length>1;
-    var canContinue=ob.roles.length>0;
+    var hasPro=ob.roles.includes('vet');
+    var canContinue=ob.roles.length>0&&(!showOtherProPanel||ob.proType)&&(!hasPro||ob.proType||!showOtherProPanel);
     var multiNote=hasMulti?'<div style="font-size:12px;color:var(--md-on-surface-dim);text-align:center;margin-bottom:12px;">You\'ll set up each role separately — takes about 2 min each.</div>':'';
     var inner='<div style="font-size:22px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">What\'s your role?</div>'
       +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-bottom:16px;">Select all that apply — you can always add more later.</div>'
-      +mainCards+otherRolesBlock+multiNote
+      +mainCards+otherProLink+multiNote
       +'<button onclick="obNext(\'account\')" '+(canContinue?'':'disabled ')+'style="width:100%;background:'+(canContinue?'var(--md-primary)':'var(--md-outline-variant)')+';color:'+(canContinue?'#fff':'var(--md-on-surface-dim)')+';border:none;border-radius:14px;padding:15px;font-size:16px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(canContinue?'pointer':'not-allowed')+';">Continue</button>';
     return wrap(inner,true,'splash',true);
   }
@@ -2711,6 +2719,286 @@ function rOnboarding(){
   return wrap('<div>Loading...</div>',false,null,true);
 }
 
+// ══════════════════════════════════════════════════════════════════════════
+// PEOPLE PAGE v2 — unified, searchable, scope-aware
+// ══════════════════════════════════════════════════════════════════════════
+// Combines two previously-separate data sources into one list:
+//   'barn'     — BARN_PROFESSIONALS (requires a barn/pro role: manager, vet,
+//                trainer, breeder)
+//   'personal' — people connected to horses the CURRENT PERSONA personally
+//                owns (h.vet/h.trainer/h.pros/h.owners), requires owning
+//                at least one horse
+// A multi-role persona (e.g. Owner + Manager) can have BOTH scopes at once —
+// each person's row shows every scope they're connected through, and the
+// Invite FAB asks which one you mean before proceeding (see
+// rPeopleInviteChoiceSheet). A single-scope persona skips that question
+// entirely and goes straight to the one flow that applies.
+const CURRENT_OWNER_USERID='owner-sarah'; // matches the app-wide convention (see getHorsesForUser, rAddHorse)
+
+function getUnifiedPeopleList(){
+  var hasOwnHorses=S.newOwnerDemo?false:getHorsesForUser().some(function(r){return r.rel==='own';});
+  var hasBarnRole=anyRole('manager','vet','trainer','breeder');
+  var people={};
+  function addPerson(name,role,scope,horseName,proId){
+    if(!name) return;
+    if(!people[name]) people[name]={name:name,roles:[],scopes:[],horseNames:[],nayNay:false,barnProId:null};
+    var p=people[name];
+    if(p.roles.indexOf(role)<0) p.roles.push(role);
+    if(p.scopes.indexOf(scope)<0) p.scopes.push(scope);
+    if(horseName&&p.horseNames.indexOf(horseName)<0) p.horseNames.push(horseName);
+    if(proId) p.barnProId=proId;
+  }
+  if(hasBarnRole){
+    BARN_PROFESSIONALS.forEach(function(pro){
+      addPerson(pro.name,pro.type,'barn',null,pro.id);
+      people[pro.name].nayNay=pro.nayNay;
+    });
+  }
+  if(hasOwnHorses){
+    var ownedHorses=getHorsesForUser().filter(function(r){return r.rel==='own';}).map(function(r){return r.horse;});
+    ownedHorses.forEach(function(h){
+      if(h.vet) addPerson(h.vet,'Veterinarian','personal',h.name);
+      if(h.trainer) addPerson(h.trainer,'Trainer','personal',h.name);
+      (h.pros||[]).forEach(function(p){addPerson(p.name,p.role,'personal',h.name);});
+      (h.owners||[]).forEach(function(o){
+        var isMe=o.userId===CURRENT_OWNER_USERID;
+        if(!isMe) addPerson(o.name,'Co-owner','personal',h.name);
+      });
+    });
+  }
+  return {people:Object.values(people),hasOwnHorses:hasOwnHorses,hasBarnRole:hasBarnRole};
+}
+
+function personRoleColor(role){
+  var map={Veterinarian:'var(--md-secondary)',Trainer:'var(--md-tertiary)',Farrier:'var(--md-warning)',Dentist:'var(--md-error)',Chiropractor:'var(--md-primary)','Co-owner':'#C04A6A'};
+  return map[role]||'var(--md-on-surface-dim)';
+}
+var PEOPLE_APPT_ROLES=['Veterinarian','Farrier','Dentist','Chiropractor'];
+
+// Called at click-time (not render-time) so it can correctly branch on the
+// CURRENT owned-horse count without any render-cycle timing issues: skips
+// the picker sheet entirely when there's only one horse to choose from.
+function peopleInviteHorseAction(){
+  var owned=getHorsesForUser().filter(function(r){return r.rel==='own';}).map(function(r){return r.horse;});
+  if(owned.length===1){
+    S.selectedHorse=owned[0].id;S.horseTab='connections';
+    window._inviteState={open:true,step:1,name:'',role:'Veterinarian',email:'',phone:'',inviteCode:null};
+  } else {
+    S.peopleInviteHorsePicker=true;
+  }
+}
+
+function rPeoplePage(){
+  var data=getUnifiedPeopleList();
+  var hasOwnHorses=data.hasOwnHorses, hasBarnRole=data.hasBarnRole;
+  if(!S.peopleSearch) S.peopleSearch='';
+  if(!S.peopleRoleFilter) S.peopleRoleFilter=[];
+
+  // ── No data at all: role-appropriate empty state ──────────────────────────
+  if(!hasOwnHorses&&!hasBarnRole){
+    return '<div style="padding:14px;">'
+      +'<div style="font-size:18px;font-weight:800;color:var(--md-on-surface);margin-bottom:14px;">People</div>'
+      +'<div style="background:var(--md-surface-variant);border-radius:14px;padding:20px;text-align:center;">'
+        +msiIcon('group',28,'var(--md-on-surface-dim)')
+        +'<div style="font-size:14px;font-weight:700;color:var(--md-on-surface);margin:10px 0 4px;">No horses yet</div>'
+        +'<div style="font-size:12px;color:var(--md-on-surface-dim);margin-bottom:14px;">Once you add a horse, everyone connected to their care will show up here.</div>'
+        +'<button onclick="S.showAddHorse=true;rerender()" style="background:var(--md-primary);color:#fff;border:none;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Add your first horse</button>'
+      +'</div></div>';
+  }
+
+  // ── Filtering ──────────────────────────────────────────────────────────────
+  var q=(S.peopleSearch||'').toLowerCase();
+  var visible=data.people.filter(function(p){
+    if(q&&p.name.toLowerCase().indexOf(q)<0) return false;
+    if(S.peopleRoleFilter.length&&!p.roles.some(function(r){return S.peopleRoleFilter.indexOf(r)>=0;})) return false;
+    return true;
+  });
+
+  var allRolesPresent=Array.from(new Set(data.people.reduce(function(acc,p){return acc.concat(p.roles);},[])));
+
+  // ── Search bar ─────────────────────────────────────────────────────────────
+  var searchBar='<div style="position:relative;margin-bottom:10px;">'
+    +'<input type="text" value="'+S.peopleSearch+'" oninput="S.peopleSearch=this.value;rerender()" placeholder="Search by name" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px 9px 34px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/>'
+    +'<div style="position:absolute;left:11px;top:50%;transform:translateY(-50%);">'+msiIcon('search',15,'var(--md-on-surface-dim)')+'</div>'
+  +'</div>';
+
+  // ── Role filter pills ──────────────────────────────────────────────────────
+  var filterPills=allRolesPresent.length?('<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">'
+    +allRolesPresent.map(function(r){
+      var on=S.peopleRoleFilter.indexOf(r)>=0;
+      return '<button onclick="(function(){var arr=S.peopleRoleFilter;var i=arr.indexOf(\''+r+'\');if(i>=0)arr.splice(i,1);else arr.push(\''+r+'\');rerender();})()" style="font-family:\'DM Sans\',sans-serif;padding:6px 12px;border-radius:20px;border:1.5px solid '+(on?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(on?'var(--md-primary-container)':'var(--md-surface)')+';font-size:12px;font-weight:700;color:'+(on?'var(--md-primary)':'var(--md-on-surface-variant)')+';cursor:pointer;">'+r+'</button>';
+    }).join('')
+  +'</div>'):'';
+
+  // ── Rows ───────────────────────────────────────────────────────────────────
+  var content;
+  if(!visible.length){
+    content='<div style="background:var(--md-surface-variant);border-radius:14px;padding:20px;text-align:center;">'
+      +msiIcon('search_off',24,'var(--md-on-surface-dim)')
+      +'<div style="font-size:13px;color:var(--md-on-surface-dim);margin-top:8px;">No one matches your search.</div>'
+    +'</div>';
+  } else {
+    var ROLE_ORDER=['Veterinarian','Trainer','Farrier','Dentist','Chiropractor','Co-owner'];
+    var grouped={};
+    visible.forEach(function(p){
+      var primaryRole=ROLE_ORDER.find(function(r){return p.roles.indexOf(r)>=0;})||p.roles[0]||'Other';
+      if(!grouped[primaryRole]) grouped[primaryRole]=[];
+      grouped[primaryRole].push(p);
+    });
+    content=Object.keys(grouped).sort(function(a,b){
+      var ia=ROLE_ORDER.indexOf(a),ib=ROLE_ORDER.indexOf(b);
+      return (ia<0?99:ia)-(ib<0?99:ib);
+    }).map(function(roleName){
+      var rc=personRoleColor(roleName);
+      return '<div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 8px;">'+roleName+(grouped[roleName].length>1?'s':'')+'</div>'
+        +grouped[roleName].map(function(p){
+          var scopeBadges=p.scopes.map(function(sc){
+            return '<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;margin-right:4px;background:'+(sc==='barn'?'var(--md-tertiary-container)':'var(--md-primary-container)')+';color:'+(sc==='barn'?'var(--md-tertiary)':'var(--md-primary)')+';">'+(sc==='barn'?'Barn':'Personal horse')+'</span>';
+          }).join('');
+          var detail=p.scopes.indexOf('personal')>=0?p.horseNames.join(', '):(mgrSetup&&mgrSetup.barnName||'Sunrise Stables');
+
+          // ── Per-row actions, based on scope + role + connection status ─────
+          var actions=[];
+          if(p.nayNay){
+            actions.push({label:'Message',icon:'chat',action:"navTo('messages')"});
+            var canAppt=PEOPLE_APPT_ROLES.indexOf(roleName)>=0;
+            if(canAppt&&p.scopes.indexOf('personal')>=0&&hasOwnHorses){
+              var firstHorse=getHorsesForUser().filter(function(r){return r.rel==='own'&&p.horseNames.indexOf(r.horse.name)>=0;})[0];
+              if(firstHorse){
+                var barnPro=BARN_PROFESSIONALS.find(function(bp){return bp.name===p.name;});
+                actions.push({label:'Request appointment',icon:'event_available',action:"window.reqApptState={horseId:'"+firstHorse.horse.id+"',lockHorse:true,proType:'"+roleName+"',proId:'"+(barnPro?barnPro.id:p.name)+"',lockPro:true,serviceId:'',serviceCategory:'',description:'',preferredDate:'',preferredTime:'',useNewCard:false,newCardNumber:'',newCardExpiry:'',newCardCVC:'',submitted:false};S.quickAction='request-appointment';"});
+              }
+            }
+            if(canAppt&&p.scopes.indexOf('barn')>=0&&p.barnProId){
+              actions.push({label:'Request visit',icon:'home_work',action:"S.scheduleVisitSheet={step:1,proId:'"+p.barnProId+"',proName:'"+p.name+"',proRole:'"+roleName+"',service:'',date:'',timeStart:'',timeEnd:'',notes:''};"});
+            }
+          } else {
+            actions.push({label:'Invite to NayNay',icon:'send',action:"window._inviteState={open:true,step:1,name:'"+p.name+"',role:'"+roleName+"',email:'',phone:'',inviteCode:null};"});
+          }
+          
+var revokeAction="if(confirm('Remove "+p.name.replace(/'/g,"\\'")+" from your connections?')){"
+            +"if("+JSON.stringify(p.scopes.indexOf('barn')>=0)+"){var bi=BARN_PROFESSIONALS.findIndex(function(bp){return bp.name==='"+p.name+"';});if(bi>=0)BARN_PROFESSIONALS.splice(bi,1);}"
+            +"if("+JSON.stringify(p.scopes.indexOf('personal')>=0)+"){getHorsesForUser().filter(function(r){return r.rel==='own';}).forEach(function(r){var hh=r.horse;if(hh.vet==='"+p.name+"')hh.vet='';if(hh.trainer==='"+p.name+"')hh.trainer='';if(hh.pros)hh.pros=hh.pros.filter(function(pp){return pp.name!=='"+p.name+"';});});}"
+            +"showToast('"+p.name.replace(/'/g,"\\'")+" removed','link_off','info');rerender();}";
+
+          return '<div style="background:var(--md-surface);border:1.5px solid var(--md-outline-variant);border-radius:12px;padding:11px 13px;margin-bottom:8px;">'
+            +'<div style="display:flex;align-items:center;gap:11px;margin-bottom:9px;">'
+              +'<div style="width:38px;height:38px;border-radius:50%;background:'+rc+'18;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:'+rc+';flex-shrink:0;">'+p.name.charAt(0)+'</div>'
+              +'<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+p.name+'</div>'
+                +'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:2px;">'+scopeBadges+(p.nayNay?'<span style="background:var(--md-primary-container);color:var(--md-primary);font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;margin-right:4px;">on NayNay</span>':'')+detail+'</div>'
+              +'</div>'
+            +'</div>'
+            +'<div style="display:flex;gap:6px;flex-wrap:wrap;">'
+              +actions.map(function(a){
+                return '<button onclick="'+a.action+'rerender()" style="display:flex;align-items:center;gap:4px;background:'+(a.danger?'var(--md-error-container)':'var(--md-surface-variant)')+';border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;color:'+(a.danger?'var(--md-error)':'var(--md-primary)')+';cursor:pointer;font-family:\'DM Sans\',sans-serif;">'+msiIcon(a.icon,12,'var(--md-primary)')+a.label+'</button>';
+              }).join('')
+            +'</div>'
+            +'<button onclick="'+revokeAction+'" style="background:none;border:none;padding:4px 2px;font-size:10px;font-weight:600;color:var(--md-on-surface-dim);cursor:pointer;font-family:\'DM Sans\',sans-serif;text-decoration:underline;flex-shrink:0;">Revoke</button>'
+            +'</div>'
+          +'</div>';
+        }).join('');
+    }).join('');
+  }
+
+  // ── Pending requests — enriched to match the Home page's pending-request
+  // card format (rMgrHome's barnReqBanner): role icon, "Role · Requesting
+  // to join BarnName · time" subtitle, and the full request message —
+  // instead of the bare name-only row this used to show. Status value on
+  // accept matches the Home page's own convention ('approved', not
+  // 'accepted') so both surfaces stay in sync reading the same field.
+  var pendingSection='';
+  if(hasBarnRole){
+    var pendingBarnReqs=(BARN_JOIN_REQUESTS||[]).filter(function(r){return r.status==='pending';});
+    var pendingStaffReqs=(STAFF_JOIN_REQUESTS||[]).filter(function(r){return r.status==='pending';});
+    var allPending=pendingBarnReqs.map(function(r){return Object.assign({kind:'barn'},r);})
+      .concat(pendingStaffReqs.map(function(r){return Object.assign({kind:'staff'},r);}));
+    if(allPending.length){
+      pendingSection='<div style="background:var(--md-warning-container);border-radius:12px;padding:12px 14px;margin-bottom:14px;">'
+        +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'+msiIcon('mail',16,'var(--md-warning)')+'<span style="font-size:13px;font-weight:700;color:var(--md-warning);">'+allPending.length+' pending request'+(allPending.length>1?'s':'')+'</span></div>'
+        +allPending.map(function(r){
+          var roleLabel=r.kind==='staff'?'Barn Staff':r.role;
+          var icon=r.kind==='staff'?'person':(r.role==='Veterinarian'?'medical_services':'fitness_center');
+          return '<div style="background:var(--md-surface);border-radius:10px;padding:10px 12px;margin-bottom:7px;">'
+            +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">'
+              +'<div style="width:36px;height:36px;border-radius:50%;background:var(--md-secondary-container);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon(icon,17,'var(--md-secondary)')+'</div>'
+              +'<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+r.name+'</div>'
+              +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+roleLabel+' · Requesting to join '+r.barnName+' · '+r.time+'</div></div>'
+            +'</div>'
+            +(r.message?'<div style="font-size:12px;color:var(--md-on-surface-variant);line-height:1.5;margin-bottom:9px;padding:0 2px;">'+r.message+'</div>':'')
+            +'<div style="display:flex;gap:7px;">'
+              +'<button onclick="var rr=(BARN_JOIN_REQUESTS||[]).concat(STAFF_JOIN_REQUESTS||[]).find(function(x){return x.id===\''+r.id+'\';});if(rr)rr.status=\'approved\';showToast(\''+r.name.split(' ')[0]+' connected!\',\'check_circle\',\'success\');rerender()" style="flex:1;padding:8px 12px;background:var(--md-secondary);color:#fff;border:none;border-radius:9px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Approve connection</button>'
+              +'<button onclick="var rr=(BARN_JOIN_REQUESTS||[]).concat(STAFF_JOIN_REQUESTS||[]).find(function(x){return x.id===\''+r.id+'\';});if(rr)rr.status=\'declined\';showToast(\'Request declined\',\'close\',\'info\');rerender()" style="flex:1;padding:8px 12px;background:var(--md-surface-variant);color:var(--md-on-surface-dim);border:none;border-radius:9px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">Decline</button>'
+            +'</div>'
+          +'</div>';
+        }).join('')
+      +'</div>';
+    }
+  }
+
+  
+// ── Invite FAB — see rPeopleInviteChoiceSheet / rPeopleHorsePickerSheet for
+  // the disambiguation flow this triggers when a persona has both scopes.
+  var fabAction;
+  if(hasOwnHorses&&hasBarnRole) fabAction="S.peopleInviteChoice=true;";
+  else if(hasOwnHorses) fabAction="peopleInviteHorseAction();";
+  else if(S.role==='manager') fabAction="S.mgrInviteSheet={step:1,role:null,firstName:'',lastName:'',email:'',phone:'',inviteCode:generateInviteCode()};";
+  else if(S.role==='vet') fabAction="S.barnConnectFlow={role:'Veterinarian',step:'search',query:'',selected:null,sent:false};";
+  else fabAction="S.barnConnectFlow={role:'Trainer',step:'search',query:'',selected:null,sent:false};";
+  var fab='<button onclick="'+fabAction+'rerender()" style="position:fixed;bottom:80px;right:20px;z-index:200;width:54px;height:54px;border-radius:50%;background:var(--md-primary);border:none;box-shadow:0 4px 14px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;cursor:pointer;">'+msiIcon('person_add',24,'#fff')+'</button>';
+
+  var choiceSheet=S.peopleInviteChoice?rPeopleInviteChoiceSheet():'';
+  var horsePickerSheet=S.peopleInviteHorsePicker?rPeopleHorsePickerSheet():'';
+
+  return choiceSheet+horsePickerSheet+fab+'<div style="padding:14px;padding-bottom:80px;">'
+    +'<div style="font-size:18px;font-weight:800;color:var(--md-on-surface);margin-bottom:14px;">People</div>'
+    +pendingSection
+    +searchBar+filterPills
+    +content
+  +'</div>';
+}
+
+// ── Disambiguation: "invite for a horse" vs "invite to the barn/business" ───
+function rPeopleInviteChoiceSheet(){
+  var close="S.peopleInviteChoice=false;";
+  return '<div onclick="'+close+'rerender()" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:400;display:flex;flex-direction:column;justify-content:flex-end;">'
+    +'<div onclick="event.stopPropagation()" style="background:var(--md-surface);border-radius:20px 20px 0 0;padding:18px 16px 26px;">'
+      +'<div style="width:36px;height:4px;border-radius:2px;background:var(--md-outline-variant);margin:0 auto 16px;"></div>'
+      +'<div style="font-size:16px;font-weight:800;color:var(--md-on-surface);margin-bottom:14px;">Who is this invite for?</div>'
+      +'<button onclick="'+close+'peopleInviteHorseAction();rerender()" style="width:100%;display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--md-surface-variant);border:none;border-radius:12px;cursor:pointer;text-align:left;margin-bottom:8px;">'
+        +'<div style="width:38px;height:38px;border-radius:10px;background:var(--md-primary-container);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon('favorite',18,'var(--md-primary)')+'</div>'
+        +'<div><div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">One of my horses</div><div style="font-size:11px;color:var(--md-on-surface-dim);">A vet, trainer, or other professional for a horse you own</div></div>'
+      +'</button>'
+      +'<button onclick="'+close+(S.role==='manager'?"S.mgrInviteSheet={step:1,role:null,firstName:'',lastName:'',email:'',phone:'',inviteCode:generateInviteCode()};":"S.barnConnectFlow={role:'"+(S.role==='vet'?'Veterinarian':'Trainer')+"',step:'search',query:'',selected:null,sent:false};")+'rerender()" style="width:100%;display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--md-surface-variant);border:none;border-radius:12px;cursor:pointer;text-align:left;">'
+        +'<div style="width:38px;height:38px;border-radius:10px;background:var(--md-tertiary-container);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon('home_work',18,'var(--md-tertiary)')+'</div>'
+        +'<div><div style="font-size:14px;font-weight:700;color:var(--md-on-surface);">My barn/business</div><div style="font-size:11px;color:var(--md-on-surface-dim);">Someone joining the barn broadly, not tied to one horse</div></div>'
+      +'</button>'
+    +'</div>'
+  +'</div>';
+}
+
+// ── Horse picker: which owned horse is this invite for? ──────────────────────
+function rPeopleHorsePickerSheet(){
+  var close="S.peopleInviteHorsePicker=false;";
+  var ownedHorses=getHorsesForUser().filter(function(r){return r.rel==='own';}).map(function(r){return r.horse;});
+  // The single-horse case is handled BEFORE this sheet ever opens — see
+  // peopleInviteHorseAction() in rPeoplePage/rPeopleInviteChoiceSheet, which
+  // jumps straight to the invite flow instead of triggering this picker at
+  // all when there's nothing to pick between. This function only renders
+  // when there are genuinely 2+ owned horses to choose from.
+  return '<div onclick="'+close+'rerender()" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:400;display:flex;flex-direction:column;justify-content:flex-end;">'
+    +'<div onclick="event.stopPropagation()" style="background:var(--md-surface);border-radius:20px 20px 0 0;padding:18px 16px 26px;">'
+      +'<div style="width:36px;height:4px;border-radius:2px;background:var(--md-outline-variant);margin:0 auto 16px;"></div>'
+      +'<div style="font-size:16px;font-weight:800;color:var(--md-on-surface);margin-bottom:14px;">Which horse?</div>'
+      +ownedHorses.map(function(h){
+        return '<button onclick="'+close+'S.selectedHorse=\''+h.id+'\';S.horseTab=\'connections\';window._inviteState={open:true,step:1,name:\'\',role:\'Veterinarian\',email:\'\',phone:\'\',inviteCode:null};rerender()" style="width:100%;display:flex;align-items:center;gap:11px;padding:11px 13px;background:var(--md-surface-variant);border:none;border-radius:11px;cursor:pointer;text-align:left;margin-bottom:7px;">'
+          +horseAvatar(h,32)
+          +'<span style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+h.name+'</span>'
+        +'</button>';
+      }).join('')
+    +'</div>'
+  +'</div>';
+}
+
 function getContent(isVet,isMgr,showHorse){
   if(window._ob&&window._ob.active) return rOnboarding();
   if(S.notifyCtx&&S.notifyCtx.active) return rNotifyStep();
@@ -2718,11 +3006,11 @@ function getContent(isVet,isMgr,showHorse){
   if(S.roles.length>1&&S.activeTab==='setup'&&!showHorse){
     if(anyRole('vet'))return rVetSetup();
     if(anyRole('trainer')||anyRole('breeder'))return rTrainerSetup();
-    if(PRO_ROLES.some(function(r){return anyRole(r);}))return rProSetup(PRO_ROLES.find(function(r){return anyRole(r);}));
     if(anyRole('manager'))return rMgrSetup();
     if(anyRole('staff'))return rStaffSetup();
     return rOwnerSetup();
   }
+  if(S.roles.length>1&&S.activeTab==='people'&&!showHorse) return rPeoplePage();
   if(anyRole('manager')&&S.mgrView==='assignments') return rAssignments();
   if(isVet){
     if(!S.vetSignedIn){if(S.vetConfirmPage==='confirmed')return rVetConfirmedPage();if(S.vetConfirmPage==='declined')return rVetDeclinedPage();return rVetUnauth();}
@@ -2731,32 +3019,21 @@ function getContent(isVet,isMgr,showHorse){
     if(S.quickAction==='schedule-appointment')return rVetScheduleAppt();if(S.quickAction)return rQuickActionForm(S.quickAction);
     if(S.vetView==='home')return rVetHome();if(S.vetView==='horses')return S.showAddHorse?rAddHorse():rHorseList();
     if(S.vetView==='messages')return rMessages('vet');if(S.vetView==='setup')return rVetSetup();
+    if(S.vetView==='people')return rPeoplePage();
     if(S.vetView==='vaxform')return rVaxForm();return rVetHome();
   }
   if(S.role==='trainer'||S.role==='breeder'){
     if(showHorse&&!S.quickAction)return rHorseDetail(HORSES_ALL.find(function(h){return h.id===S.selectedHorse;})||HORSES.find(function(h){return h.id===S.selectedHorse;}));
     if(S.quickAction==='document-observation')return rObservationForm();
     if(S.quickAction==='request-barn-visit')return rScheduleVisitForm();
-    if(S.quickAction==='create-regimen')return rCreateRegimenForm();
+    // 'create-regimen' routing retired along with the quick action above.
     if(S.quickAction)return rQuickActionForm(S.quickAction);
     if(S.showAddHorse)return rAddHorse();
     if(S.activeTab==='horses')return rHorseList();
     if(S.activeTab==='messages')return rMessages('trainer');
     if(S.activeTab==='setup')return rTrainerSetup();
+    if(S.activeTab==='people')return rPeoplePage();
     return S.role==='breeder'?rBreederHome():rTrainerHome();
-  }
-  if(['farrier','dentist','chiropractor','masseuse','saddlefitter'].includes(S.role)){
-    // Setup (Phase 2, this pass) is fully wired. Home/Horses/Messages reuse
-    // the same generic components Trainer/Breeder already use — the
-    // role-specific Home *content* (visits, recurring-care cards, etc.) is
-    // Phase 3 and lands in rProHome(), not yet built.
-    if(showHorse&&!S.quickAction)return rHorseDetail(HORSES_ALL.find(function(h){return h.id===S.selectedHorse;})||HORSES.find(function(h){return h.id===S.selectedHorse;}));
-    if(S.quickAction)return rQuickActionForm(S.quickAction);
-    if(S.showAddHorse)return rAddHorse();
-    if(S.activeTab==='horses')return rHorseList();
-    if(S.activeTab==='messages')return rMessages(S.role);
-    if(S.activeTab==='setup')return rProSetup(S.role);
-    return rProHome(S.role); // Phase 3: shared visiting-professional Home core
   }
   if(S.role==='owner'){
     if(showHorse&&!S.quickAction)return rHorseDetail(HORSES_ALL.find(function(h){return h.id===S.selectedHorse;})||HORSES.find(function(h){return h.id===S.selectedHorse;}));
@@ -2768,6 +3045,7 @@ function getContent(isVet,isMgr,showHorse){
     if(S.activeTab==='horses')return rHorseList();
     if(S.activeTab==='messages')return rMessages('owner');
     if(S.activeTab==='setup')return rOwnerSetup();
+    if(S.activeTab==='people')return rPeoplePage();
     return rOwnerHome();
   }
   if(showHorse&&!S.quickAction)return rHorseDetail(HORSES_ALL.find(function(h){return h.id===S.selectedHorse;})||HORSES.find(function(h){return h.id===S.selectedHorse;}));
@@ -2776,8 +3054,9 @@ function getContent(isVet,isMgr,showHorse){
   if(S.quickAction)return rQuickActionForm(S.quickAction);
   if(S.showAddHorse)return rAddHorse();
     if(S.activeTab==='horses')return rHorseList();if(S.activeTab==='messages')return rMessages(S.role);
-  if(isMgr){if(S.activeTab==='setup')return rMgrSetup();if(S.mgrView==='assignments')return rAssignments();return rMgrHome();}
+  if(isMgr){if(S.activeTab==='setup')return rMgrSetup();if(S.activeTab==='people')return rPeoplePage();if(S.mgrView==='assignments')return rAssignments();return rMgrHome();}
   if(S.activeTab==='setup')return rStaffSetup();
+  if(S.activeTab==='people')return rPeoplePage();
   return rStaff();
 }
 
@@ -3372,192 +3651,6 @@ let mgrSetup={
   get tasks(){ if(!this._tasks) this._tasks=buildDefaultTasks(); return this._tasks; },
 };
 
-// ══════════════════════════════════════════════════════════════════════════
-// BUSINESS SETUP — the shared shell (Details/Services/Connections/Payments)
-// ══════════════════════════════════════════════════════════════════════════
-// Every visiting-professional business (Vet, Trainer, Breeder, Farrier,
-// Dentist, Chiropractor, Masseuse, Saddle Fitter) uses this same setup[]
-// object shape: profile (person + practice/business details), payment,
-// connectedBarns. Calendar and notifications are deliberately NOT part of
-// this consolidation — those are per-user preferences, not business data,
-// so each role still keeps its own `calendar`/`notifs` sub-object here for
-// convenience, but rProSetupCalendar()/rProSetupNotifs() below are generic,
-// reusable renderers rather than a merged "business" record. See
-// proSetupFor()/proMetaFor() for the role→object/label/color lookup that
-// lets one set of render functions (rProSetupAccount, rProSetupConnections,
-// rPaymentsTab, rServicesTab) serve all 8 of these roles instead of each
-// hand-rolling its own copy (the pattern Vet/Trainer/Manager had drifted
-// into before this pass).
-// ══════════════════════════════════════════════════════════════════════════
-let breederSetup={
-  profile:{prefix:'',first:'Patricia',last:'Alvarez',suffix:'',credentials:'',practice:'Alvarez Sport Horse Breeding',practicePhone:'(845) 555-0166',practiceEmail:'patricia@alvarezbreeding.com',practiceAddress:'',website:'',phone:'(845) 555-0166',email:'patricia@alvarezbreeding.com',specialty:'Warmblood breeding'},
-  notifs:{cycleAlerts:true,foalingAlerts:true,appointmentChanges:true,paymentReceipts:true,chatMessages:true},
-  payment:{method:'Bank account',account:'Chase \u00b7\u00b7\u00b7\u00b7 6120',invoicePrefix:'ASH',autoCharge:false,receiptEmail:true},
-  calendar:{googleConnected:false,iCalConnected:false,syncAppts:true,syncReminders:true},
-  connectedBarns:[{id:'b1',name:'Sunrise Stables',manager:'Charlene Georgia',horses:2,since:'Feb 2025',active:true}],
-};
-let farrierSetup={
-  profile:{prefix:'',first:'Mike',last:'Farrell',suffix:'',credentials:'AFA Certified Journeyman Farrier',practice:'Farrell Farrier Service',practicePhone:'(555) 382-9104',practiceEmail:'',practiceAddress:'',website:'',phone:'(555) 382-9104',email:'',license:'AFA-CJF-2214',licenseState:''},
-  notifs:{resetDueAlerts:true,appointmentReminders:true,chatMessages:true,paymentReceipts:true},
-  payment:{method:'Bank account',account:'Wells Fargo \u00b7\u00b7\u00b7\u00b7 4471',invoicePrefix:'FFS',autoCharge:false,receiptEmail:true},
-  calendar:{googleConnected:false,iCalConnected:false,syncAppts:true,syncReminders:true},
-  connectedBarns:[{id:'b1',name:'Sunrise Stables',manager:'Charlene Georgia',horses:6,since:'Jan 2024',active:true},{id:'b4',name:'River Ranch',manager:'Melissa Torres',horses:4,since:'Jun 2023',active:true}],
-};
-let dentistSetup={
-  profile:{prefix:'Dr.',first:'Priya',last:'Nair',suffix:'DVM',credentials:'DVM, Certified Equine Dentist',practice:'Nair Equine Dental',practicePhone:'',practiceEmail:'priya@equinedental.com',practiceAddress:'',website:'',phone:'',email:'priya@equinedental.com',license:'VT-55210',licenseState:'Vermont'},
-  notifs:{floatDueAlerts:true,appointmentReminders:true,chatMessages:true,paymentReceipts:true},
-  payment:{method:'Bank account',account:'Chase \u00b7\u00b7\u00b7\u00b7 2287',invoicePrefix:'NED',autoCharge:false,receiptEmail:true},
-  calendar:{googleConnected:false,iCalConnected:false,syncAppts:true,syncReminders:true},
-  connectedBarns:[{id:'b1',name:'Sunrise Stables',manager:'Charlene Georgia',horses:4,since:'Apr 2024',active:true}],
-};
-let chiroSetup={
-  profile:{prefix:'Dr.',first:'',last:'',suffix:'DC',credentials:'Certified Animal Chiropractor',practice:'',practicePhone:'',practiceEmail:'',practiceAddress:'',website:'',phone:'',email:'',license:'',licenseState:''},
-  notifs:{treatmentPlanAlerts:true,appointmentReminders:true,chatMessages:true,paymentReceipts:true},
-  payment:{method:'Bank account',account:'',invoicePrefix:'',autoCharge:false,receiptEmail:true},
-  calendar:{googleConnected:false,iCalConnected:false,syncAppts:true,syncReminders:true},
-  connectedBarns:[],
-};
-let masseuseSetup={
-  profile:{prefix:'',first:'Sofia',last:'Reyes',suffix:'',credentials:'Certified Equine Sports Massage Therapist',practice:'Reyes Equine Wellness',practicePhone:'',practiceEmail:'sofia@eqwellness.com',practiceAddress:'',website:'',phone:'',email:'sofia@eqwellness.com'},
-  notifs:{competitionAlerts:true,appointmentReminders:true,chatMessages:true,paymentReceipts:true},
-  payment:{method:'Bank account',account:'Chase \u00b7\u00b7\u00b7\u00b7 8834',invoicePrefix:'REW',autoCharge:false,receiptEmail:true},
-  calendar:{googleConnected:false,iCalConnected:false,syncAppts:true,syncReminders:true},
-  connectedBarns:[{id:'b1',name:'Sunrise Stables',manager:'Charlene Georgia',horses:3,since:'Aug 2024',active:true}],
-};
-let saddleFitterSetup={
-  profile:{prefix:'',first:'',last:'',suffix:'',credentials:'Society of Master Saddlers Qualified Fitter',practice:'',practicePhone:'',practiceEmail:'',practiceAddress:'',website:'',phone:'',email:''},
-  notifs:{refitDueAlerts:true,appointmentReminders:true,chatMessages:true,paymentReceipts:true},
-  payment:{method:'Bank account',account:'',invoicePrefix:'',autoCharge:false,receiptEmail:true},
-  calendar:{googleConnected:false,iCalConnected:false,syncAppts:true,syncReminders:true},
-  connectedBarns:[],
-};
-
-// Role → business-setup object. Called (not a plain object literal) so it
-// can be referenced anywhere in the file regardless of declaration order.
-function proSetupFor(role){
-  return {vet:vetSetup,trainer:trainerSetup,breeder:breederSetup,farrier:farrierSetup,dentist:dentistSetup,chiropractor:chiroSetup,masseuse:masseuseSetup,saddlefitter:saddleFitterSetup,manager:mgrSetup}[role];
-}
-// Role → the literal variable name, needed wherever we build an onclick
-// string like storeName+'.profile.first=this.value'.
-function proStoreNameFor(role){
-  return {vet:'vetSetup',trainer:'trainerSetup',breeder:'breederSetup',farrier:'farrierSetup',dentist:'dentistSetup',chiropractor:'chiroSetup',masseuse:'masseuseSetup',saddlefitter:'saddleFitterSetup',manager:'mgrSetup'}[role];
-}
-// Role → display metadata used across Setup/Home: business-details label
-// (Practice vs Business vs Barn), brand color/icon, the proType string used
-// to match BARN_PROFESSIONALS/PRO_BARN_REQUESTS entries, and which
-// services[] array (from Phase 1) is this business's own service list.
-function proMetaFor(role){
-  const M={
-    vet:         {label:'Practice', color:'var(--md-primary)',   icon:'medical_services',  proType:'Veterinarian', servicesVar:'vetServices',         suffixOpts:['DVM','VMD','PhD','MS','DVM PhD','']},
-    trainer:     {label:'Business',  color:'var(--md-tertiary)',  icon:'sports',             proType:'Trainer',      servicesVar:'trainerServices',     suffixOpts:['']},
-    breeder:     {label:'Business',  color:'var(--md-tertiary)',  icon:'egg_alt',            proType:'Breeder',      servicesVar:'breederServices',     suffixOpts:['']},
-    farrier:     {label:'Business',  color:'var(--md-warning)',   icon:'construction',       proType:'Farrier',      servicesVar:'farrierServices',     suffixOpts:['']},
-    dentist:     {label:'Practice', color:'var(--md-error)',     icon:'dentistry',          proType:'Dentist',      servicesVar:'dentistServices',     suffixOpts:['DVM','VMD','']},
-    chiropractor:{label:'Practice', color:'var(--md-secondary)', icon:'self_improvement',   proType:'Chiropractor', servicesVar:'chiroServices',       suffixOpts:['DC','DVM','']},
-    masseuse:    {label:'Business',  color:'var(--md-secondary)', icon:'spa',                proType:'Masseuse',     servicesVar:'masseuseServices',    suffixOpts:['']},
-    saddlefitter:{label:'Business',  color:'var(--md-warning)',   icon:'chair',              proType:'Saddle Fitter',servicesVar:'saddleFitterServices',suffixOpts:['']},
-    manager:     {label:'Barn',      color:'var(--md-primary)',   icon:'home',               proType:'Barn Manager', servicesVar:'mgrServices',         suffixOpts:['']},
-  };
-  return M[role]||M.vet;
-}
-// proType label → icon, derived from proMetaFor() so it can't drift out of
-// sync with the per-role icons defined there. Used anywhere a horse's
-// pros[] list needs to show an icon for whichever professional it is
-// (labels like 'Veterinarian'/'Farrier'/'Saddle Fitter', not role keys).
-const PRO_TYPE_ICON=(function(){
-  var out={};
-  ['vet','trainer','breeder','farrier','dentist','chiropractor','masseuse','saddlefitter'].forEach(function(r){
-    var m=proMetaFor(r); out[m.proType]=m.icon;
-  });
-  return out;
-})();
-// All 8 visiting-professional business roles (everything but Manager/Staff/
-// Owner) — used wherever code needs to loop or check "is this a Pro role".
-const PRO_ROLES=['vet','trainer','breeder','farrier','dentist','chiropractor','masseuse','saddlefitter'];
-PRO_BARN_REQUESTS_SENT['breeder']=PRO_BARN_REQUESTS_SENT['breeder']||[];
-PRO_BARN_REQUESTS_SENT['farrier']=PRO_BARN_REQUESTS_SENT['farrier']||[];
-PRO_BARN_REQUESTS_SENT['dentist']=PRO_BARN_REQUESTS_SENT['dentist']||[];
-PRO_BARN_REQUESTS_SENT['chiropractor']=PRO_BARN_REQUESTS_SENT['chiropractor']||[];
-PRO_BARN_REQUESTS_SENT['masseuse']=PRO_BARN_REQUESTS_SENT['masseuse']||[];
-PRO_BARN_REQUESTS_SENT['saddlefitter']=PRO_BARN_REQUESTS_SENT['saddlefitter']||[];
-
-// ── Generic Business Details tab (Phase 2's "Details" shell piece) ────────
-function rProSetupAccount(role){
-  var meta=proMetaFor(role),store=proStoreNameFor(role),setup=proSetupFor(role);
-  var p=setup.profile;
-  var credsBlock='';
-  if(p.hasOwnProperty('license')||p.hasOwnProperty('credentials')){
-    credsBlock='<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);padding:14px 14px 10px;margin-bottom:14px;">'
-      +'<div style="font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">Credentials'+(p.hasOwnProperty('license')?' &amp; licenses':'')+'</div>'
-      +(p.hasOwnProperty('license')?'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'+settingInput('License number',store+'.profile.license',p.license||'')+settingInput('State',store+'.profile.licenseState',p.licenseState||'')+'</div>':'')
-      +(p.hasOwnProperty('credentials')?settingInput('Credentials',store+'.profile.credentials',p.credentials||''):'')
-      +'</div>';
-  }
-  return rPersonCard(p,store+'.profile',meta.suffixOpts)+rPracticeCard(p,store+'.profile',meta.label)+credsBlock;
-}
-
-// ── Calendar & Notifications: generic per-USER renderers ──────────────────
-// Deliberately separate from the Business shell above — these settings
-// belong to the person, not the business, so they're not part of
-// proSetupFor()'s consolidated Details/Services/Connections/Payments story.
-// They're still one shared implementation (rather than 8 hand-copies) since
-// the underlying toggles are the same regardless of business type; each
-// role's setup[].calendar/.notifs sub-object just holds that person's
-// current values for them.
-function rProSetupCalendar(role){
-  var setup=proSetupFor(role),store=proStoreNameFor(role);
-  var cal=setup.calendar;
-  return rCalendarConnections(cal,store+'.calendar')+secBlock('Sync settings',
-    settingToggle('Appointments','Sync your visit schedule to calendar',cal.syncAppts,store+'.calendar.syncAppts=!'+store+'.calendar.syncAppts;rerender()')
-    +settingToggle('Reminders','24h reminders before each visit',cal.syncReminders,store+'.calendar.syncReminders=!'+store+'.calendar.syncReminders;rerender()')
-  );
-}
-function rProSetupNotifs(role){
-  var setup=proSetupFor(role),store=proStoreNameFor(role),n=setup.notifs;
-  var rows='';
-  Object.keys(n).forEach(function(key){
-    var labels={
-      confirmRequests:['Confirmation requests','When a barn asks you to confirm a visit'],
-      appointmentReminders:['Appointment reminders','24h and 1h before each visit'],
-      appointmentChanges:['Appointment changes','When a visit is rescheduled or cancelled'],
-      labResults:['Lab & test results','When results are ready'],
-      dueDateAlerts:['Due-date alerts','When a horse is due for a recurring service'],
-      resetDueAlerts:['Reset due alerts','When a horse is due for a reset'],
-      floatDueAlerts:['Float due alerts','When a horse is due for a dental float'],
-      refitDueAlerts:['Re-fit due alerts','When a horse is due for a saddle re-fit'],
-      treatmentPlanAlerts:['Treatment plan alerts','When a horse\u2019s adjustment plan is due for review'],
-      cycleAlerts:['Cycle alerts','Mare cycle monitoring reminders'],
-      foalingAlerts:['Foaling alerts','Upcoming and overdue foaling reminders'],
-      competitionAlerts:['Upcoming competitions','When a client horse has a show coming up'],
-      sessionReminders:['Session reminders','Reminders before training sessions'],
-      ownerUpdates:['Owner updates','Messages from horse owners'],
-      chatMessages:['Chat messages','New messages from barn teams'],
-      paymentReceipts:['Payment & invoices','When a payment is made or fails'],
-    }[key]||[key,''];
-    rows+=settingToggle(labels[0],labels[1],n[key],store+'.notifs.'+key+'=!'+store+'.notifs.'+key+';rerender()');
-  });
-  return secBlock('Notifications',rows);
-}
-
-// ── Generic Setup shell wrapper: Details / Services / Connections /
-//    Payments / Calendar / Notifications — same 6 tabs as Vet's setup,
-//    for every one of the 5 new roles (Farrier, Dentist, Chiropractor,
-//    Masseuse, Saddle Fitter). ────────────────────────────────────────────
-function rProSetup(role){
-  const t=TH;
-  const tabs=[{key:'account',label:'Account'},{key:'services',label:'Services'},{key:'connections',label:'Connections'},{key:'payments',label:'Payments'},{key:'calendar',label:'Calendar'},{key:'notifications',label:'Notifications'}];
-  S.proSetupTab=S.proSetupTab||'account';
-  if(svcEditId!==null)S.proSetupTab='services';
-  const tabRow='<div style="display:flex;border-bottom:2px solid '+TH.mdOutlineVar+';margin:-12px -14px 14px;background:'+TH.mdSurf+';overflow-x:auto;">'+tabs.map(function(tab){return '<button onclick="S.proSetupTab=\''+tab.key+'\';svcEditId=null;rerender()" style="flex:1;font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:11px 5px;background:transparent;color:'+(S.proSetupTab===tab.key?t.T:t.TX3)+';border:none;border-bottom:'+(S.proSetupTab===tab.key?'3px solid var(--md-primary)':'3px solid transparent')+';margin-bottom:-2px;white-space:nowrap;">'+tab.label+'</button>';}).join('')+'</div>';
-  let body='';
-  if(S.proSetupTab==='services') body=rServicesTab();
-  else if(S.proSetupTab==='connections') body=rProSetupConnections(role);
-  else if(S.proSetupTab==='payments') body=rPaymentsTab(role);
-  else if(S.proSetupTab==='calendar') body=rProSetupCalendar(role);
-  else if(S.proSetupTab==='notifications') body=rProSetupNotifs(role);
-  else body=rProSetupAccount(role);
-  return tabRow+body;
-}
 
 function rMgrSetupConnections(){
   var t=TH;
@@ -3852,8 +3945,10 @@ function rMgrSetupConnections(){
 
 function rMgrSetup(){
   const t=TH;
-  const tabs=[{key:'account',label:'Account'},{key:'tasks',label:'Tasks'},{key:'services',label:'Services'},{key:'connections',label:'Connections'},{key:'payments',label:'Payments'},{key:'calendar',label:'Calendar'},{key:'notifications',label:'Notifications'}];
-  S.mgrSetupTab=S.mgrSetupTab||'tasks';
+  // 'Connections' removed from this tab row — that functionality is now
+  // the People page (bottom nav), not a Setup sub-page.
+  const tabs=[{key:'account',label:'Account'},{key:'tasks',label:'Tasks'},{key:'services',label:'Services'},{key:'payments',label:'Payments'},{key:'calendar',label:'Calendar'},{key:'notifications',label:'Notifications'}];
+  S.mgrSetupTab=(S.mgrSetupTab&&S.mgrSetupTab!=='connections')?S.mgrSetupTab:'tasks';
   const tabRow='<div style="display:flex;border-bottom:2px solid '+TH.mdOutlineVar+';margin:-12px -14px 14px;background:'+TH.mdSurf+';overflow-x:auto;">'+tabs.map(function(tab){return '<button onclick="S.mgrSetupTab=\''+tab.key+'\';rerender()" style="font-family:\'DM Sans\',sans-serif;flex:1;font-size:12px;font-weight:700;cursor:pointer;padding:11px 5px;white-space:nowrap;background:transparent;color:'+(S.mgrSetupTab===tab.key?t.T:t.TX3)+';border:none;border-bottom:'+(S.mgrSetupTab===tab.key?'3px solid var(--md-primary)':'3px solid transparent')+';margin-bottom:-2px;white-space:nowrap;">'+tab.label+'</button>';}).join('')+'</div>';
   let body='';
   if(S.mgrSetupTab==='account') body=rMgrSetupAccount();
@@ -3984,13 +4079,8 @@ function rStripeConnect(pay,store){
 
 
 function rPaymentsTab(role){
-  // Payments applies to every business (Manager's barn included) — one
-  // lookup covers all 9 rather than the old vet/trainer/else-manager
-  // ternary, which silently routed every other role's payments to the
-  // Manager's Stripe account.
-  var setup=proSetupFor(role)||mgrSetup;
-  var pay=setup.payment;
-  var store=proStoreNameFor(role)?proStoreNameFor(role)+'.payment':'mgrSetup.payment';
+  var pay=role==='vet'?vetSetup.payment:role==='trainer'?trainerSetup.payment:mgrSetup.payment;
+  var store=role==='vet'?'vetSetup.payment':role==='trainer'?'trainerSetup.payment':'mgrSetup.payment';
   var stripe=rStripeConnect(pay,store);
   // Billing preferences
   var prefs='<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);overflow:hidden;margin-bottom:14px;">'
@@ -4018,54 +4108,55 @@ function rPaymentsTab(role){
 function rServicesTab(){
   if(svcEditId!==null)return rServiceForm(svcEditId);
   var t=TH;
-  // Updated to the Phase 1 unified taxonomy's 10 categories (Exam,
-  // Diagnostics, Procedure, Wellness, Rehabilitation, Reproduction,
-  // Training, Boarding, Care, Logistics) — replaces the old ad-hoc set
-  // (Regimens, Board, Medical, Handling, Consultation, Farrier, Dental)
-  // that predated the taxonomy migration.
   var catColors={
     Exam:{color:'var(--md-tertiary)',bg:'var(--md-tertiary-container)'},
-    Diagnostics:{color:'var(--md-error)',bg:'var(--md-error-container)'},
     Procedure:{color:'var(--md-error)',bg:'var(--md-error-container)'},
-    Wellness:{color:'var(--md-secondary)',bg:'var(--md-secondary-container)'},
-    Rehabilitation:{color:'var(--md-secondary)',bg:'var(--md-secondary-container)'},
-    Reproduction:{color:'var(--md-tertiary)',bg:'var(--md-tertiary-container)'},
+    Regimens:{color:'var(--md-secondary)',bg:'var(--md-secondary-container)'},
+    Vaccination:{color:'var(--md-primary)',bg:'var(--md-primary-container)'},
+    Board:{color:'var(--md-primary)',bg:'var(--md-primary-container)'},
     Training:{color:'var(--md-tertiary)',bg:'var(--md-tertiary-container)'},
-    Boarding:{color:'var(--md-primary)',bg:'var(--md-primary-container)'},
-    Care:{color:'var(--md-warning)',bg:'var(--md-warning-container)'},
-    Logistics:{color:'var(--md-on-surface-dim)',bg:'var(--md-surface-variant)'},
+    Care:{color:'var(--md-secondary)',bg:'var(--md-secondary-container)'},
+    Medical:{color:'var(--md-error)',bg:'var(--md-error-container)'},
+    Facility:{color:'var(--md-on-surface-dim)',bg:'var(--md-surface-variant)'},
+    Handling:{color:'var(--md-on-surface-dim)',bg:'var(--md-surface-variant)'},
+    Breeding:{color:'var(--md-tertiary)',bg:'var(--md-tertiary-container)'},
+    Foaling:{color:'var(--md-secondary)',bg:'var(--md-secondary-container)'},
+    Consultation:{color:'var(--md-primary)',bg:'var(--md-primary-container)'},
+    Farrier:{color:'var(--md-warning)',bg:'var(--md-warning-container)'},
+    Dental:{color:'var(--md-error)',bg:'var(--md-error-container)'},
+    Wellness:{color:'var(--md-secondary)',bg:'var(--md-secondary-container)'},
   };
 
-  // Each of the 5 new single-role businesses (Farrier/Dentist/Chiropractor/
-  // Masseuse/Saddle Fitter) owns its own Phase-1 services array; checked
-  // before the older breeder/trainer/manager precedence chain since none of
-  // them currently combine with vet/trainer in a multi-role persona.
-  var ownSvcs=S.roles.length===1&&S.role==='farrier'?farrierServices
-    :S.roles.length===1&&S.role==='dentist'?dentistServices
-    :S.roles.length===1&&S.role==='chiropractor'?chiroServices
-    :S.roles.length===1&&S.role==='masseuse'?masseuseServices
-    :S.roles.length===1&&S.role==='saddlefitter'?saddleFitterServices
-    :anyRole('breeder')&&!anyRole('vet')&&!anyRole('trainer')?breederServices
+  var ownSvcs=anyRole('breeder')&&!anyRole('vet')&&!anyRole('trainer')?breederServices
     :anyRole('trainer')&&!anyRole('vet')?trainerServices
     :anyRole('manager')&&!anyRole('vet')&&!anyRole('trainer')?mgrServices
     :vetServices;
 
   // ── Build pro services for manager ──────────────────────────────────────────
-  // Reuses the Phase 1 canonical per-role arrays (farrierServices, etc.)
-  // instead of re-declaring separate, drifting copies here — the previous
-  // version of this block had its own FARRIER_SVCS/DENTIST_SVCS/MASSEUSE_SVCS
-  // with categories that no longer matched the unified taxonomy, and had no
-  // entry at all for Chiropractor or Saddle Fitter.
   var proServiceRows=[];
   if(anyRole('manager')&&!anyRole('vet')&&!anyRole('trainer')){
+    var FARRIER_SVCS=[
+      {id:'farrier_full',name:'Full Set (shoes)',category:'Farrier',subCategory:'Shoeing',duration:60,price:180},
+      {id:'farrier_trim',name:'Trim only',category:'Farrier',subCategory:'Trimming',duration:30,price:55},
+      {id:'farrier_reset',name:'Reset (re-shoe)',category:'Farrier',subCategory:'Shoeing',duration:45,price:100},
+      {id:'farrier_special',name:'Corrective shoeing',category:'Farrier',subCategory:'Therapeutic',duration:75,price:220},
+    ];
+    var DENTIST_SVCS=[
+      {id:'dent_float',name:'Dental float',category:'Dental',subCategory:'Routine',duration:60,price:150},
+      {id:'dent_exam',name:'Dental exam',category:'Dental',subCategory:'Exam',duration:30,price:75},
+      {id:'dent_extract',name:'Tooth extraction',category:'Dental',subCategory:'Procedure',duration:90,price:350},
+    ];
+    var MASSEUSE_SVCS=[
+      {id:'mass_full',name:'Full-body massage',category:'Wellness',subCategory:'Massage',duration:60,price:120},
+      {id:'mass_spot',name:'Spot treatment',category:'Wellness',subCategory:'Massage',duration:30,price:75},
+      {id:'mass_post',name:'Post-competition massage',category:'Wellness',subCategory:'Recovery',duration:45,price:100},
+    ];
     (BARN_PROFESSIONALS||[]).forEach(function(pro){
       var proSvcs=pro.type==='Vet'?vetServices
         :pro.type==='Trainer'?trainerServices
-        :pro.type==='Farrier'?farrierServices
-        :pro.type==='Dentist'?dentistServices
-        :pro.type==='Masseuse'?masseuseServices
-        :pro.type==='Chiropractor'?chiroServices
-        :pro.type==='Saddle Fitter'?saddleFitterServices
+        :pro.type==='Farrier'?FARRIER_SVCS
+        :pro.type==='Dentist'?DENTIST_SVCS
+        :pro.type==='Masseuse'?MASSEUSE_SVCS
         :[];
       proSvcs.forEach(function(sv){
         proServiceRows.push(Object.assign({},sv,{
@@ -4249,16 +4340,15 @@ function rVetSetupAccount(){
 }
 
 function rProSetupConnections(role){
-  var meta=proMetaFor(role);
-  var roleColor=meta.color;
-  var roleIcon=meta.icon;
-  var setup=proSetupFor(role);
+  var isVet=role==='vet';
+  var roleColor=isVet?'var(--md-primary)':'var(--md-tertiary)';
+  var roleIcon=isVet?'medical_services':'fitness_center';
+  var setup=isVet?vetSetup:trainerSetup;
   var connectedBarns=(setup&&setup.connectedBarns)||[];
 
-  // Inbound: barn requests TO this pro (matched on the same proType string
-  // used in BARN_PROFESSIONALS, so this works identically for all 8 roles)
+  // Inbound: barn requests TO this pro
   var inboundReqs=(PRO_BARN_REQUESTS||[]).filter(function(r){
-    return r.status==='pending'&&r.role===meta.proType;
+    return r.status==='pending'&&r.role===(isVet?'Veterinarian':'Trainer');
   });
 
   // Outbound: requests this pro sent TO barns
@@ -4322,9 +4412,8 @@ function rProSetupConnections(role){
     +'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Connected barns</div>'
     +(connectedBarns.length
       ? connectedBarns.map(function(b){
-          var threadRoleLabel=ROLE_LABELS_MAP[role]||meta.proType;
           var thread=MESSAGE_THREADS.find(function(th){
-            return th.roles&&(th.roles.includes(threadRoleLabel)||th.roles.includes(meta.proType));
+            return th.roles&&(th.roles.includes(isVet?'Vet':'Trainer'));
           });
           return '<div style="background:var(--md-surface);border-radius:12px;border:1px solid var(--md-outline-variant);margin-bottom:8px;overflow:hidden;">'
             +'<div style="padding:12px 14px;display:flex;align-items:center;gap:11px;">'
@@ -4336,7 +4425,7 @@ function rProSetupConnections(role){
               +'<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:'+(b.active?'var(--md-secondary-container)':'var(--md-surface-variant)')+';color:'+(b.active?'var(--md-secondary)':'var(--md-on-surface-dim)')+';">'+(b.active?'Active':'Inactive')+'</span>'
             +'</div>'
             +'<div style="border-top:1px solid var(--md-outline-variant);padding:8px 14px;display:flex;gap:8px;">'
-              +'<button onclick="S.activeTab=\'messages\';S.selectedThread=\''+(thread?thread.id:(role==='vet'?'t2':'t4'))+'\';rerender()" style="flex:1;background:none;border:1.5px solid '+roleColor+'33;padding:7px 10px;border-radius:9px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:'+roleColor+';display:flex;align-items:center;justify-content:center;gap:5px;">'+msiIcon('chat',13,roleColor)+' Message</button>'
+              +'<button onclick="S.activeTab=\'messages\';S.selectedThread=\''+(thread?thread.id:(isVet?'t2':'t4'))+'\';rerender()" style="flex:1;background:none;border:1.5px solid '+roleColor+'33;padding:7px 10px;border-radius:9px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:'+roleColor+';display:flex;align-items:center;justify-content:center;gap:5px;">'+msiIcon('chat',13,roleColor)+' Message</button>'
               +'<button onclick="showToast(\'Viewing '+b.name+'\',\'home_work\',\'info\')" style="background:none;border:1.5px solid var(--md-outline-variant);padding:7px 10px;border-radius:9px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface-dim);display:flex;align-items:center;gap:5px;">'+msiIcon('open_in_new',13,'var(--md-on-surface-dim)')+' View</button>'
               +(b.active
                 ?'<button onclick="showToast(\'Disconnected from '+b.name+'\',\'link_off\',\'info\')" style="background:none;border:1.5px solid var(--md-error)44;padding:7px 10px;border-radius:9px;font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-error);display:flex;align-items:center;gap:5px;">'+msiIcon('link_off',13,'var(--md-error)')+' Leave</button>'
@@ -4433,7 +4522,10 @@ const QUICK_ACTIONS={
   'document-vaccine':     {id:'document-vaccine',      roles:['manager','vet','owner'],                 label:'Document Vaccine',        icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M7 10l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="6" width="11" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M16 10h2M16 14h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',                  color:'var(--md-primary)', bg:'var(--md-primary-container)'},
   'upload-lab':           {id:'upload-lab',            roles:['vet','owner'],                   label:'Upload Lab Test',         icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 3v8l-3 5a2 2 0 001.7 3h10.6A2 2 0 0017 16l-3-5V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 3h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7 13h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',   color:'var(--md-primary)', bg:'var(--md-primary-container)'},
   'request-barn-visit':   {id:'request-barn-visit',    roles:['manager','vet','trainer'],        label:'Request Visit',      icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 22V12h6v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',                                                            color:'var(--md-primary)', bg:'var(--md-primary-container)'},
-  'create-regimen':       {id:'create-regimen',        roles:['trainer'],                        label:'Create Training Regimen', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',                                                               color:'var(--md-primary)', bg:'var(--md-primary-container)'},
+  // 'create-regimen' quick action retired — it never persisted real data
+  // (submitRegimen() only ever set a local "submitted" flag). Trainer now
+  // creates real training Programs via the horse's Feed tab "Programs"
+  // group (rProgramSheet), same flow every other role uses.
   'request-appointment':  {id:'request-appointment',   roles:['owner'],                          label:'Request Appointment',     icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', color:'var(--md-primary)', bg:'var(--md-primary-container)'},
   'schedule-appointment': {id:'schedule-appointment', roles:['vet'], label:'Schedule Appointment', bg:'var(--md-primary-container)', color:'var(--md-primary)', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'},
     'document-exam':  {id:'document-exam',  roles:['vet'], label:'Document Exam', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="9" y="3" width="6" height="4" rx="1" stroke="currentColor" stroke-width="1.8"/><path d="M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>', bg:'var(--md-primary-container)',color:'var(--md-primary)'},
@@ -5204,6 +5296,12 @@ function rQuickActionForm(actionId){
   const vaccineSaveLogic=(actionId==='document-vaccine'&&_prefillV&&_prefillV.vaccineIndex!==undefined)
     ?`(function(){var ps=window._pregnancyState&&window._pregnancyState['${_prefillV.horseId}'];if(ps){if(!ps.vaccinesGiven)ps.vaccinesGiven={};ps.vaccinesGiven[${_prefillV.vaccineIndex}]=new Date().toISOString().slice(0,10);}window._prefillVaccine=null;showToast('Vaccine documented and marked complete!','check_circle','success');})();`
     :'';
+  // NOTE: Training journal entries used to have their own standalone save
+  // path here (trainingJournalSaveLogic). That's been retired — Training is
+  // now one of the 5 types in the unified rJournalEntrySheet() flow (see
+  // the FAB on the horse Overview tab), which handles its own save logic
+  // and already defaults skills/tqs/env safely for the same reasons this
+  // used to.
   const saveBtn=`<button onclick="${vaccineSaveLogic}S.quickAction=null;rerender()" style="width:100%;background:${action.color};color:#fff;border:none;padding:13px;border-radius:var(--md-shape-md);font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;">Save</button>`;
 
   let formBody='';
@@ -5261,6 +5359,8 @@ function rQuickActionForm(actionId){
         ${msiIcon('upload_file',28,'var(--md-primary)')}<div style="font-size:12px;color:var(--md-on-surface-dim);margin-top:6px;">Tap to attach DICOM, JPEG, or PDF</div>
       </div></div>`;
     }
+
+  // Training journal entries now go through rJournalEntrySheet() (see the horse Overview tab FAB), not this quickAction form.
 
   return backBtn+`<div style="background:var(--md-surface);border-radius:var(--md-shape-lg);border:1px solid var(--md-outline-variant);padding:14px;">${formBody}${saveBtn}</div>`;
 }
@@ -5831,7 +5931,7 @@ function openExamFromAppt(apt){
 
 function rBarnConnectionRequestBanner(role){
   var myRole=role||S.role;
-  var roleLabel=proMetaFor(myRole).proType;
+  var roleLabel=myRole==='vet'?'Veterinarian':'Trainer';
   var pending=(PRO_BARN_REQUESTS||[]).filter(function(r){
     return r.status==='pending'&&r.role===roleLabel;
   });
@@ -6085,141 +6185,6 @@ function rVetScheduleAppt(){
   }
 
   return '';
-}
-
-// ══════════════════════════════════════════════════════════════════════════
-// PRO HOME — shared visiting-professional Home core (Phase 3)
-// ══════════════════════════════════════════════════════════════════════════
-// rProHome(role) composes the same pieces Vet/Trainer/Breeder's home
-// screens each hand-built independently: greeting header, stats row,
-// pending barn-connection banner, an upcoming-visits list, the shared
-// "Recurring Care Due" card below, and one role-specific business card.
-// The 5 new roles (Farrier, Dentist, Chiropractor, Masseuse, Saddle Fitter)
-// plug into this one function instead of getting a hand copy each.
-// ══════════════════════════════════════════════════════════════════════════
-
-// Demo upcoming-visit data per role, same shape/spirit as rVetHome's
-// hardcoded `appts` array — one small list per persona rather than a real
-// backend, consistent with how this prototype represents data everywhere.
-const PRO_UPCOMING_VISITS={
-  farrier:[
-    {horse:'Thunder',barn:'River Ranch',month:'Mar',day:'30',time:'9:00 AM',type:'Reset (re-shoe)',urgent:false},
-    {horse:'Vader',  barn:'Sunrise Stables',month:'Apr',day:'2', time:'11:00 AM',type:'Full Set (shoes)',urgent:false},
-  ],
-  dentist:[
-    {horse:'Apollo', barn:'Sunrise Stables',month:'Apr',day:'8', time:'10:30 AM',type:'Dental float',urgent:false},
-    {horse:'Bella',  barn:'Oakwood Farm',    month:'Apr',day:'14',time:'1:00 PM', type:'Dental exam',urgent:false},
-  ],
-  chiropractor:[
-    {horse:'Luna',   barn:'Sunrise Stables',month:'Mar',day:'27',time:'2:00 PM', type:'Follow-up visit',urgent:false},
-  ],
-  masseuse:[
-    {horse:'Rivendell',barn:'Sunrise Stables',month:'Mar',day:'26',time:'3:30 PM',type:'Post-competition massage',urgent:true},
-    {horse:'Luna',      barn:'Sunrise Stables',month:'Mar',day:'27',time:'4:00 PM',time2:null,type:'Full-body massage',urgent:false},
-  ],
-  saddlefitter:[
-    {horse:'Vader',  barn:'Sunrise Stables',month:'Apr',day:'15',time:'10:00 AM',type:'Static & Dynamic Fit Evaluation',urgent:false},
-  ],
-};
-
-// ── Recurring Care Due — shared component ──────────────────────────────
-// Every visiting-trade business tracks its own recurring-service cadence
-// (Vet: vaccine, Farrier: reset, Dentist: float, Saddle Fitter: re-fit).
-// Rather than 4 near-identical warning cards, one renderer takes a role's
-// cadence label/icon/demo due-list and renders the same pattern Vet's
-// vaccine-due alert already used — Chiropractor and Masseuse don't have a
-// simple due-date cadence in the same way, so they get their own
-// business-specific card below instead of an entry here.
-const RECURRING_CARE_CONFIG={
-  vet:         {label:'Vaccine due',clickTo:'Vaccination',icon:'vaccines',    dueList:[{horse:'Bella',  detail:'Annual vaccinations · due Apr 3'}]},
-  farrier:     {label:'Reset due',              icon:'construction',dueList:[{horse:'Thunder',detail:'6-week reset · due Mar 30'},{horse:'Vader',detail:'6-week reset · due Apr 2'}]},
-  dentist:     {label:'Float due',              icon:'dentistry',   dueList:[{horse:'Apollo', detail:'Annual float · due Apr 8'}]},
-  saddlefitter:{label:'Re-fit due',             icon:'chair',       dueList:[{horse:'Luna',   detail:'6-month re-fit check · due Apr 15'}]},
-};
-function rRecurringCareDueCard(role){
-  var cfg=RECURRING_CARE_CONFIG[role];
-  if(!cfg||!cfg.dueList.length)return '';
-  var rows=cfg.dueList.map(function(d){
-    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;">'
-      +'<div style="width:6px;height:6px;border-radius:50%;background:var(--md-warning);flex-shrink:0;"></div>'
-      +'<div style="font-size:12px;color:var(--md-on-surface-variant);"><span style="font-weight:700;color:var(--md-on-surface);">'+d.horse+'</span> · '+d.detail+'</div>'
-      +'</div>';
-  }).join('');
-  return '<div style="background:var(--md-warning-container);border:1.5px solid var(--md-warning)44;border-radius:12px;padding:11px 14px;margin-bottom:12px;">'
-    +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:4px;">'+msiIcon(cfg.icon,15,'var(--md-warning)')+'<span style="font-size:12px;font-weight:700;color:var(--md-warning);">'+cfg.label+' · '+cfg.dueList.length+' horse'+(cfg.dueList.length>1?'s':'')+'</span></div>'
-    +rows
-    +'</div>';
-}
-
-// ── Chiropractor: active treatment plans (role-specific card) ─────────────
-const CHIRO_TREATMENT_PLANS=[
-  {horse:'Luna',plan:'Post-injury recovery plan',session:'Session 3 of 6',nextDate:'Mar 27'},
-];
-function rChiroTreatmentPlansCard(){
-  if(!CHIRO_TREATMENT_PLANS.length)return '';
-  var rows=CHIRO_TREATMENT_PLANS.map(function(p){
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--md-outline-variant);">'
-      +'<div><div style="font-size:12px;font-weight:700;color:var(--md-on-surface);">'+p.horse+' · '+p.plan+'</div>'
-      +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+p.session+' · next '+p.nextDate+'</div></div>'
-      +'</div>';
-  }).join('');
-  return '<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:11px 14px;margin-bottom:12px;">'
-    +'<div style="font-size:12px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Active treatment plans</div>'
-    +rows+'</div>';
-}
-
-// ── Masseuse: upcoming competitions (role-specific card) ───────────────────
-// Pulls from the same TRAINER_UPCOMING_COMPS data the Trainer's competition
-// schedule feature already uses, so a masseuse can proactively schedule
-// post-competition sessions around shows their client horses have coming up.
-function rMasseuseUpcomingCompsCard(){
-  var comps=(TRAINER_UPCOMING_COMPS||[]).slice(0,3);
-  if(!comps.length)return '';
-  var rows=comps.map(function(c){
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--md-outline-variant);">'
-      +'<div><div style="font-size:12px;font-weight:700;color:var(--md-on-surface);">'+c.horseName+' · '+c.event+'</div>'
-      +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+c.dateStr+'</div></div>'
-      +'<button onclick="showToast(\'Post-competition massage suggested for '+c.horseName.replace(/'/g,"\\'")+'\',\'spa\',\'info\')" style="font-size:11px;font-weight:700;color:var(--md-secondary);background:var(--md-secondary-container);border:none;border-radius:8px;padding:5px 10px;cursor:pointer;font-family:\'DM Sans\',sans-serif;">Suggest visit</button>'
-      +'</div>';
-  }).join('');
-  return '<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:11px 14px;margin-bottom:12px;">'
-    +'<div style="font-size:12px;font-weight:700;color:var(--md-on-surface);margin-bottom:4px;">Upcoming competitions</div>'
-    +rows+'</div>';
-}
-
-function rProHome(role){
-  const t=TH,meta=proMetaFor(role),setup=proSetupFor(role),p=setup.profile;
-  const displayName=(p.prefix?p.prefix+' ':'')+(p.first||meta.proType);
-  const visits=PRO_UPCOMING_VISITS[role]||[];
-  const header='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">'
-    +'<div><div style="font-size:17px;font-weight:700;color:var(--md-on-surface);">Good morning, '+displayName+'</div>'
-    +'<div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:2px;">'+visits.length+' upcoming visit'+(visits.length===1?'':'s')+'</div></div>'
-    +'<div style="width:38px;height:38px;border-radius:50%;background:'+meta.color+'22;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon(meta.icon,20,meta.color)+'</div>'
-    +'</div>';
-  const connectedCount=(setup.connectedBarns||[]).filter(function(b){return b.active;}).length;
-  const stats='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">'
-    +'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-primary);">'+connectedCount+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">Barns</div></div>'
-    +'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-primary);">'+visits.length+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">Visits</div></div>'
-    +'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-warning);">'+(visits.filter(function(v){return v.urgent;}).length)+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">Urgent</div></div>'
-    +'</div>';
-  const pending=rBarnConnectionRequestBanner(role);
-  const apptCards=visits.map(function(a){
-    var horseObj=HORSES_ALL.find(function(h){return h.name===a.horse;})||null;
-    return '<div onclick="S.selectedHorse=\''+(horseObj?horseObj.id:'')+'\';rerender()" style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid '+(a.urgent?t.DNG:t.BRD)+';margin-bottom:8px;padding:11px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;">'
-      +'<div style="width:36px;height:36px;border-radius:10px;background:'+(a.urgent?t.DNGBG:t.TL)+';display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;">'
-      +'<div style="font-size:9px;font-weight:700;color:'+(a.urgent?t.DNG:t.T)+';line-height:1;">'+a.month+'</div>'
-      +'<div style="font-size:14px;font-weight:700;color:'+(a.urgent?t.DNG:t.T)+';line-height:1;">'+a.day+'</div></div>'
-      +'<div style="flex:1;min-width:0;">'
-      +'<div style="font-size:13px;font-weight:600;color:var(--md-on-surface);">'+a.horse+' <span style="font-size:11px;font-weight:400;color:var(--md-on-surface-dim);">· '+a.barn+'</span></div>'
-      +'<div style="font-size:11px;color:var(--md-on-surface-dim);">'+a.time+' · '+a.type+'</div>'
-      +(a.urgent?'<span style="font-size:10px;font-weight:700;background:var(--md-error-container);color:var(--md-error);padding:2px 8px;border-radius:10px;">Today</span>':'')
-      +'</div>'
-      +msiIcon('chevron_right',18,'var(--md-on-surface-dim)')
-      +'</div>';
-  }).join('');
-  const recurring=rRecurringCareDueCard(role);
-  const extra=role==='chiropractor'?rChiroTreatmentPlansCard():role==='masseuse'?rMasseuseUpcomingCompsCard():'';
-  return pending+header+stats+recurring+extra+'<div style="font-size:12px;font-weight:700;color:var(--md-on-surface);margin-bottom:9px;">Upcoming visits</div>'+(apptCards||'<div style="font-size:12px;color:var(--md-on-surface-dim);padding:8px 0;">No upcoming visits scheduled.</div>')+quickActionsBar(role);
 }
 
 function rVetHome(){const t=TH;const appts=[{horse:'Rivendell',barn:'Sunrise Stables',month:'Mar',day:'22',time:'10:00 AM',type:'Follow-up — post colic',urgent:false},{horse:'Bella',barn:'Oakwood Farm',month:'Mar',day:'24',time:'2:00 PM',type:'Annual vaccinations',urgent:false},{horse:'Thunder',barn:'River Ranch',month:'Mar',day:'16',time:'11:30 AM',type:'Lameness eval',urgent:true}];const header=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><div><div style="font-size:17px;font-weight:700;color:var(--md-on-surface);">Good morning, Dr. Matthew</div><div style="font-size:11px;color:var(--md-on-surface-dim);margin-top:2px;">Mon, Mar 16 · 3 upcoming appointments</div></div><div style="width:38px;height:38px;border-radius:50%;background:var(--md-secondary)22;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class=\"msi\" style=\"font-size:30px;color:var(--md-secondary);line-height:1;\">face_6</span></div></div>`;const stats=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;"><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-primary);">12</div><div style="font-size:11px;color:var(--md-on-surface-dim);">In care</div></div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-primary);">3</div><div style="font-size:11px;color:var(--md-on-surface-dim);">Appts</div></div><div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);padding:10px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--md-warning);">2</div><div style="font-size:11px;color:var(--md-on-surface-dim);">Confirmations</div></div></div>`;const pending=`<div style="background:var(--md-warning-container);border:1.5px solid var(--md-warning)44;border-radius:12px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="S.vetSignedIn=false;S.vetView='confirmation';S.vetConfirmPage=false;rerender()"><div style="flex:1;"><div style="font-size:12px;font-weight:700;color:var(--md-warning);margin-bottom:2px;">Confirmation request pending</div><div style="font-size:12px;color:var(--md-on-surface-variant);">Rivendell · Potomavac + Imrab · Charlene Georgia</div></div><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="var(--md-warning)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;const apptCards=appts.map(function(a){
@@ -7367,14 +7332,11 @@ const EVENT_PASSES=[
 
 function rRolePickerSheet(){
   const t=TH;
-  // Single-role personas — Staff/Manager/Trainer/Breeder/Vet plus the 5 new
-  // Pro personas (Farrier/Dentist/Chiropractor/Masseuse/Saddle Fitter) and
-  // Owner/New Owner = 12 total. Rendered as a fixed 6-column grid (2 rows)
-  // rather than flex-wrap now that there are enough tiles to need it.
-  const singleCombos=ROLE_COMBOS.slice(0,12);
+  // Single-role rows (index 0-5) shown as user cards
+  const singleCombos=ROLE_COMBOS.slice(0,7);
   // Demo onboarding trigger
   var obDemoBtn='<div style="padding:10px 16px;border-bottom:1px solid var(--md-outline-variant);"><button onclick="S.showRolePicker=false;window._ob=null;obStart(\'fresh\');" style="width:100%;background:var(--md-primary-container);color:var(--md-primary);border:1.5px solid var(--md-primary)33;border-radius:10px;padding:10px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">'+msiIcon('rocket_launch',15,'var(--md-primary)')+' Demo: New user onboarding</button></div>';
-  const multiCombos=ROLE_COMBOS.slice(12);
+  const multiCombos=ROLE_COMBOS.slice(7);
   const active=S.roleComboIdx;
 
   function userCard(combo,idx){
@@ -7419,9 +7381,9 @@ function rRolePickerSheet(){
       +'</div>';
   }
 
-  const userCards='<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:16px;">'+singleCombos.map(function(combo,idx){return userCard(combo,idx);}).join('')+'</div>';
+  const userCards='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;">'+singleCombos.map(function(combo,idx){return userCard(combo,idx);}).join('')+'</div>';
   const multiSection='<div style="font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;">Multi-role</div>'
-    +multiCombos.map(function(combo,idx){return multiRow(combo,idx+12);}).join('');
+    +multiCombos.map(function(combo,idx){return multiRow(combo,idx+7);}).join('');
 
   return '<div onclick="S.showRolePicker=false;rerender()" style="position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.4);"></div>'
     +'<div style="position:fixed;left:0;right:0;top:0;z-index:2001;background:var(--md-surface);border-radius:0 0 20px 20px;padding:14px 14px 18px;box-shadow:0 8px 32px rgba(0,0,0,0.18);max-height:90vh;overflow-y:auto;">'
@@ -8290,6 +8252,60 @@ const HORSE_TRAINING_HISTORY={
   ],
 };
 
+// ── Rehab / Therapy journal history (Part 1 of the journal-entry consolidation) ──
+// Same "dated point-in-time record" shape as INGESTIBLES_JOURNAL, scoped to
+// bodywork/rehab modalities (massage, chiropractic, PEMF, hydrotherapy, etc.
+// — see the Rehabilitation/Wellness categories in the services reference).
+// programId links an entry to an active Program of type 'rehab' (Part 2);
+// null means a standalone entry, same convention used across all 5 journal
+// entry types.
+const HORSE_REHAB_HISTORY={};
+
+// ══════════════════════════════════════════════════════════════════════════
+// PROGRAMS (Part 2 of the journal-entry consolidation — formerly "Regimens")
+// ══════════════════════════════════════════════════════════════════════════
+// A Program is a schedule, not just a description: creating one (see
+// rProgramSheet) immediately GENERATES the individual future Journal Entries
+// it implies — one per matching day within [dateFrom, dateTo] x each time in
+// `times`. Those generated entries land in the same per-type stores Part 1
+// already writes to (INGESTIBLES_JOURNAL / HORSE_TRAINING_HISTORY /
+// HORSE_REHAB_HISTORY), each tagged `status:'scheduled'` and
+// `programId:<this program's id>`.
+//
+// "Logging" something therefore usually means COMPLETING one of these
+// pre-existing scheduled entries (filling in amount/notes/who, flipping
+// status to 'completed') rather than creating a new record — see
+// rJournalEntrySheet's per-type "due today" list. A standalone entry with no
+// Program still works exactly as Part 1 built it: created directly with
+// status:'completed', programId:null.
+//
+// Day-of-week values follow REGIMEN_DAY_VALS' existing convention (JS
+// Date.getDay(): Sunday=0 ... Saturday=6) for consistency with the training
+// regimen fields this replaces.
+const HORSE_PROGRAMS={};
+
+function generateScheduledEntriesForProgram(horseId,program){
+  var entries=[];
+  var start=new Date(program.dateFrom+'T00:00:00');
+  var end=new Date(program.dateTo+'T00:00:00');
+  if(isNaN(start.getTime())||isNaN(end.getTime())||start>end) return entries;
+  var times=(program.times&&program.times.length)?program.times:['09:00'];
+  for(var d=new Date(start); d<=end; d.setDate(d.getDate()+1)){
+    if(program.days.indexOf(d.getDay())<0) continue;
+    var dateISO=d.toISOString().slice(0,10);
+    times.forEach(function(t){
+      if(program.type==='feed'||program.type==='medication'||program.type==='supplement'){
+        entries.push({id:'sched_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),category:program.type,itemName:program.itemName,amount:program.amount,time:t,givenBy:'',notes:'',dateISO:dateISO,programId:program.id,status:'scheduled'});
+      } else if(program.type==='training'){
+        entries.push({id:'sched_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),date:dateISO,dateISO:dateISO,time:t,type:program.trainingType,duration:program.duration,intensity:3,trainer:'',skills:{rhythm:7,suppleness:7,contact:7,impulsion:7,straightness:7,collection:7},tqs:7,focus:[],notes:'',env:{temp:65,humidity:50,footing:'Good',weather:'Clear'},feedChange:false,programId:program.id,status:'scheduled'});
+      } else if(program.type==='rehab'){
+        entries.push({id:'sched_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),dateISO:dateISO,time:t,modality:program.modality,provider:program.provider||'',duration:program.duration,notes:'',programId:program.id,status:'scheduled'});
+      }
+    });
+  }
+  return entries;
+}
+
 // ── UPCOMING TRAINING SESSIONS ────────────────────────────────────────────
 var UPCOMING_TRAINING={
   'rv':[
@@ -8823,6 +8839,329 @@ function addMediaFile(input,forceType){
 }
 
 
+// ══════════════════════════════════════════════════════════════════════════
+// UNIFIED JOURNAL ENTRY (Part 1 of the journal-entry consolidation)
+// ══════════════════════════════════════════════════════════════════════════
+// Single entry point for logging anything that happened to a horse at a
+// specific date/time — replaces the old tab-scoped mechanisms (Feed tab's
+// S.ingestLogSheet for feed/medication/supplement, the standalone
+// "Training Journal Entry" quick action) with one type-first flow:
+//   Step 1: pick a type (role-filtered — see journalEntryTypesForRole)
+//   Step 2: type-specific fields + a real date/time (not "today only",
+//           not free-text time, both prior limitations this fixes)
+// On save, routes to the appropriate existing store per type — this does
+// NOT unify the underlying data model (Training's rich skills/TQS shape and
+// Feed/Meds/Supplements' simpler shape stay as they are; a shared schema
+// would force either dumbing down Training or bloating the others). What's
+// unified is the CAPTURE UI and the date/time handling.
+//   feed / medication / supplement -> INGESTIBLES_JOURNAL[horseId]
+//   training                       -> HORSE_TRAINING_HISTORY[horseId]
+//   rehab                          -> HORSE_REHAB_HISTORY[horseId]
+// Every entry carries a `programId` (null by default) so it can optionally
+// link to an active Program of the same type — see Part 2. This field is
+// added now so Part 2 doesn't require touching this save logic again.
+function journalEntryTypesForRole(){
+  var all=[
+    {type:'feed',       label:'Feed',        icon:'grass',      color:'var(--md-primary)'},
+    {type:'medication', label:'Meds',        icon:'vaccines',   color:'var(--md-error)'},
+    {type:'supplement', label:'Supplements', icon:'medication', color:'var(--md-secondary)'},
+    {type:'training',   label:'Training',    icon:'sports',     color:'var(--md-tertiary)'},
+    {type:'rehab',      label:'Rehab/Therapy',icon:'spa',       color:'var(--md-secondary)'},
+  ];
+  var allowed;
+  if(S.role==='owner') allowed=['feed','medication','supplement','training','rehab'];
+  else if(S.role==='vet') allowed=['medication','supplement','rehab'];
+  else if(S.role==='trainer'||S.role==='breeder') allowed=['training','rehab','feed','supplement'];
+  else if(S.role==='manager'||S.role==='staff') allowed=['feed','medication','supplement','training'];
+  else allowed=['feed','medication','supplement','training','rehab'];
+  return all.filter(function(t){return allowed.includes(t.type);});
+}
+
+const REHAB_MODALITIES=['Massage','Chiropractic Adjustment','Acupuncture','Physical Therapy','PEMF','Laser Therapy','Shockwave Therapy','Stretching & Mobility','Myofascial Release','Aqua Treadmill','Hydrotherapy','Cold Saltwater Spa','Other'];
+const TRAINING_JOURNAL_TYPES=['Flat','Hack','Jump','Dressage','Fitness','Groundwork','Trail','Other'];
+
+const PROGRAM_DAY_LABELS=['Mo','Tu','We','Th','Fr','Sa','Su'];
+const PROGRAM_DAY_VALS=[1,2,3,4,5,6,0];
+
+function rProgramSheet(h){
+  if(!window._programState) window._programState={open:false,horseId:'',type:null,itemName:'',amount:'',trainingType:'Flat',modality:'',provider:'',duration:30,dateFrom:TODAY,dateTo:'',days:[1,2,3,4,5,6,0],timesPerDay:1,times:['09:00'],notes:''};
+  var pr=window._programState;
+  if(!pr.open) return '';
+
+  var closeAction="window._programState={open:false,horseId:'',type:null,itemName:'',amount:'',trainingType:'Flat',modality:'',provider:'',duration:30,dateFrom:TODAY,dateTo:'',days:[1,2,3,4,5,6,0],timesPerDay:1,times:['09:00'],notes:''};";
+  var INPP='width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
+  var LBLP='font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.6px;display:block;margin-bottom:5px;';
+
+  var PROGRAM_TYPES=[
+    {type:'feed',       label:'Feed',        icon:'grass',      color:'var(--md-primary)'},
+    {type:'medication', label:'Meds',        icon:'vaccines',   color:'var(--md-error)'},
+    {type:'supplement', label:'Supplements', icon:'medication', color:'var(--md-secondary)'},
+    {type:'training',   label:'Training',    icon:'sports',     color:'var(--md-tertiary)'},
+    {type:'rehab',      label:'Rehab/Therapy',icon:'spa',       color:'var(--md-secondary)'},
+  ];
+
+  var body='';
+  if(!pr.type){
+    body='<div style="font-size:16px;font-weight:800;color:var(--md-on-surface);margin-bottom:14px;">Create a program</div>'
+      +'<div style="font-size:12px;color:var(--md-on-surface-dim);margin-bottom:14px;">A program schedules itself — creating one generates the future journal entries it implies, ready to check off as they come due.</div>'
+      +'<div style="display:flex;flex-direction:column;gap:8px;">'
+      +PROGRAM_TYPES.map(function(t){
+        return '<button onclick="window._programState.type=\''+t.type+'\';rerender()" style="width:100%;display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--md-surface-variant);border:none;border-radius:12px;cursor:pointer;text-align:left;">'
+          +'<div style="width:38px;height:38px;border-radius:10px;background:'+t.color+'18;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+msiIcon(t.icon,18,t.color)+'</div>'
+          +'<span style="font-size:14px;font-weight:700;color:var(--md-on-surface);flex:1;">'+t.label+'</span>'
+          +msiIcon('chevron_right',18,'var(--md-on-surface-dim)')
+        +'</button>';
+      }).join('')
+      +'</div>';
+  } else {
+    var typeInfo=PROGRAM_TYPES.find(function(t){return t.type===pr.type;});
+
+    var itemFields='';
+    if(pr.type==='feed'||pr.type==='medication'||pr.type==='supplement'){
+      itemFields='<div style="margin-bottom:11px;"><label style="'+LBLP+'">Item</label><input type="text" value="'+pr.itemName+'" oninput="window._programState.itemName=this.value" placeholder="'+typeInfo.label+' name" style="'+INPP+'"/></div>'
+        +'<div style="margin-bottom:11px;"><label style="'+LBLP+'">Amount</label><input type="text" value="'+pr.amount+'" oninput="window._programState.amount=this.value" placeholder="e.g. 2 scoops" style="'+INPP+'"/></div>';
+    } else if(pr.type==='training'){
+      itemFields='<div style="margin-bottom:11px;"><label style="'+LBLP+'">Activity</label><select oninput="window._programState.trainingType=this.value" style="'+INPP+'">'+TRAINING_JOURNAL_TYPES.map(function(tp){return '<option value="'+tp+'"'+(pr.trainingType===tp?' selected':'')+'>'+tp+'</option>';}).join('')+'</select></div>'
+        +'<div style="margin-bottom:11px;"><label style="'+LBLP+'">Duration (min)</label><input type="number" value="'+pr.duration+'" min="5" step="5" oninput="window._programState.duration=this.value" style="'+INPP+'"/></div>';
+    } else if(pr.type==='rehab'){
+      itemFields='<div style="margin-bottom:11px;"><label style="'+LBLP+'">Modality</label><select oninput="window._programState.modality=this.value" style="'+INPP+'"><option value="">Select…</option>'+REHAB_MODALITIES.map(function(md){return '<option value="'+md+'"'+(pr.modality===md?' selected':'')+'>'+md+'</option>';}).join('')+'</select></div>'
+        +'<div style="margin-bottom:11px;"><label style="'+LBLP+'">Provider</label><input type="text" value="'+pr.provider+'" oninput="window._programState.provider=this.value" placeholder="Who performs it" style="'+INPP+'"/></div>'
+        +'<div style="margin-bottom:11px;"><label style="'+LBLP+'">Duration (min)</label><input type="number" value="'+pr.duration+'" min="5" step="5" oninput="window._programState.duration=this.value" style="'+INPP+'"/></div>';
+    }
+
+    var scheduleFields='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:11px;">'
+      +'<div><label style="'+LBLP+'">Starts</label><input type="date" value="'+pr.dateFrom+'" oninput="window._programState.dateFrom=this.value" style="'+INPP+'"/></div>'
+      +'<div><label style="'+LBLP+'">Ends</label><input type="date" value="'+pr.dateTo+'" oninput="window._programState.dateTo=this.value" style="'+INPP+'"/></div>'
+    +'</div>'
+      +'<div style="margin-bottom:11px;"><label style="'+LBLP+'">Days</label><div style="display:flex;gap:5px;">'
+      +PROGRAM_DAY_LABELS.map(function(lbl,i){
+        var val=PROGRAM_DAY_VALS[i];
+        var on=pr.days.indexOf(val)>=0;
+        return '<button onclick="(function(){var arr=window._programState.days;var idx=arr.indexOf('+val+');if(idx>=0)arr.splice(idx,1);else arr.push('+val+');rerender();})()" style="flex:1;padding:8px 0;border-radius:8px;border:1.5px solid '+(on?'var(--md-primary)':'var(--md-outline-variant)')+';background:'+(on?'var(--md-primary-container)':'var(--md-surface)')+';color:'+(on?'var(--md-primary)':'var(--md-on-surface-dim)')+';font-size:11px;font-weight:700;cursor:pointer;">'+lbl+'</button>';
+      }).join('')
+      +'</div></div>'
+      +'<div style="margin-bottom:11px;"><label style="'+LBLP+'">Times per day</label>'
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+      +pr.times.map(function(tm,i){
+        return '<input type="time" value="'+tm+'" oninput="window._programState.times['+i+']=this.value" style="width:auto;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:8px 10px;font-size:12px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;"/>';
+      }).join('')
+      +'<button onclick="window._programState.times.push(\'12:00\');rerender()" style="padding:8px 12px;border-radius:9px;border:1.5px dashed var(--md-outline);background:none;color:var(--md-primary);font-size:12px;font-weight:700;cursor:pointer;">+ Add time</button>'
+      +(pr.times.length>1?'<button onclick="window._programState.times.pop();rerender()" style="padding:8px 12px;border-radius:9px;border:1.5px dashed var(--md-outline);background:none;color:var(--md-on-surface-dim);font-size:12px;font-weight:700;cursor:pointer;">− Remove</button>':'')
+      +'</div></div>';
+
+    var notesField='<div style="margin-bottom:18px;"><label style="'+LBLP+'">Notes</label><textarea oninput="window._programState.notes=this.value" rows="2" placeholder="Any details about this program…" style="'+INPP+'resize:none;">'+pr.notes+'</textarea></div>';
+
+    var itemOk=(pr.type==='feed'||pr.type==='medication'||pr.type==='supplement')?!!pr.itemName:pr.type==='rehab'?!!pr.modality:true;
+    var canCreate=itemOk&&!!pr.dateFrom&&!!pr.dateTo&&pr.days.length>0;
+
+    var submitJs="(function(){"
+      +"var prx=window._programState;"
+      +"if(!prx.dateFrom||!prx.dateTo||!prx.days.length)return;"
+      +"var progId='prog_'+Date.now();"
+      +"var progRecord={id:progId,horseId:'"+h.id+"',type:prx.type,itemName:prx.itemName,amount:prx.amount,trainingType:prx.trainingType,modality:prx.modality,provider:prx.provider,duration:parseInt(prx.duration,10)||30,dateFrom:prx.dateFrom,dateTo:prx.dateTo,days:prx.days.slice(),times:prx.times.slice(),notes:prx.notes,active:true};"
+      +"if(!HORSE_PROGRAMS['"+h.id+"'])HORSE_PROGRAMS['"+h.id+"']=[];"
+      +"HORSE_PROGRAMS['"+h.id+"'].push(progRecord);"
+      +"var scheduled=generateScheduledEntriesForProgram('"+h.id+"',progRecord);"
+      +"if(progRecord.type==='feed'||progRecord.type==='medication'||progRecord.type==='supplement'){"
+        +"if(!window.INGESTIBLES_JOURNAL)window.INGESTIBLES_JOURNAL={};"
+        +"if(!window.INGESTIBLES_JOURNAL['"+h.id+"'])window.INGESTIBLES_JOURNAL['"+h.id+"']=[];"
+        +"window.INGESTIBLES_JOURNAL['"+h.id+"']=scheduled.concat(window.INGESTIBLES_JOURNAL['"+h.id+"']);"
+      +"} else if(progRecord.type==='training'){"
+        +"if(!HORSE_TRAINING_HISTORY['"+h.id+"'])HORSE_TRAINING_HISTORY['"+h.id+"']=[];"
+        +"HORSE_TRAINING_HISTORY['"+h.id+"']=scheduled.concat(HORSE_TRAINING_HISTORY['"+h.id+"']);"
+      +"} else if(progRecord.type==='rehab'){"
+        +"if(!HORSE_REHAB_HISTORY['"+h.id+"'])HORSE_REHAB_HISTORY['"+h.id+"']=[];"
+        +"HORSE_REHAB_HISTORY['"+h.id+"']=scheduled.concat(HORSE_REHAB_HISTORY['"+h.id+"']);"
+      +"}"
+      +closeAction
+      +"showToast(scheduled.length+' journal entries scheduled!','event_repeat','success');"
+      +"S.ingestAddSheetOpen=false;"
+      +"rerender();"
+    +"})()";
+
+    body='<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">'
+      +'<button onclick="window._programState.type=null;rerender()" style="background:none;border:none;cursor:pointer;padding:2px;display:flex;">'+msiIcon('arrow_back',20,'var(--md-on-surface)')+'</button>'
+      +'<div style="width:32px;height:32px;border-radius:9px;background:'+typeInfo.color+'18;display:flex;align-items:center;justify-content:center;">'+msiIcon(typeInfo.icon,16,typeInfo.color)+'</div>'
+      +'<div style="font-size:16px;font-weight:800;color:var(--md-on-surface);">'+typeInfo.label+' program</div>'
+    +'</div>'
+      +itemFields+scheduleFields+notesField
+      +'<button onclick="'+(canCreate?submitJs:'void 0')+'" style="width:100%;background:'+(canCreate?typeInfo.color:'var(--md-outline-variant)')+';color:'+(canCreate?'#fff':'var(--md-on-surface-dim)')+';border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(canCreate?'pointer':'not-allowed')+';">Create program</button>';
+  }
+
+  return '<div onclick="'+closeAction+'rerender()" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:400;display:flex;flex-direction:column;justify-content:flex-end;">'
+    +'<div onclick="event.stopPropagation()" style="background:var(--md-surface);border-radius:20px 20px 0 0;padding:16px;max-height:88vh;overflow-y:auto;">'
+      +'<div style="width:36px;height:4px;border-radius:2px;background:var(--md-outline-variant);margin:0 auto 14px;"></div>'
+      +body
+    +'</div>'
+  +'</div>';
+}
+
+function rJournalEntrySheet(h){
+  if(!window._journalEntryState) window._journalEntryState={open:false,horseId:'',type:null,dateISO:TODAY,time:'',itemName:'',amount:'',givenBy:'',trainingType:'Flat',duration:30,modality:'',provider:'',notes:'',programId:null,completingId:null,showNewForm:false,_prefilled:false};
+  var je=window._journalEntryState;
+  if(!je.open) return '';
+
+  var closeAction="window._journalEntryState={open:false,horseId:'',type:null,dateISO:TODAY,time:'',itemName:'',amount:'',givenBy:'',trainingType:'Flat',duration:30,modality:'',provider:'',notes:'',programId:null,completingId:null,showNewForm:false,_prefilled:false};";
+  var INPJ='width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:10px;padding:9px 12px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;';
+  var LBLJ='font-size:10px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.6px;display:block;margin-bottom:5px;';
+
+  // Scheduled entries generated by an active Program, due today or earlier
+  // and not yet completed — see generateScheduledEntriesForProgram and the
+  // Programs data-model comment above HORSE_PROGRAMS for the full picture.
+  function dueScheduledEntries(type){
+    var store=(type==='feed'||type==='medication'||type==='supplement')?(window.INGESTIBLES_JOURNAL&&window.INGESTIBLES_JOURNAL[h.id]||[])
+      :type==='training'?(HORSE_TRAINING_HISTORY[h.id]||[])
+      :(HORSE_REHAB_HISTORY[h.id]||[]);
+    var typeMatch=(type==='feed'||type==='medication'||type==='supplement')?function(e){return e.category===type;}:function(){return true;};
+    return store.filter(function(e){return e.status==='scheduled'&&e.programId&&typeMatch(e)&&e.dateISO<=TODAY;})
+      .sort(function(a,b){return a.dateISO<b.dateISO?-1:a.dateISO>b.dateISO?1:0;});
+  }
+
+  var body='';
+  if(!je.type){
+    var types=journalEntryTypesForRole();
+    body='<div style="font-size:16px;font-weight:800;color:var(--md-on-surface);margin-bottom:14px;">Add journal entry</div>'
+      +'<div style="display:flex;flex-direction:column;gap:8px;">'
+      +types.map(function(t){
+        var due=dueScheduledEntries(t.type);
+        return '<button onclick="window._journalEntryState.type=\''+t.type+'\';rerender()" style="width:100%;display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--md-surface-variant);border:none;border-radius:12px;cursor:pointer;text-align:left;">'
+          +'<div style="width:38px;height:38px;border-radius:10px;background:'+t.color+'18;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;">'+msiIcon(t.icon,18,t.color)
+            +(due.length?'<div style="position:absolute;top:-4px;right:-4px;background:var(--md-warning);color:#fff;font-size:9px;font-weight:800;border-radius:8px;min-width:16px;height:16px;display:flex;align-items:center;justify-content:center;padding:0 3px;">'+due.length+'</div>':'')
+          +'</div>'
+          +'<span style="font-size:14px;font-weight:700;color:var(--md-on-surface);flex:1;">'+t.label+(due.length?' · '+due.length+' due':'')+'</span>'
+          +msiIcon('chevron_right',18,'var(--md-on-surface-dim)')
+        +'</button>';
+      }).join('')
+      +'</div>';
+  } else {
+    var typeInfo=journalEntryTypesForRole().concat([
+      {type:'feed',label:'Feed',icon:'grass',color:'var(--md-primary)'},
+      {type:'medication',label:'Meds',icon:'vaccines',color:'var(--md-error)'},
+      {type:'supplement',label:'Supplements',icon:'medication',color:'var(--md-secondary)'},
+      {type:'training',label:'Training',icon:'sports',color:'var(--md-tertiary)'},
+      {type:'rehab',label:'Rehab/Therapy',icon:'spa',color:'var(--md-secondary)'},
+    ]).find(function(t){return t.type===je.type;});
+
+    var due=je.completingId?[]:dueScheduledEntries(je.type);
+
+    // ── Due-entries checklist: shown first, before the blank-entry form ────
+    // Tapping one sets completingId and pre-fills the form from that
+    // scheduled record; "Log a new entry" bypasses this and goes straight
+    // to a fresh standalone entry (setting showNewForm).
+    if(due.length && !je.completingId && !je.showNewForm){
+      body='<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">'
+        +'<button onclick="window._journalEntryState.type=null;rerender()" style="background:none;border:none;cursor:pointer;padding:2px;display:flex;">'+msiIcon('arrow_back',20,'var(--md-on-surface)')+'</button>'
+        +'<div style="width:32px;height:32px;border-radius:9px;background:'+typeInfo.color+'18;display:flex;align-items:center;justify-content:center;">'+msiIcon(typeInfo.icon,16,typeInfo.color)+'</div>'
+        +'<div style="font-size:16px;font-weight:800;color:var(--md-on-surface);">'+typeInfo.label+' — due</div>'
+      +'</div>'
+      +due.map(function(e){
+        var label=(je.type==='feed'||je.type==='medication'||je.type==='supplement')?e.itemName:je.type==='training'?e.type:e.modality;
+        var overdue=e.dateISO<TODAY;
+        return '<button onclick="window._journalEntryState.completingId=\''+e.id+'\';rerender()" style="width:100%;display:flex;align-items:center;gap:10px;padding:11px 13px;background:var(--md-surface-variant);border:1.5px solid '+(overdue?'var(--md-warning)':'var(--md-outline-variant)')+';border-radius:10px;margin-bottom:7px;cursor:pointer;text-align:left;">'
+          +'<div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--md-on-surface);">'+label+'</div><div style="font-size:11px;color:'+(overdue?'var(--md-warning)':'var(--md-on-surface-dim)')+';">'+e.dateISO+(e.time?' · '+e.time:'')+(overdue?' · overdue':'')+'</div></div>'
+          +msiIcon('chevron_right',16,'var(--md-on-surface-dim)')
+        +'</button>';
+      }).join('')
+      +'<button onclick="window._journalEntryState.showNewForm=true;rerender()" style="width:100%;background:none;border:1.5px dashed var(--md-outline);border-radius:10px;padding:11px;font-size:12px;font-weight:700;color:var(--md-primary);cursor:pointer;font-family:\'DM Sans\',sans-serif;margin-top:4px;">+ Log a new entry instead</button>';
+    } else {
+      // Pre-fill from the scheduled record being completed, if any.
+      var srcEntry=null;
+      if(je.completingId){
+        var srcStore=(je.type==='feed'||je.type==='medication'||je.type==='supplement')?(window.INGESTIBLES_JOURNAL&&window.INGESTIBLES_JOURNAL[h.id]||[])
+          :je.type==='training'?(HORSE_TRAINING_HISTORY[h.id]||[])
+          :(HORSE_REHAB_HISTORY[h.id]||[]);
+        srcEntry=srcStore.find(function(e){return e.id===je.completingId;});
+        if(srcEntry&&!je._prefilled){
+          if(je.type==='feed'||je.type==='medication'||je.type==='supplement'){je.itemName=srcEntry.itemName;je.amount=srcEntry.amount||je.amount;}
+          else if(je.type==='training'){je.trainingType=srcEntry.type;je.duration=srcEntry.duration;}
+          else if(je.type==='rehab'){je.modality=srcEntry.modality;je.provider=srcEntry.provider||je.provider;je.duration=srcEntry.duration;}
+          je.dateISO=srcEntry.dateISO;je.time=srcEntry.time||je.time;
+          je._prefilled=true;
+        }
+      }
+
+      var dateTimeRow='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">'
+        +'<div><label style="'+LBLJ+'">Date</label><input type="date" value="'+je.dateISO+'" oninput="window._journalEntryState.dateISO=this.value" style="'+INPJ+'"/></div>'
+        +'<div><label style="'+LBLJ+'">Time</label><input type="time" value="'+je.time+'" oninput="window._journalEntryState.time=this.value" style="'+INPJ+'"/></div>'
+      +'</div>';
+
+      var fields='';
+      if(je.type==='feed'||je.type==='medication'||je.type==='supplement'){
+        var reg2=HORSE_REGIMENS[h.id]||{feed:[],supplements:[],medications:[],vetNotes:''};
+        var catItems=je.type==='feed'?(reg2.feed||[]):je.type==='medication'?(reg2.medications||[]):(reg2.supplements||[]);
+        fields='<div style="margin-bottom:11px;"><label style="'+LBLJ+'">Item</label>'
+          +(catItems.length
+            ?'<select oninput="window._journalEntryState.itemName=this.value" style="'+INPJ+'"><option value="">Select item…</option>'+catItems.map(function(it){return '<option value="'+it.label+'"'+(je.itemName===it.label?' selected':'')+'>'+it.label+'</option>';}).join('')+'</select>'
+            :'<input type="text" value="'+je.itemName+'" oninput="window._journalEntryState.itemName=this.value" placeholder="'+typeInfo.label+' name" style="'+INPJ+'"/>')
+          +'</div>'
+          +'<div style="margin-bottom:11px;"><label style="'+LBLJ+'">Amount given</label><input type="text" value="'+je.amount+'" oninput="window._journalEntryState.amount=this.value" placeholder="e.g. 2 scoops" style="'+INPJ+'"/></div>'
+          +'<div style="margin-bottom:11px;"><label style="'+LBLJ+'">Given by</label><input type="text" value="'+je.givenBy+'" oninput="window._journalEntryState.givenBy=this.value" placeholder="Staff / your name" style="'+INPJ+'"/></div>';
+      } else if(je.type==='training'){
+        fields='<div style="margin-bottom:11px;"><label style="'+LBLJ+'">Activity</label><select oninput="window._journalEntryState.trainingType=this.value" style="'+INPJ+'">'+TRAINING_JOURNAL_TYPES.map(function(tp){return '<option value="'+tp+'"'+(je.trainingType===tp?' selected':'')+'>'+tp+'</option>';}).join('')+'</select></div>'
+          +'<div style="margin-bottom:11px;"><label style="'+LBLJ+'">Duration (min)</label><input type="number" value="'+je.duration+'" min="5" step="5" oninput="window._journalEntryState.duration=this.value" style="'+INPJ+'"/></div>';
+      } else if(je.type==='rehab'){
+        fields='<div style="margin-bottom:11px;"><label style="'+LBLJ+'">Modality</label><select oninput="window._journalEntryState.modality=this.value" style="'+INPJ+'"><option value="">Select…</option>'+REHAB_MODALITIES.map(function(md){return '<option value="'+md+'"'+(je.modality===md?' selected':'')+'>'+md+'</option>';}).join('')+'</select></div>'
+          +'<div style="margin-bottom:11px;"><label style="'+LBLJ+'">Provider</label><input type="text" value="'+je.provider+'" oninput="window._journalEntryState.provider=this.value" placeholder="Who performed it" style="'+INPJ+'"/></div>'
+          +'<div style="margin-bottom:11px;"><label style="'+LBLJ+'">Duration (min)</label><input type="number" value="'+je.duration+'" min="5" step="5" oninput="window._journalEntryState.duration=this.value" style="'+INPJ+'"/></div>';
+      }
+
+      var notesField='<div style="margin-bottom:18px;"><label style="'+LBLJ+'">Notes</label><textarea oninput="window._journalEntryState.notes=this.value" rows="2" placeholder="Any observations…" style="'+INPJ+'resize:none;">'+je.notes+'</textarea></div>';
+
+      var isCompleting=!!je.completingId;
+      var submitJs="(function(){"
+        +"var je2=window._journalEntryState;"
+        +(isCompleting
+          // ── Completing an existing scheduled entry: find it by id in the
+          // right store and mutate it in place (status -> 'completed'),
+          // rather than pushing a new record. programId is preserved so the
+          // link back to its Program stays intact.
+          ?("var store=(je2.type==='feed'||je2.type==='medication'||je2.type==='supplement')?(window.INGESTIBLES_JOURNAL['"+h.id+"']||[])"
+            +":je2.type==='training'?(HORSE_TRAINING_HISTORY['"+h.id+"']||[])"
+            +":(HORSE_REHAB_HISTORY['"+h.id+"']||[]);"
+            +"var rec=store.find(function(e){return e.id===je2.completingId;});"
+            +"if(!rec)return;"
+            +"rec.dateISO=je2.dateISO;rec.time=je2.time||rec.time;rec.notes=je2.notes;rec.status='completed';"
+            +"if(je2.type==='feed'||je2.type==='medication'||je2.type==='supplement'){rec.itemName=je2.itemName;rec.amount=je2.amount;rec.givenBy=je2.givenBy;}"
+            +"else if(je2.type==='training'){rec.type=je2.trainingType;rec.duration=parseInt(je2.duration,10)||rec.duration;rec.date=je2.dateISO;}"
+            +"else if(je2.type==='rehab'){rec.modality=je2.modality;rec.provider=je2.provider;rec.duration=parseInt(je2.duration,10)||rec.duration;}")
+          // ── Fresh standalone entry: same as Part 1's original behavior.
+          : ("if(je2.type==='feed'||je2.type==='medication'||je2.type==='supplement'){"
+              +"if(!je2.itemName)return;"
+              +"if(!window.INGESTIBLES_JOURNAL)window.INGESTIBLES_JOURNAL={};"
+              +"if(!window.INGESTIBLES_JOURNAL['"+h.id+"'])window.INGESTIBLES_JOURNAL['"+h.id+"']=[];"
+              +"window.INGESTIBLES_JOURNAL['"+h.id+"'].unshift({id:'ij'+Date.now(),category:je2.type,itemName:je2.itemName,amount:je2.amount,time:je2.time||'',givenBy:je2.givenBy,notes:je2.notes,dateISO:je2.dateISO,programId:null,status:'completed'});"
+            +"} else if(je2.type==='training'){"
+              +"if(!HORSE_TRAINING_HISTORY['"+h.id+"'])HORSE_TRAINING_HISTORY['"+h.id+"']=[];"
+              +"HORSE_TRAINING_HISTORY['"+h.id+"'].unshift({id:'th'+Date.now(),date:je2.dateISO,dateISO:je2.dateISO,time:je2.time||'',type:je2.trainingType,duration:parseInt(je2.duration,10)||30,intensity:3,trainer:'Journal entry',skills:{rhythm:7,suppleness:7,contact:7,impulsion:7,straightness:7,collection:7},tqs:7,focus:[],notes:je2.notes,env:{temp:65,humidity:50,footing:'Good',weather:'Clear'},feedChange:false,programId:null,status:'completed'});"
+            +"} else if(je2.type==='rehab'){"
+              +"if(!je2.modality)return;"
+              +"if(!HORSE_REHAB_HISTORY['"+h.id+"'])HORSE_REHAB_HISTORY['"+h.id+"']=[];"
+              +"HORSE_REHAB_HISTORY['"+h.id+"'].unshift({id:'rh'+Date.now(),dateISO:je2.dateISO,time:je2.time||'',modality:je2.modality,provider:je2.provider,duration:parseInt(je2.duration,10)||30,notes:je2.notes,programId:null,status:'completed'});"
+            +"}")
+        )
+        +closeAction
+        +"showToast('"+(isCompleting?"Entry completed!":"Journal entry added!")+"','"+(isCompleting?"check_circle":"edit_note")+"','success');"
+        +"rerender();"
+      +"})()";
+
+      body='<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">'
+        +'<button onclick="window._journalEntryState.type=null;window._journalEntryState.completingId=null;window._journalEntryState.showNewForm=false;window._journalEntryState._prefilled=false;rerender()" style="background:none;border:none;cursor:pointer;padding:2px;display:flex;">'+msiIcon('arrow_back',20,'var(--md-on-surface)')+'</button>'
+        +'<div style="width:32px;height:32px;border-radius:9px;background:'+typeInfo.color+'18;display:flex;align-items:center;justify-content:center;">'+msiIcon(typeInfo.icon,16,typeInfo.color)+'</div>'
+        +'<div style="font-size:16px;font-weight:800;color:var(--md-on-surface);">'+typeInfo.label+(isCompleting?' — complete':' entry')+'</div>'
+      +'</div>'
+        +dateTimeRow+fields+notesField
+        +'<button onclick="'+submitJs+'" style="width:100%;background:'+typeInfo.color+';color:#fff;border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;">'+(isCompleting?'Mark complete':'Save entry')+'</button>';
+    }
+  }
+
+  return '<div onclick="'+closeAction+'rerender()" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:400;display:flex;flex-direction:column;justify-content:flex-end;">'
+    +'<div onclick="event.stopPropagation()" style="background:var(--md-surface);border-radius:20px 20px 0 0;padding:16px;max-height:85vh;overflow-y:auto;">'
+      +'<div style="width:36px;height:4px;border-radius:2px;background:var(--md-outline-variant);margin:0 auto 14px;"></div>'
+      +body
+    +'</div>'
+  +'</div>';
+}
+
 function rHorseDetail(h){
   const t=TH;
   const tab=S.horseTab||'overview';
@@ -8882,11 +9221,7 @@ function rHorseDetail(h){
 
   var passCard_ov=upPass_ov?'<div onclick="S.horseTab=\'competitions\';rerender()" style="background:linear-gradient(135deg,#112030 0%,#1E3A52 100%);border:1.5px solid rgba(58,172,190,0.3);border-radius:12px;padding:12px 14px;margin-bottom:12px;cursor:pointer;display:flex;align-items:center;gap:10px;"><div style="flex:1;"><div style="font-size:9px;font-weight:700;color:rgba(58,172,190,0.8);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:2px;">Upcoming competition</div><div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:1px;">'+upPass_ov.event.name+'</div><div style="font-size:11px;color:rgba(255,255,255,0.6);">'+upPass_ov.event.date+'</div></div><div style="background:rgba(58,172,190,0.15);border:1px solid rgba(58,172,190,0.3);border-radius:8px;padding:6px 10px;font-size:10px;font-weight:700;color:rgba(58,172,190,0.9);display:flex;align-items:center;gap:3px;flex-shrink:0;">'+msiIcon('arrow_forward',12,'rgba(58,172,190,0.9)')+'View</div></div>':'';
 
-  // Icon per pro type — was a 2-way ternary (Farrier/Dentist only, everyone
-  // else fell back to a generic "groups" icon); now covers all 8 proType
-  // labels via the shared PRO_TYPE_ICON map.
-  var prosCard_ov=(h.pros&&h.pros.length)?'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);overflow:hidden;margin-bottom:12px;"><div style="padding:10px 13px;border-bottom:1px solid var(--md-outline-variant);font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;">Upcoming appointments</div>'+h.pros.map(function(p,i){return '<div style="display:flex;align-items:center;gap:9px;padding:9px 13px;'+(i<h.pros.length-1?'border-bottom:1px solid var(--md-outline-variant)':'')+';"><div style="width:32px;height:32px;border-radius:8px;background:var(--md-surface-variant);display:flex;align-items:center;justify-content:center;">'+msiIcon(PRO_TYPE_ICON[p.role]||'groups',15,'var(--md-on-surface-dim)')+'</div><div style="flex:1;"><div style="font-size:12px;font-weight:600;color:var(--md-on-surface);">'+p.name+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+p.role+'</div></div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+p.next+'</div></div>';}).join('')+'</div>':'';
-
+  var prosCard_ov=(h.pros&&h.pros.length)?'<div style="background:var(--md-surface);border-radius:var(--md-shape-md);border:1px solid var(--md-outline-variant);overflow:hidden;margin-bottom:12px;"><div style="padding:10px 13px;border-bottom:1px solid var(--md-outline-variant);font-size:10px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;">Upcoming appointments</div>'+h.pros.map(function(p,i){return '<div style="display:flex;align-items:center;gap:9px;padding:9px 13px;'+(i<h.pros.length-1?'border-bottom:1px solid var(--md-outline-variant)':'')+';"><div style="width:32px;height:32px;border-radius:8px;background:var(--md-surface-variant);display:flex;align-items:center;justify-content:center;">'+msiIcon(p.role==='Farrier'?'build':p.role==='Dentist'?'medical_services':'groups',15,'var(--md-on-surface-dim)')+'</div><div style="flex:1;"><div style="font-size:12px;font-weight:600;color:var(--md-on-surface);">'+p.name+'</div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+p.role+'</div></div><div style="font-size:11px;color:var(--md-on-surface-dim);">'+p.next+'</div></div>';}).join('')+'</div>':'';
 
 
 // ── Pregnancy dashboard (Mares/Fillies only) ────────────────────────────────
@@ -9754,6 +10089,12 @@ function rHorseDetail(h){
     :'';
   overviewTab=bookApptFab+overviewTab;
 
+  // ── Journal Entry FAB (Overview tab) ─────────────────────────────────────
+  // Stacked above the Book Appointment FAB. Opens the unified type-first
+  // journal entry sheet (rJournalEntrySheet) with this horse pre-set.
+  var journalEntryFab='<button onclick="window._journalEntryState={open:true,horseId:\''+h.id+'\',type:null,dateISO:TODAY,time:\'\',itemName:\'\',amount:\'\',givenBy:\'\',trainingType:\'Flat\',duration:30,modality:\'\',provider:\'\',notes:\'\',programId:null,completingId:null,showNewForm:false,_prefilled:false};rerender()" style="position:fixed;bottom:144px;right:20px;z-index:200;width:54px;height:54px;border-radius:50%;background:var(--md-tertiary);border:none;box-shadow:0 4px 14px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;cursor:pointer;">'+msiIcon('edit_note',24,'#fff')+'</button>';
+  overviewTab=journalEntryFab+overviewTab;
+
   pedigreeTab=pedigreeTab+(foalSection?('<div style="padding:0 14px 14px;">'+foalSection+'</div>'):'');
 
   // ── Add Pedigree Info FAB + sheet (Pedigree tab only) ────────────────────────
@@ -10009,7 +10350,7 @@ function rHorseDetail(h){
           +'<div><label style="font-size:9px;font-weight:700;color:var(--md-primary);text-transform:uppercase;letter-spacing:0.7px;display:block;margin-bottom:4px;">Phone</label>'
           +'<input type="tel" value="'+inv.phone+'" oninput="window._inviteState.phone=this.value" placeholder="(555) 000-0000" style="width:100%;background:var(--md-surface-variant);border:1.5px solid var(--md-outline);border-radius:9px;padding:9px 11px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--md-on-surface);outline:none;box-sizing:border-box;"/></div>'
           +'</div>'
-          +'<div style="background:var(--md-surface-variant);border-radius:9px;padding:9px 11px;font-size:11px;color:var(--md-on-surface-dim);margin-bottom:14px;line-height:1.5;">'+msiIcon('info',12,'var(--md-primary)')+" If they're on NayNay, they'll be connected instantly. Otherwise we'll send them an invite."+'</div>'
+          +'<div style="background:var(--md-surface-variant);border-radius:9px;padding:9px 11px;font-size:11px;color:var(--md-on-surface-dim);margin-bottom:14px;line-height:1.5;">'+msiIcon('info',12,'var(--md-primary)')+" If they're on NayNay, they'll be sent a notification to connect instantly. Otherwise we'll send them an invite."+'</div>'
           +'<div style="display:flex;gap:8px;">'
           +'<button onclick="window._inviteState.open=false;rerender()" style="flex:1;background:var(--md-surface);border:1.5px solid var(--md-outline);border-radius:12px;padding:12px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer;color:var(--md-on-surface);">Cancel</button>'
           +'<button onclick="'+(inv.name?"window._inviteState.step=2;window._inviteState.inviteCode=window._inviteState.inviteCode||generateInviteCode();rerender()":'void 0')+'" style="flex:1;background:'+(inv.name?'var(--md-primary)':'var(--md-outline-variant)')+';color:'+(inv.name?'#fff':'var(--md-on-surface-dim)')+';border:none;border-radius:12px;padding:12px;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:'+(inv.name?'pointer':'not-allowed')+';">Preview invite</button>'
@@ -10869,12 +11210,24 @@ function rHorseDetail(h){
 
   // ── Ingestibles Add sheet: menu (Regimens / Journal Entries) OR active form ───
   var ingestAddOptions=[
-    {group:'regimen',type:'feed',       label:'Feed',            icon:'grass',      color:'var(--md-primary)',   action:"window._regimenEditState={type:'feed',horseId:'"+h.id+"'};"},
-    {group:'regimen',type:'medication', label:'Medication',      icon:'vaccines',   color:'var(--md-error)',     action:"window._regimenEditState={type:'medication',horseId:'"+h.id+"'};"},
-    {group:'regimen',type:'supplement', label:'Supplement',      icon:'medication', color:'var(--md-secondary)', action:"window._regimenEditState={type:'supplement',horseId:'"+h.id+"'};"},
-    {group:'journal',type:'feed',       label:'Feed',      icon:'edit_note',  color:'var(--md-primary)',   action:"S.ingestLogSheet={open:true,category:'feed',itemName:'',amount:'',time:'Now',givenBy:'',notes:''};"},
-    {group:'journal',type:'medication', label:'Medication',icon:'edit_note',  color:'var(--md-error)',     action:"S.ingestLogSheet={open:true,category:'medication',itemName:'',amount:'',time:'Now',givenBy:'',notes:''};"},
-    {group:'journal',type:'supplement', label:'Supplement',icon:'edit_note',  color:'var(--md-secondary)', action:"S.ingestLogSheet={open:true,category:'supplement',itemName:'',amount:'',time:'Now',givenBy:'',notes:''};"},
+    // Program options now open the unified rProgramSheet (type pre-set),
+    // which collects a real schedule (date range, days, times/day) and
+    // generates the resulting journal entries on save — addRegimenForm's
+    // old single-item-no-schedule flow couldn't do that, so this replaces
+    // it as the creation path. addRegimenForm/window._regimenEditState are
+    // left defined but unused rather than deleted, to minimize blast radius.
+    {group:'regimen',type:'feed',       label:'Feed',            icon:'grass',      color:'var(--md-primary)',   action:"S.ingestAddSheetOpen=false;window._programState={open:true,horseId:'"+h.id+"',type:'feed',itemName:'',amount:'',trainingType:'Flat',modality:'',provider:'',duration:30,dateFrom:TODAY,dateTo:'',days:[1,2,3,4,5,6,0],timesPerDay:1,times:['09:00'],notes:''};"},
+    {group:'regimen',type:'medication', label:'Medication',      icon:'vaccines',   color:'var(--md-error)',     action:"S.ingestAddSheetOpen=false;window._programState={open:true,horseId:'"+h.id+"',type:'medication',itemName:'',amount:'',trainingType:'Flat',modality:'',provider:'',duration:30,dateFrom:TODAY,dateTo:'',days:[1,2,3,4,5,6,0],timesPerDay:1,times:['09:00'],notes:''};"},
+    {group:'regimen',type:'supplement', label:'Supplement',      icon:'medication', color:'var(--md-secondary)', action:"S.ingestAddSheetOpen=false;window._programState={open:true,horseId:'"+h.id+"',type:'supplement',itemName:'',amount:'',trainingType:'Flat',modality:'',provider:'',duration:30,dateFrom:TODAY,dateTo:'',days:[1,2,3,4,5,6,0],timesPerDay:1,times:['09:00'],notes:''};"},
+    {group:'regimen',type:'training',   label:'Training',        icon:'sports',     color:'var(--md-tertiary)',  action:"S.ingestAddSheetOpen=false;window._programState={open:true,horseId:'"+h.id+"',type:'training',itemName:'',amount:'',trainingType:'Flat',modality:'',provider:'',duration:30,dateFrom:TODAY,dateTo:'',days:[1,2,3,4,5,6,0],timesPerDay:1,times:['09:00'],notes:''};"},
+    {group:'regimen',type:'rehab',      label:'Rehab/Therapy',   icon:'spa',        color:'var(--md-secondary)', action:"S.ingestAddSheetOpen=false;window._programState={open:true,horseId:'"+h.id+"',type:'rehab',itemName:'',amount:'',trainingType:'Flat',modality:'',provider:'',duration:30,dateFrom:TODAY,dateTo:'',days:[1,2,3,4,5,6,0],timesPerDay:1,times:['09:00'],notes:''};"},
+    // Journal-entry options now open the unified rJournalEntrySheet with the
+    // type pre-set (skipping its type-picker step), instead of the old
+    // tab-scoped S.ingestLogSheet mechanism — same shared flow the horse
+    // Overview FAB uses, just entered from the Feed tab with a shortcut.
+    {group:'journal',type:'feed',       label:'Feed',      icon:'edit_note',  color:'var(--md-primary)',   action:"S.ingestAddSheetOpen=false;window._journalEntryState={open:true,horseId:'"+h.id+"',type:'feed',dateISO:TODAY,time:'',itemName:'',amount:'',givenBy:'',trainingType:'Flat',duration:30,modality:'',provider:'',notes:'',programId:null,completingId:null,showNewForm:false,_prefilled:false};"},
+    {group:'journal',type:'medication', label:'Medication',icon:'edit_note',  color:'var(--md-error)',     action:"S.ingestAddSheetOpen=false;window._journalEntryState={open:true,horseId:'"+h.id+"',type:'medication',dateISO:TODAY,time:'',itemName:'',amount:'',givenBy:'',trainingType:'Flat',duration:30,modality:'',provider:'',notes:'',programId:null,completingId:null,showNewForm:false,_prefilled:false};"},
+    {group:'journal',type:'supplement', label:'Supplement',icon:'edit_note',  color:'var(--md-secondary)', action:"S.ingestAddSheetOpen=false;window._journalEntryState={open:true,horseId:'"+h.id+"',type:'supplement',dateISO:TODAY,time:'',itemName:'',amount:'',givenBy:'',trainingType:'Flat',duration:30,modality:'',provider:'',notes:'',programId:null,completingId:null,showNewForm:false,_prefilled:false};"},
   ];
 
   var ingestAddFab=(tab==='feed'&&anyRole('vet','manager','staff'))
@@ -10897,7 +11250,7 @@ function rHorseDetail(h){
     var ingestSheetInner=ingestActiveFormLabel==='regimen'?addRegimenForm(reState.type)
       :ingestActiveFormLabel==='journal'?ingestLogFormInner
       :('<div style="width:36px;height:4px;border-radius:2px;background:var(--md-outline-variant);margin:0 auto 14px;"></div>'
-          +(regimenOpts.length?'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;padding:0 14px 8px;">Regimens</div>'+regimenOpts.map(ingestOptRow).join(''):'')
+          +(regimenOpts.length?'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;padding:0 14px 8px;">Programs</div>'+regimenOpts.map(ingestOptRow).join(''):'')
           +(journalOpts.length?'<div style="font-size:11px;font-weight:700;color:var(--md-on-surface-dim);text-transform:uppercase;letter-spacing:0.5px;padding:14px 14px 8px;">Journal Entries</div>'+journalOpts.map(ingestOptRow).join(''):''));
     var ingestSheetPadding=ingestActiveFormLabel?'padding:16px;':'padding-top:12px;padding-bottom:24px;';
     ingestAddSheet='<div onclick="S.ingestAddSheetOpen=false;window._regimenEditState={type:null,horseId:\''+h.id+'\'};S.ingestLogSheet=null;rerender()" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:400;display:flex;flex-direction:column;justify-content:flex-end;">'
@@ -11088,7 +11441,9 @@ var ingestJournalSection='';
     +'</div>';
   }
 
-  return overviewFoalSheet+logSheet+trainingFab+ingestAddFab+'<div style="display:flex;flex-direction:column;height:100%;">'+hero+tabBar+'<div id="horse-tab-body" style="flex:1;overflow-y:auto;">'+content+'</div></div>';
+  var journalEntrySheetOverlay=(window._journalEntryState&&window._journalEntryState.open&&window._journalEntryState.horseId===h.id)?rJournalEntrySheet(h):'';
+  var programSheetOverlay=(window._programState&&window._programState.open&&window._programState.horseId===h.id)?rProgramSheet(h):'';
+  return programSheetOverlay+journalEntrySheetOverlay+overviewFoalSheet+logSheet+trainingFab+ingestAddFab+'<div style="display:flex;flex-direction:column;height:100%;">'+hero+tabBar+'<div id="horse-tab-body" style="flex:1;overflow-y:auto;">'+content+'</div></div>';
 }
 
 // --- BARN PROFESSIONALS DATA ---------------------------------
@@ -11098,8 +11453,6 @@ const BARN_PROFESSIONALS=[
   {id:'p3',name:'Dr. Priya Nair',type:'Dentist',face:'face_3',email:'priya@equinedental.com',phone:'',nayNay:true,initials:'PN',color:'var(--md-error)',bg:'var(--md-error-container)'},
   {id:'p4',name:'Jordan M.',type:'Trainer',face:'face_5',email:'jordan@sunrisestables.com',phone:'',nayNay:true,initials:'JM',color:'var(--md-tertiary)',bg:'var(--md-tertiary-container)'},
   {id:'p5',name:'Sofia Reyes',type:'Masseuse',face:'face_4',email:'sofia@eqwellness.com',phone:'',nayNay:false,initials:'SR',color:'var(--md-secondary)',bg:'var(--md-secondary-container)'},
-  {id:'p6',name:'Dr. Sam Ortiz',type:'Chiropractor',face:'face_6',email:'',phone:'',nayNay:false,initials:'SO',color:'var(--md-secondary)',bg:'var(--md-secondary-container)'},
-  {id:'p7',name:'Jamie Ruiz',type:'Saddle Fitter',face:'face_5',email:'',phone:'',nayNay:false,initials:'JR',color:'var(--md-warning)',bg:'var(--md-warning-container)'},
 ];
 
 // --- VISITS DATA ---------------------------------------------
